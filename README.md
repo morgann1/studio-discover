@@ -1,7 +1,7 @@
 <div align="center">
 
-<h1>📦 Studio Discover</h1>
+# 📦 Studio Discover
 
-**A lightweight Roblox Studio plugin for installing Wally packages. **
+**A lightweight Roblox Studio plugin for installing Wally packages.**
 
 </div>
