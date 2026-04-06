@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Roblox/setup-rokit@v1
+
+      - name: Install packages
+        run: wally install
+
+      - name: Build Discover.rbxm
+        run: rojo build -o Discover.rbxm
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Discover.rbxm
