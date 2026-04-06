@@ -1,0 +1,11 @@
+# Project place file
+/studio-discover.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+sourcemap.json
+
+# Wally
+Packages

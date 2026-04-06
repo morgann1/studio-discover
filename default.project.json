@@ -1,0 +1,15 @@
+{
+  "name": "Discover",
+  "tree": {
+    "$className": "Folder",
+    "Bin": {
+      "$path": "plugin/bin/"
+    },
+    "Src": {
+      "$path": "plugin/src/"
+    },
+    "Packages": {
+      "$path": "Packages/"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+std = "roblox"
+
+[config]
+global_usage = { ignore_pattern = "^__" }
+
+[rules]
+incorrect_standard_library_use = "allow"
