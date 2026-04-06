@@ -26,13 +26,19 @@ jobs:
           cache: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install packages
+      - name: 📦 Install packages
         run: wally install
 
-      - name: Build Discover.rbxm
+      - name: 🗺️ Generate sourcemap
+        run: rojo sourcemap -o sourcemap.json
+
+      - name: 🔤 Generate package types
+        run: wally-package-types --sourcemap sourcemap.json Packages/
+
+      - name: 🏗️ Build Discover.rbxm
         run: rojo build -o Discover.rbxm
 
-      - name: Create release
+      - name: 🚀 Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
