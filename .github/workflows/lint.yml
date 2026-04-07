@@ -3,7 +3,19 @@ name: Lint
 on:
   push:
     branches: [main]
+    paths:
+      - "**/*.lua"
+      - "**/*.luau"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/lint.yml"
   pull_request:
+    paths:
+      - "**/*.lua"
+      - "**/*.luau"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/lint.yml"
 
 jobs:
   lint:
