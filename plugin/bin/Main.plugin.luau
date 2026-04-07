@@ -17,6 +17,7 @@ local widgetInfo = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, fals
 local widget = plugin:CreateDockWidgetPluginGuiAsync("DiscoverWidget", widgetInfo)
 widget.Title = "Discover"
 widget.Name = "Discover"
+widget.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local root = ReactRoblox.createRoot(widget)
 
