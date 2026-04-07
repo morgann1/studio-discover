@@ -64,11 +64,12 @@ local function SettingsProvider(props: { plugin: Plugin?, children: any })
 		end)
 	end, { props.plugin })
 
-	local value = React.useMemo(function()
-		return {
+	local value: SettingsContext = React.useMemo(function()
+		local v: SettingsContext = {
 			settings = settings,
 			setSetting = setSetting,
 		}
+		return v
 	end, { settings, setSetting })
 
 	return React.createElement(Context.Provider, {

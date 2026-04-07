@@ -81,13 +81,14 @@ local function NavigationProvider(props: { children: any })
 
 	local screen = getScreen(stack)
 
-	local value = React.useMemo(function()
-		return {
+	local value: NavigationContext = React.useMemo(function()
+		local v: NavigationContext = {
 			push = push,
 			pop = pop,
 			replace = replace,
 			screen = screen,
 		}
+		return v
 	end, { push, pop, replace, screen })
 
 	return React.createElement(Context.Provider, {
