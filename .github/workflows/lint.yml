@@ -1,0 +1,28 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Install Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          cache: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Install packages
+        run: wally install
+
+      - name: 🎨 StyLua check
+        run: stylua --check plugin/
+
+      - name: 🔍 Selene
+        run: selene plugin/
