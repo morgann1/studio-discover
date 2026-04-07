@@ -35,7 +35,7 @@ local function LinkRow(props: LinkRowProps)
 			LayoutOrder = 1,
 		}),
 		ValueWrap = e("Frame", {
-			Size = UDim2.new(1, 0, 1, 0),
+			Size = UDim2.fromScale(1, 1),
 			BackgroundTransparency = 1,
 			LayoutOrder = 2,
 		}, {

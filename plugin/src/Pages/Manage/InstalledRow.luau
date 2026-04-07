@@ -76,7 +76,7 @@ local function InstalledRow(props: InstalledRowProps)
 	end
 
 	return e(View, {
-		Size = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromScale(1, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		LayoutOrder = props.LayoutOrder,
 		onActivated = handleSelect,
@@ -97,7 +97,7 @@ local function InstalledRow(props: InstalledRowProps)
 		}),
 
 		Info = e("Frame", {
-			Size = UDim2.new(1, 0, 0, 0),
+			Size = UDim2.fromScale(1, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 			LayoutOrder = 1,
@@ -116,7 +116,7 @@ local function InstalledRow(props: InstalledRowProps)
 				LayoutOrder = 1,
 			}),
 			Pills = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = 2,
@@ -125,7 +125,7 @@ local function InstalledRow(props: InstalledRowProps)
 
 		UpdateWrap = if updateAvailable
 			then e("Frame", {
-				Size = UDim2.new(0, 80, 0, 32),
+				Size = UDim2.fromOffset(80, 32),
 				BackgroundTransparency = 1,
 				LayoutOrder = 2,
 			}, {
@@ -139,7 +139,7 @@ local function InstalledRow(props: InstalledRowProps)
 			else nil,
 
 		UninstallWrap = e("Frame", {
-			Size = UDim2.new(0, 32, 0, 32),
+			Size = UDim2.fromOffset(32, 32),
 			BackgroundTransparency = 1,
 			LayoutOrder = 3,
 		}, {

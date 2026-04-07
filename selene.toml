@@ -1,5 +1,5 @@
 std = "roblox"
-exclude = ["plugin/Packages/**", "plugin/generated/**"]
+exclude = ["plugin/Packages/**", "plugin/generated/**", "plugin/src/Installer/zzlib/**"]
 
 [config]
 global_usage = { ignore_pattern = "^__" }

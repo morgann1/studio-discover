@@ -157,7 +157,7 @@ local function Settings()
 				}),
 
 				NamingSection = e("Frame", {
-					Size = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.fromScale(1, 0),
 					AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundTransparency = 1,
 					LayoutOrder = nextContentOrder(),
@@ -202,7 +202,7 @@ local function Settings()
 				}),
 
 				OverridesSection = e("Frame", {
-					Size = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.fromScale(1, 0),
 					AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundTransparency = 1,
 					LayoutOrder = nextContentOrder(),
@@ -223,7 +223,7 @@ local function Settings()
 					}),
 					List = if #sortedKeys > 0
 						then e("Frame", {
-							Size = UDim2.new(1, 0, 0, 0),
+							Size = UDim2.fromScale(1, 0),
 							AutomaticSize = Enum.AutomaticSize.Y,
 							BackgroundTransparency = 1,
 							LayoutOrder = 3,
@@ -248,7 +248,7 @@ local function Settings()
 							Padding = UDim.new(0, 8),
 						}),
 						KeyInputWrap = e("Frame", {
-							Size = UDim2.new(1, 0, 1, 0),
+							Size = UDim2.fromScale(1, 1),
 							BackgroundTransparency = 1,
 							LayoutOrder = 1,
 						}, {
@@ -265,7 +265,7 @@ local function Settings()
 							}),
 						}),
 						ValueInputWrap = e("Frame", {
-							Size = UDim2.new(1, 0, 1, 0),
+							Size = UDim2.fromScale(1, 1),
 							BackgroundTransparency = 1,
 							LayoutOrder = 2,
 						}, {
@@ -282,7 +282,7 @@ local function Settings()
 							}),
 						}),
 						AddButtonWrap = e("Frame", {
-							Size = UDim2.new(0, 40, 0, 40),
+							Size = UDim2.fromOffset(40, 40),
 							BackgroundTransparency = 1,
 							LayoutOrder = 3,
 						}, {

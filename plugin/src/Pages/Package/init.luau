@@ -262,7 +262,7 @@ local function Package()
 				Padding = UDim.new(0, 8),
 			}),
 			TitleRow = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = 1,
@@ -416,14 +416,14 @@ local function Package()
 			}),
 
 			Header = e(View, {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				LayoutOrder = nextPageOrder(),
 				tag = "bg-surface-100 radius-medium",
 			}, headerChildren),
 
 			ActionRow = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = nextPageOrder(),
@@ -503,14 +503,14 @@ local function Package()
 			}) or nil,
 
 			Facts = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = nextPageOrder(),
 			}, factsChildren),
 
 			Snippet = e(View, {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				LayoutOrder = nextPageOrder(),
 				tag = "bg-surface-200 radius-small",
@@ -541,7 +541,7 @@ local function Package()
 			}),
 
 			LinksSection = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = nextPageOrder(),
@@ -553,7 +553,7 @@ local function Package()
 				}),
 				Header = e(SectionHeader, { text = "Links", LayoutOrder = 1 }),
 				List = e("Frame", {
-					Size = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.fromScale(1, 0),
 					AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundTransparency = 1,
 					LayoutOrder = 2,
@@ -561,7 +561,7 @@ local function Package()
 			}),
 
 			UsedBySection = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = nextPageOrder(),
@@ -577,7 +577,7 @@ local function Package()
 				}),
 				List = if #dependents > 0
 					then e("Frame", {
-						Size = UDim2.new(1, 0, 0, 0),
+						Size = UDim2.fromScale(1, 0),
 						AutomaticSize = Enum.AutomaticSize.Y,
 						BackgroundTransparency = 1,
 						LayoutOrder = 2,
@@ -592,7 +592,7 @@ local function Package()
 			}),
 
 			DepsSection = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = nextPageOrder(),

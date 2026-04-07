@@ -274,7 +274,7 @@ local function Home()
 				PaddingBottom = UDim.new(0, 8),
 			}),
 			SearchWrap = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = nextTopBarOrder(),

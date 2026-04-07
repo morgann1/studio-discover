@@ -73,7 +73,7 @@ local function PackageCard(props: PackageCardProps)
 	end
 
 	return e(View, {
-		Size = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromScale(1, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		onActivated = handleSelect,
 		stateLayer = { affordance = "Background" },
@@ -93,7 +93,7 @@ local function PackageCard(props: PackageCardProps)
 		}),
 
 		Info = e("Frame", {
-			Size = UDim2.new(1, 0, 0, 0),
+			Size = UDim2.fromScale(1, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 			LayoutOrder = 1,
@@ -122,7 +122,7 @@ local function PackageCard(props: PackageCardProps)
 			}),
 			Pills = if pillOrder > 0
 				then e("Frame", {
-					Size = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.fromScale(1, 0),
 					AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundTransparency = 1,
 					LayoutOrder = 3,
