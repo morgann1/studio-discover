@@ -185,210 +185,167 @@ local function Package()
 			})
 		end
 
-		content = e("Frame", {
+		local nextPageOrder = ReactHelpers.createNextOrder()
+		content = e(ScrollView, {
 			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
+			scroll = {
+				scrollBarVisibility = Visibility.Auto,
+				ScrollingDirection = Enum.ScrollingDirection.Y,
+			},
 		}, {
-			ContentLayout = e("UIListLayout", {
+			ScrollLayout = e("UIListLayout", {
 				FillDirection = Enum.FillDirection.Vertical,
 				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 10),
+			}),
+			ScrollPadding = e("UIPadding", {
+				PaddingLeft = UDim.new(0, 16),
+				PaddingRight = UDim.new(0, 16),
+				PaddingTop = UDim.new(0, 12),
+				PaddingBottom = UDim.new(0, 16),
 			}),
 
-			FixedHeader = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
+			Title = e(Text, {
+				Text = `{scope}/{rawName}`,
 				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				LayoutOrder = 1,
-			}, {
-				HeaderLayout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 10),
-				}),
-				HeaderPadding = e("UIPadding", {
-					PaddingLeft = UDim.new(0, 16),
-					PaddingRight = UDim.new(0, 16),
-					PaddingTop = UDim.new(0, 16),
-					PaddingBottom = UDim.new(0, 8),
-				}),
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-title-medium content-emphasis text-align-x-left",
+				LayoutOrder = nextPageOrder(),
+			}),
 
-				Title = e(Text, {
-					Text = `{scope}/{rawName}`,
-					AutomaticSize = Enum.AutomaticSize.XY,
-					tag = "text-title-medium content-emphasis",
-					LayoutOrder = 1,
-				}),
-
-				InstalledBadge = if installedEntry
-					then e(Text, {
-						Text = `Installed v{installedEntry.version}`,
-						AutomaticSize = Enum.AutomaticSize.XY,
-						tag = "text-caption-small content-emphasis",
-						LayoutOrder = 1.5,
-					})
-					else nil,
-
-				Description = e(Text, {
-					Text = description,
+			InstalledBadge = if installedEntry
+				then e(Text, {
+					Text = `Installed v{installedEntry.version}`,
 					AutomaticSize = Enum.AutomaticSize.Y,
 					Size = UDim2.fromScale(1, 0),
-					tag = "text-label-small text-align-x-left",
-					LayoutOrder = 2,
-				}),
+					tag = "text-caption-small content-emphasis text-align-x-left",
+					LayoutOrder = nextPageOrder(),
+				})
+				else nil,
 
-				VersionDropdown = e(Dropdown.Root, {
-					label = "Version",
-					value = selectedVersion,
-					size = InputSize.Small,
-					width = UDim.new(0, 180),
-					LayoutOrder = 3,
-					onItemChanged = function(id: string)
-						setSelectedVersion(id)
-					end,
-					items = (function()
-						local flat = {}
-						if allVersions then
-							for i, versionData in allVersions do
-								local v = versionData.package.version
-								table.insert(flat, {
-									id = v,
-									text = i == 1 and `v{v} (latest)` or `v{v}`,
-								})
-							end
-						end
-						return flat
-					end)(),
-				}),
+			Description = e(Text, {
+				Text = description,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-label-small text-align-x-left",
+				LayoutOrder = nextPageOrder(),
 			}),
 
-			InstallRow = e("Frame", {
+			VersionDropdown = e(Dropdown.Root, {
+				label = "",
+				value = selectedVersion,
+				size = InputSize.Small,
+				width = UDim.new(1, 0),
+				LayoutOrder = nextPageOrder(),
+				onItemChanged = function(id: string)
+					setSelectedVersion(id)
+				end,
+				items = (function()
+					local flat = {}
+					if allVersions then
+						for i, versionData in allVersions do
+							local v = versionData.package.version
+							table.insert(flat, {
+								id = v,
+								text = i == 1 and `v{v} (latest)` or `v{v}`,
+							})
+						end
+					end
+					return flat
+				end)(),
+			}),
+
+			Install = e(Button, {
+				LayoutOrder = nextPageOrder(),
+				text = if installStatus == "installing"
+						then "Installing..."
+					elseif installStatus == "installed" then "Installed"
+					elseif installStatus == "partial" then "Installed (with warnings)"
+					elseif installStatus == "error" then "Error"
+					else "Install",
+				variant = if installStatus == "installed" or installStatus == "partial"
+					then ButtonVariant.Standard
+					else ButtonVariant.Emphasis,
+				size = InputSize.Medium,
+				isDisabled = installStatus == "installing"
+					or installStatus == "installed"
+					or installStatus == "partial",
+				onActivated = function()
+					setInstallStatus("installing")
+					setInstallError(nil)
+
+					task.spawn(function()
+						local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention)
+						local success, err, failures =
+							Installer.install(scope, rawName, version, alias, installRealm)
+
+						if success then
+							if failures and #failures > 0 then
+								setInstallStatus("partial")
+								setInstallError(
+									`Installed, but {#failures} dependency issue(s):\n• `
+										.. table.concat(failures, "\n• ")
+								)
+							else
+								setInstallStatus("installed")
+								setInstallError(nil)
+							end
+						else
+							setInstallStatus("error")
+							setInstallError(err)
+							warn("[Discover] Install failed:", err)
+						end
+					end)
+				end,
+			}),
+
+			InstallMessage = installError and e(SystemBanner, {
+				severity = if installStatus == "partial" then AlertSeverity.Warning else AlertSeverity.Error,
+				title = if installStatus == "partial" then "Installed with warnings" else "Install failed",
+				description = installError,
+				LayoutOrder = nextPageOrder(),
+			}) or nil,
+
+			MetaDivider = e(Divider, { LayoutOrder = nextPageOrder() }),
+
+			MetaSection = e("Frame", {
 				Size = UDim2.fromScale(1, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
-				LayoutOrder = 2,
+				LayoutOrder = nextPageOrder(),
 			}, {
-				InstallPadding = e("UIPadding", {
-					PaddingLeft = UDim.new(0, 16),
-					PaddingRight = UDim.new(0, 16),
-					PaddingTop = UDim.new(0, 4),
-					PaddingBottom = UDim.new(0, 8),
-				}),
-				InstallLayout = e("UIListLayout", {
+				Layout = e("UIListLayout", {
 					FillDirection = Enum.FillDirection.Vertical,
 					SortOrder = Enum.SortOrder.LayoutOrder,
 					Padding = UDim.new(0, 6),
 				}),
-				InstallMessage = installError and e(SystemBanner, {
-					severity = if installStatus == "partial" then AlertSeverity.Warning else AlertSeverity.Error,
-					title = if installStatus == "partial" then "Installed with warnings" else "Install failed",
-					description = installError,
-					LayoutOrder = 2,
-				}) or nil,
-				Install = e(Button, {
-					LayoutOrder = 1,
-					text = if installStatus == "installing"
-						then "Installing..."
-						elseif installStatus == "installed" then "Installed"
-						elseif installStatus == "partial" then "Installed (with warnings)"
-						elseif installStatus == "error" then "Error"
-						else "Install",
-					variant = if installStatus == "installed" or installStatus == "partial"
-						then ButtonVariant.Standard
-						else ButtonVariant.Emphasis,
-					size = InputSize.Medium,
-					isDisabled = installStatus == "installing"
-						or installStatus == "installed"
-						or installStatus == "partial",
-					onActivated = function()
-						setInstallStatus("installing")
-						setInstallError(nil)
-
-						task.spawn(function()
-							local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention)
-							local success, err, failures =
-								Installer.install(scope, rawName, version, alias, installRealm)
-
-							if success then
-								if failures and #failures > 0 then
-									setInstallStatus("partial")
-									setInstallError(
-										`Installed, but {#failures} dependency issue(s):\n• `
-											.. table.concat(failures, "\n• ")
-									)
-								else
-									setInstallStatus("installed")
-									setInstallError(nil)
-								end
-							else
-								setInstallStatus("error")
-								setInstallError(err)
-								warn("[Discover] Install failed:", err)
-							end
-						end)
-					end,
-				}),
+				Realm = e(MetadataRow, { label = "Realm", value = installRealm, LayoutOrder = nextMetaOrder() }),
+				License = e(MetadataRow, { label = "License", value = license, LayoutOrder = nextMetaOrder() }),
+				Authors = e(MetadataRow, { label = "Authors", value = authorStr, LayoutOrder = nextMetaOrder() }),
+				Repository = if repository and repository ~= ""
+					then e(MetadataRow, { label = "Repository", value = repository, LayoutOrder = nextMetaOrder() })
+					else nil,
+				Homepage = if homepage and homepage ~= ""
+					then e(MetadataRow, { label = "Homepage", value = homepage, LayoutOrder = nextMetaOrder() })
+					else nil,
 			}),
 
-			HeaderDivider = e(Divider, { LayoutOrder = 3 }),
+			DepDivider = e(Divider, { LayoutOrder = nextPageOrder() }),
 
-			Details = e(ScrollView, {
-				Size = UDim2.new(1, 0, 1, -200),
-				LayoutOrder = 4,
-				scroll = {
-					scrollBarVisibility = Visibility.Auto,
-					ScrollingDirection = Enum.ScrollingDirection.Y,
-				},
-			}, {
-				ScrollLayout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 10),
-				}),
-				ScrollPadding = e("UIPadding", {
-					PaddingLeft = UDim.new(0, 16),
-					PaddingRight = UDim.new(0, 16),
-					PaddingTop = UDim.new(0, 12),
-					PaddingBottom = UDim.new(0, 16),
-				}),
-
-				MetaSection = e("Frame", {
-					Size = UDim2.fromScale(1, 0),
-					AutomaticSize = Enum.AutomaticSize.Y,
-					BackgroundTransparency = 1,
-					LayoutOrder = 1,
-				}, {
-					Layout = e("UIListLayout", {
-						FillDirection = Enum.FillDirection.Vertical,
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 6),
-					}),
-					Realm = e(MetadataRow, { label = "Realm", value = installRealm, LayoutOrder = nextMetaOrder() }),
-					License = e(MetadataRow, { label = "License", value = license, LayoutOrder = nextMetaOrder() }),
-					Authors = e(MetadataRow, { label = "Authors", value = authorStr, LayoutOrder = nextMetaOrder() }),
-					Repository = if repository and repository ~= ""
-						then e(MetadataRow, { label = "Repository", value = repository, LayoutOrder = nextMetaOrder() })
-						else nil,
-					Homepage = if homepage and homepage ~= ""
-						then e(MetadataRow, { label = "Homepage", value = homepage, LayoutOrder = nextMetaOrder() })
-						else nil,
-				}),
-
-				DepDivider = e(Divider, { LayoutOrder = 2 }),
-
-				DepHeader = e(Text, {
-					Text = #allDeps > 0 and `Dependencies ({#allDeps})` or "No dependencies",
-					AutomaticSize = Enum.AutomaticSize.XY,
-					tag = "text-label-small content-emphasis",
-					LayoutOrder = 3,
-				}),
-
-				DepList = #allDeps > 0 and e("Frame", {
-					Size = UDim2.fromScale(1, 0),
-					AutomaticSize = Enum.AutomaticSize.Y,
-					BackgroundTransparency = 1,
-					LayoutOrder = 4,
-				}, depChildren) or nil,
+			DepHeader = e(Text, {
+				Text = #allDeps > 0 and `Dependencies ({#allDeps})` or "No dependencies",
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-label-small content-emphasis text-align-x-left",
+				LayoutOrder = nextPageOrder(),
 			}),
+
+			DepList = #allDeps > 0 and e("Frame", {
+				Size = UDim2.fromScale(1, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+				LayoutOrder = nextPageOrder(),
+			}, depChildren) or nil,
 		})
 	else
 		content = e(View, {
