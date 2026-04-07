@@ -20,16 +20,25 @@ Wally is the standard package manager for Roblox, but installing packages requir
 
 ### 🔧 From Source
 
-Requires [Rokit](https://github.com/rojo-rbx/rokit).
+Requires [Rokit](https://github.com/rojo-rbx/rokit) and [Lune](https://github.com/lune-org/lune).
 
 ```sh
 git clone https://github.com/morgann1/studio-discover.git
 cd studio-discover
 rokit install
-wally install
-rojo sourcemap -o sourcemap.json
-wally-package-types --sourcemap sourcemap.json Packages/
-rojo build -o Discover.rbxm
+lune run install
+rojo build plugin/default.project.json -o Discover.rbxm
 ```
 
 Then drag `Discover.rbxm` into your Plugins folder in Roblox Studio.
+
+> `lune run install` installs Wally packages, fetches Foundation from the pinned Roblox version, and applies any patches under `plugin/patches/`.
+
+## Permissions
+
+On first use, Roblox Studio will prompt you to grant the plugin two permissions:
+
+- **HTTP requests** — used to query the [Wally registry](https://wally.run) and download package contents.
+- **Script injection** — used to create the Wally alias `ModuleScript`s and package code under `ReplicatedStorage.Packages` / `ServerStorage.ServerPackages`.
+
+Click **Allow** on both prompts.
