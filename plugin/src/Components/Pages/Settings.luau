@@ -11,13 +11,17 @@ local View = Foundation.View
 local Text = Foundation.Text
 local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
+local Dropdown = Foundation.Dropdown
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
 
 local e = React.createElement
 
-local CONVENTIONS = { "Normal", "PascalCase" }
+local CONVENTION_ITEMS = {
+	{ id = "Normal", text = "Normal (react-roblox)" },
+	{ id = "PascalCase", text = "PascalCase (ReactRoblox)" },
+}
 
 local function Settings()
 	local nav = Navigation.useNavigation()
@@ -27,64 +31,6 @@ local function Settings()
 	local onBack = React.useCallback(function()
 		nav.pop()
 	end, { nav })
-
-	local optionButtons = {}
-	for i, convention in CONVENTIONS do
-		local isSelected = convention == current
-		local preview = if convention == "PascalCase" then "ReactRoblox" else "react-roblox"
-
-		optionButtons["option_" .. convention] = e("TextButton", {
-			Text = "",
-			Size = UDim2.fromScale(1, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundColor3 = if isSelected then Color3.fromRGB(40, 55, 85) else Color3.fromRGB(32, 34, 39),
-			BorderSizePixel = 0,
-			LayoutOrder = i,
-			[React.Event.Activated] = function()
-				ctx.setSetting("namingConvention", convention)
-			end,
-		}, {
-			Corner = e("UICorner", { CornerRadius = UDim.new(0, 8) }),
-			OptionPadding = e("UIPadding", {
-				PaddingLeft = UDim.new(0, 14),
-				PaddingRight = UDim.new(0, 14),
-				PaddingTop = UDim.new(0, 12),
-				PaddingBottom = UDim.new(0, 12),
-			}),
-			OptionLayout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UDim.new(0, 4),
-			}),
-			Stroke = e("UIStroke", {
-				Color = if isSelected then Color3.fromRGB(60, 120, 255) else Color3.fromRGB(55, 58, 66),
-				Thickness = 1,
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			}),
-			Label = e("TextLabel", {
-				Text = convention,
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				TextColor3 = Color3.fromRGB(247, 247, 248),
-				FontFace = Font.fromEnum(Enum.Font.GothamBold),
-				TextSize = 14,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				LayoutOrder = 1,
-			}),
-			Preview = e("TextLabel", {
-				Text = `Example: {preview}`,
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				TextColor3 = Color3.fromRGB(188, 190, 200),
-				FontFace = Font.fromEnum(Enum.Font.Gotham),
-				TextSize = 12,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				LayoutOrder = 2,
-			}),
-		})
-	end
 
 	return e(React.Fragment, nil, {
 		TopBar = e(View, {
@@ -152,19 +98,15 @@ local function Settings()
 				tag = "text-caption-small text-align-x-left",
 				LayoutOrder = 2,
 			}),
-
-			Options = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
+			NamingConvention = e(Dropdown.Root, {
+				size = InputSize.Small,
+				width = UDim.new(1, 0),
+				value = current,
+				items = CONVENTION_ITEMS,
+				onItemChanged = function(id: string)
+					ctx.setSetting("namingConvention", id)
+				end,
 				LayoutOrder = 3,
-			}, {
-				OptionsLayout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 8),
-				}),
-				OptionButtons = e(React.Fragment, nil, optionButtons),
 			}),
 		}),
 	})
