@@ -114,7 +114,7 @@ local function Package()
 		local version = pkg.version or "?"
 		local description = pkg.description or ""
 		local license = pkg.license or "Unknown"
-		local realm = pkg.realm or "shared"
+		local installRealm = pkg.realm or "shared"
 		local authors = pkg.authors
 		local authorStr = authors and table.concat(authors, ", ") or "Unknown"
 
@@ -295,7 +295,7 @@ local function Package()
 
 						task.spawn(function()
 							local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention)
-							local success, err = Installer.install(scope, rawName, version, alias, realm)
+							local success, err = Installer.install(scope, rawName, version, alias, installRealm)
 
 							if success then
 								setInstallStatus("installed")
@@ -342,7 +342,7 @@ local function Package()
 						SortOrder = Enum.SortOrder.LayoutOrder,
 						Padding = UDim.new(0, 6),
 					}),
-					Realm = e(MetadataRow, { label = "Realm", value = realm, LayoutOrder = 1 }),
+					Realm = e(MetadataRow, { label = "Realm", value = installRealm, LayoutOrder = 1 }),
 					License = e(MetadataRow, { label = "License", value = license, LayoutOrder = 2 }),
 					Authors = e(MetadataRow, { label = "Authors", value = authorStr, LayoutOrder = 3 }),
 				}),
