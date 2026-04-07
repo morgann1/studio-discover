@@ -4,6 +4,7 @@
 	Installs all packages: Wally packages, package types, and Foundation.
 ]]
 
+local fs = require("@lune/fs")
 local process = require("@lune/process")
 local stdio = require("@lune/stdio")
 
@@ -104,6 +105,10 @@ function install.run(options_: Options?): boolean
 			stdio.write(installStdout)
 		end
 		return false
+	end
+
+	if not fs.isDir("plugin/generated") then
+		fs.writeDir("plugin/generated")
 	end
 
 	local sourcemapResult, sourcemapStdout = rojo.sourcemap({
