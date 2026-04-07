@@ -6,6 +6,7 @@ local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
 local SettingsModule = require(Discover.Src.Settings)
+local ReactHelpers = require(Discover.Src.Utility.React)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -31,6 +32,8 @@ local function Settings()
 	local onBack = React.useCallback(function()
 		nav.pop()
 	end, { nav })
+
+	local nextContentOrder = ReactHelpers.createNextOrder()
 
 	return e(React.Fragment, nil, {
 		TopBar = e(View, {
@@ -89,14 +92,14 @@ local function Settings()
 				Text = "Naming Convention",
 				AutomaticSize = Enum.AutomaticSize.XY,
 				tag = "text-label-medium content-emphasis",
-				LayoutOrder = 1,
+				LayoutOrder = nextContentOrder(),
 			}),
 			SectionDesc = e(Text, {
 				Text = "How package names are formatted when installed.",
 				AutomaticSize = Enum.AutomaticSize.Y,
 				Size = UDim2.fromScale(1, 0),
 				tag = "text-caption-small text-align-x-left",
-				LayoutOrder = 2,
+				LayoutOrder = nextContentOrder(),
 			}),
 			NamingConvention = e(Dropdown.Root, {
 				size = InputSize.Small,
@@ -106,7 +109,7 @@ local function Settings()
 				onItemChanged = function(id: string)
 					ctx.setSetting("namingConvention", id)
 				end,
-				LayoutOrder = 3,
+				LayoutOrder = nextContentOrder(),
 			}),
 		}),
 	})

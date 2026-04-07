@@ -7,6 +7,7 @@ local React = require(Packages.React)
 local Navigation = require(Discover.Src.Navigation)
 local Installer = require(Discover.Src.Utility.Installer)
 local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
+local ReactHelpers = require(Discover.Src.Utility.React)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -107,14 +108,15 @@ local function Manage()
 		FillDirection = Enum.FillDirection.Vertical,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	})
-	for i, pkg in installed do
-		local order = i * 2
-		rows[`row_{pkg.scope}_{pkg.name}`] = e(InstalledRow, {
+	local rowKey = ReactHelpers.createUniqueKey()
+	local nextRowOrder = ReactHelpers.createNextOrder()
+	for _, pkg in installed do
+		rows[rowKey(`{pkg.scope}/{pkg.name}`)] = e(InstalledRow, {
 			scope = pkg.scope,
 			name = pkg.name,
 			version = pkg.version,
 			realm = pkg.realm,
-			LayoutOrder = order - 1,
+			LayoutOrder = nextRowOrder(),
 			onOpen = function()
 				nav.push("Package", { scope = pkg.scope, name = pkg.name })
 			end,
@@ -128,7 +130,7 @@ local function Manage()
 				end)
 			end,
 		})
-		rows[`divider_{i}`] = e(Divider, { LayoutOrder = order })
+		rows[rowKey(`divider_{pkg.scope}/{pkg.name}`)] = e(Divider, { LayoutOrder = nextRowOrder() })
 	end
 
 	local content

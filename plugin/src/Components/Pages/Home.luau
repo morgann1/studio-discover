@@ -8,6 +8,7 @@ local Navigation = require(Discover.Src.Navigation)
 local PackageCard = require(Discover.Src.Components.PackageCard)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
+local ReactHelpers = require(Discover.Src.Utility.React)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -121,16 +122,17 @@ local function Home()
 	end, { results })
 
 	local packageCards = {}
-	for i, pkg in results do
+	local cardKey = ReactHelpers.createUniqueKey()
+	local nextCardOrder = ReactHelpers.createNextOrder()
+	for _, pkg in results do
 		local scope = pkg.scope or ""
 		local name = pkg.name or ""
 		local desc = pkg.description
 		if not desc or desc == "" then
 			desc = `{name} has no provided description.`
 		end
-		local order = i * 2
 
-		packageCards[scope .. "/" .. name .. "_" .. i] = e(PackageCard, {
+		packageCards[cardKey(`{scope}/{name}`)] = e(PackageCard, {
 			name = name,
 			scope = scope,
 			description = desc,
@@ -138,13 +140,13 @@ local function Home()
 			realm = pkg.realm,
 			depCount = pkg.depCount,
 			isInstalled = installedMap[`{scope}/{name}`] ~= nil,
-			LayoutOrder = order - 1,
+			LayoutOrder = nextCardOrder(),
 			onActivated = function()
 				nav.push("Package", { scope = scope, name = name })
 			end,
 		})
-		packageCards["divider_" .. i] = e(Divider, {
-			LayoutOrder = order,
+		packageCards[cardKey(`divider_{scope}/{name}`)] = e(Divider, {
+			LayoutOrder = nextCardOrder(),
 		})
 	end
 
@@ -206,10 +208,12 @@ local function Home()
 		})
 	end
 
+	local nextOrder = ReactHelpers.createNextOrder()
+	local nextTopBarOrder = ReactHelpers.createNextOrder()
 	return e(React.Fragment, nil, {
 		TopBar = e(View, {
 			Size = UDim2.new(1, 0, 0, 48),
-			LayoutOrder = 1,
+			LayoutOrder = nextOrder(),
 		}, {
 			RowLayout = e("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -231,32 +235,32 @@ local function Home()
 				size = InputSize.Medium,
 				width = UDim.new(1, -80),
 				onChanged = onSearchChanged,
-				LayoutOrder = 1,
+				LayoutOrder = nextTopBarOrder(),
 			}),
 			Manage = e(IconButton, {
 				icon = Foundation.Enums.IconName.Folder,
 				size = InputSize.Medium,
 				variant = ButtonVariant.Standard,
 				onActivated = onManagePressed,
-				LayoutOrder = 2,
+				LayoutOrder = nextTopBarOrder(),
 			}),
 			Settings = e(IconButton, {
 				icon = Foundation.Enums.IconName.Gear,
 				size = InputSize.Medium,
 				variant = ButtonVariant.Standard,
 				onActivated = onSettingsPressed,
-				LayoutOrder = 3,
+				LayoutOrder = nextTopBarOrder(),
 			}),
 		}),
 
 		TopDivider = e(Divider, {
-			LayoutOrder = 2,
+			LayoutOrder = nextOrder(),
 		}),
 
 		Content = e("Frame", {
 			Size = UDim2.new(1, 0, 1, -50),
 			BackgroundTransparency = 1,
-			LayoutOrder = 3,
+			LayoutOrder = nextOrder(),
 		}, {
 			Inner = content,
 		}),
