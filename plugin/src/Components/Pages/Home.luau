@@ -227,15 +227,23 @@ local function Home()
 				PaddingTop = UDim.new(0, 6),
 				PaddingBottom = UDim.new(0, 6),
 			}),
-			Search = e(TextInput, {
-				text = searchText,
-				label = "",
-				placeholder = "Search packages",
-				leadingIcon = "icons/common/search",
-				size = InputSize.Medium,
-				width = UDim.new(1, -80),
-				onChanged = onSearchChanged,
+			SearchWrap = e("Frame", {
+				Size = UDim2.fromScale(1, 1),
+				BackgroundTransparency = 1,
 				LayoutOrder = nextTopBarOrder(),
+			}, {
+				Flex = e("UIFlexItem", {
+					FlexMode = Enum.UIFlexMode.Fill,
+				}),
+				Search = e(TextInput, {
+					text = searchText,
+					label = "",
+					placeholder = "Search packages",
+					leadingIcon = "icons/common/search",
+					size = InputSize.Medium,
+					width = UDim.new(1, 0),
+					onChanged = onSearchChanged,
+				}),
 			}),
 			Manage = e(IconButton, {
 				icon = Foundation.Enums.IconName.Folder,
