@@ -93,6 +93,10 @@ local function Package()
 		return allVersions[#allVersions]
 	end, { allVersions, selectedVersion })
 
+	local isLatestSelected = allVersions ~= nil
+		and allVersions[1] ~= nil
+		and allVersions[1].package.version == selectedVersion
+
 	local installStatus, setInstallStatus = React.useState("idle")
 	local installError: string?, setInstallError = React.useState(nil :: string?)
 	local installProgress: string?, setInstallProgress = React.useState(nil :: string?)
@@ -308,6 +312,16 @@ local function Package()
 					end)
 				end,
 			}),
+
+			OlderVersionWarning = if not isLatestSelected and installStatus == "idle"
+				then e(Text, {
+					Text = "You're installing an older version.",
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.fromScale(1, 0),
+					tag = "text-caption-small text-align-x-left",
+					LayoutOrder = nextPageOrder(),
+				})
+				else nil,
 
 			InstallProgress = if installProgress
 				then e(Text, {
