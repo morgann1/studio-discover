@@ -5,8 +5,10 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
+local SettingsModule = require(Discover.Src.Settings)
 local Installer = require(Discover.Src.Utility.Installer)
 local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
+local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 local ReactHelpers = require(Discover.Src.Utility.React)
 
 local View = Foundation.View
@@ -15,6 +17,7 @@ local Button = Foundation.Button
 local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local ScrollView = Foundation.ScrollView
+local Dialog = Foundation.Dialog
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
@@ -27,10 +30,18 @@ local function InstalledRow(props: {
 	name: string,
 	version: string,
 	realm: string,
+	latestVersion: string?,
 	onOpen: () -> (),
+	onUpdate: (() -> ())?,
 	onUninstall: () -> (),
 	LayoutOrder: number,
 })
+	local updateAvailable = props.latestVersion ~= nil and props.latestVersion ~= props.version
+	local metaText = `v{props.version}  •  {props.realm}`
+	if updateAvailable then
+		metaText ..= `  •  update to v{props.latestVersion}`
+	end
+
 	return e(View, {
 		Size = UDim2.new(1, 0, 0, 56),
 		LayoutOrder = props.LayoutOrder,
@@ -39,7 +50,7 @@ local function InstalledRow(props: {
 			FillDirection = Enum.FillDirection.Horizontal,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			VerticalAlignment = Enum.VerticalAlignment.Center,
-			Padding = UDim.new(0, 8),
+			Padding = UDim.new(0, 6),
 		}),
 		Padding = e("UIPadding", {
 			PaddingLeft = UDim.new(0, 12),
@@ -47,7 +58,7 @@ local function InstalledRow(props: {
 		}),
 
 		Info = e("Frame", {
-			Size = UDim2.new(1, -160, 1, 0),
+			Size = UDim2.new(1, if updateAvailable then -220 else -160, 1, 0),
 			BackgroundTransparency = 1,
 			LayoutOrder = 1,
 		}, {
@@ -65,7 +76,7 @@ local function InstalledRow(props: {
 				LayoutOrder = 1,
 			}),
 			Meta = e(Text, {
-				Text = `v{props.version}  •  {props.realm}`,
+				Text = metaText,
 				AutomaticSize = Enum.AutomaticSize.Y,
 				Size = UDim2.fromScale(1, 0),
 				tag = "text-caption-small text-align-x-left",
@@ -81,27 +92,72 @@ local function InstalledRow(props: {
 			LayoutOrder = 2,
 		}),
 
+		Update = if updateAvailable and props.onUpdate
+			then e(Button, {
+				text = "Update",
+				variant = ButtonVariant.Emphasis,
+				size = InputSize.Small,
+				onActivated = props.onUpdate,
+				LayoutOrder = 3,
+			})
+			else nil,
+
 		Uninstall = e(Button, {
 			text = "Uninstall",
 			variant = ButtonVariant.Utility,
 			size = InputSize.Small,
 			onActivated = props.onUninstall,
-			LayoutOrder = 3,
+			LayoutOrder = 4,
 		}),
 	})
 end
 
 local function Manage()
 	local nav = Navigation.useNavigation()
+	local settingsCtx = SettingsModule.useSettings()
 	local refreshKey, setRefreshKey = React.useState(0)
+	local latestVersions, setLatestVersions =
+		React.useState({} :: { [string]: string })
+	local pendingUninstall: { scope: string, name: string }?, setPendingUninstall =
+		React.useState(nil :: { scope: string, name: string }?)
 
 	local installed = React.useMemo(function()
 		return InstalledPackages.list()
 	end, { refreshKey })
 
+	-- Fetch latest version for each installed package to detect updates
+	React.useEffect(function()
+		local cancelled = false
+		for _, pkg in installed do
+			task.spawn(function()
+				local meta = WallyAPI.metadata(pkg.scope, pkg.name)
+				if cancelled then
+					return
+				end
+				if meta and meta.versions and meta.versions[1] and meta.versions[1].package then
+					local latest = meta.versions[1].package.version
+					setLatestVersions(function(prev)
+						local new = table.clone(prev)
+						new[`{pkg.scope}/{pkg.name}`] = latest
+						return new
+					end)
+				end
+			end)
+		end
+		return function()
+			cancelled = true
+		end
+	end, { installed })
+
 	local onBack = React.useCallback(function()
 		nav.pop()
 	end, { nav })
+
+	local function refresh()
+		setRefreshKey(function(k)
+			return k + 1
+		end)
+	end
 
 	local rows = {}
 	rows.Layout = e("UIListLayout", {
@@ -111,26 +167,36 @@ local function Manage()
 	local rowKey = ReactHelpers.createUniqueKey()
 	local nextRowOrder = ReactHelpers.createNextOrder()
 	for _, pkg in installed do
-		rows[rowKey(`{pkg.scope}/{pkg.name}`)] = e(InstalledRow, {
+		local key = `{pkg.scope}/{pkg.name}`
+		local latest = latestVersions[key]
+		rows[rowKey(key)] = e(InstalledRow, {
 			scope = pkg.scope,
 			name = pkg.name,
 			version = pkg.version,
 			realm = pkg.realm,
+			latestVersion = latest,
 			LayoutOrder = nextRowOrder(),
 			onOpen = function()
 				nav.push("Package", { scope = pkg.scope, name = pkg.name })
 			end,
-			onUninstall = function()
-				local ok, err = Installer.uninstall(pkg.scope, pkg.name)
-				if not ok then
-					warn("[Discover] Uninstall failed:", err)
+			onUpdate = if latest and latest ~= pkg.version
+				then function()
+					task.spawn(function()
+						local alias =
+							SettingsModule.formatPackageName(pkg.name, settingsCtx.settings.namingConvention)
+						local ok, err = Installer.install(pkg.scope, pkg.name, latest, alias, pkg.realm)
+						if not ok then
+							warn("[Discover] Update failed:", err)
+						end
+						refresh()
+					end)
 				end
-				setRefreshKey(function(k)
-					return k + 1
-				end)
+				else nil,
+			onUninstall = function()
+				setPendingUninstall({ scope = pkg.scope, name = pkg.name })
 			end,
 		})
-		rows[rowKey(`divider_{pkg.scope}/{pkg.name}`)] = e(Divider, { LayoutOrder = nextRowOrder() })
+		rows[rowKey(`divider_{key}`)] = e(Divider, { LayoutOrder = nextRowOrder() })
 	end
 
 	local content
@@ -155,6 +221,47 @@ local function Manage()
 	end
 
 	return e(React.Fragment, nil, {
+		ConfirmDialog = if pendingUninstall
+			then e(Dialog.Root, {
+				disablePortal = false,
+				hasBackdrop = true,
+				onClose = function()
+					setPendingUninstall(nil)
+				end,
+			}, {
+				DialogTitle = e(Dialog.Title, nil, "Uninstall package?"),
+				DialogContent = e(Dialog.Content, nil, {
+					Body = e(Dialog.Text, nil, `This will remove {pendingUninstall.scope}/{pendingUninstall.name} and any dependencies that are no longer needed.`),
+				}),
+				DialogActions = e(Dialog.Actions, {
+					actions = {
+						{
+							text = "Cancel",
+							variant = ButtonVariant.Standard,
+							onActivated = function()
+								setPendingUninstall(nil)
+							end,
+						},
+						{
+							text = "Uninstall",
+							variant = ButtonVariant.Emphasis,
+							onActivated = function()
+								if pendingUninstall then
+									local ok, err =
+										Installer.uninstall(pendingUninstall.scope, pendingUninstall.name)
+									if not ok then
+										warn("[Discover] Uninstall failed:", err)
+									end
+								end
+								setPendingUninstall(nil)
+								refresh()
+							end,
+						},
+					},
+				}),
+			})
+			else nil,
+
 		TopBar = e(View, {
 			Size = UDim2.new(1, 0, 0, 48),
 			LayoutOrder = 1,
