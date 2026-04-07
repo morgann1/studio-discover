@@ -7,8 +7,6 @@
 
 local fs = require("@lune/fs")
 
-local exec = require("../../lib/process/exec")
-
 local TEMP_DIR = "tmp"
 
 local function withTempDir(callback: (path: string) -> ())
@@ -24,20 +22,46 @@ local function withTempDir(callback: (path: string) -> ())
 	end
 end
 
+local function copyDir(src: string, dest: string)
+	if not fs.isDir(dest) then
+		fs.writeDir(dest)
+	end
+	for _, entry in fs.readDir(src) do
+		local srcPath = `{src}/{entry}`
+		local destPath = `{dest}/{entry}`
+		if fs.isDir(srcPath) then
+			copyDir(srcPath, destPath)
+		else
+			fs.writeFile(destPath, fs.readFile(srcPath))
+		end
+	end
+end
+
+local function findFiles(root: string, name: string, results: { string }?): { string }
+	local out = results or {}
+	if not fs.isDir(root) then
+		return out
+	end
+	for _, entry in fs.readDir(root) do
+		local path = `{root}/{entry}`
+		if fs.isDir(path) then
+			findFiles(path, name, out)
+		elseif entry == name then
+			table.insert(out, path)
+		end
+	end
+	return out
+end
+
 local function findAndReplace(filePath: string, match: string, replacement: string)
 	local content = fs.readFile(filePath)
 	content = content:gsub(match, replacement)
 	fs.writeFile(filePath, content)
 end
 
-local function patchReact(packagesPath: string, quiet: boolean?)
-	local reactLinkers = exec.run("find", { `{packagesPath}/_Index`, "-name", "React.lua" }, { quiet = quiet })
-		:split("\n")
-
+local function patchReact(packagesPath: string)
+	local reactLinkers = findFiles(`{packagesPath}/_Index`, "React.lua")
 	for _, reactLinker in reactLinkers do
-		if reactLinker == "" then
-			continue
-		end
 		findAndReplace(reactLinker, `%["React"%]%["React"%]`, `["jsdotlua_react@17.2.1"]["react"]`)
 	end
 end
@@ -49,26 +73,19 @@ end
 	@param dest The destination directory for the Foundation packages
 	@param quiet Whether to suppress output
 ]]
-local function installFoundation(upstreamPath: string, dest: string, quiet: boolean?)
+local function installFoundation(upstreamPath: string, dest: string, _quiet: boolean?)
 	withTempDir(function(tempDir)
-		local upstreamPackagesPath = exec.run("realpath", {
-			upstreamPath,
-		}, {
-			quiet = quiet,
-		})
-
-		assert(fs.isDir(upstreamPackagesPath), `Could not find upstream packages at {upstreamPackagesPath}`)
+		assert(fs.isDir(upstreamPath), `Could not find upstream packages at {upstreamPath}`)
 
 		local packagesPath = `{tempDir}/Packages`
-		exec.run("cp", { "-R", upstreamPackagesPath, packagesPath }, {
-			quiet = quiet,
-		})
+		copyDir(upstreamPath, packagesPath)
 
-		patchReact(packagesPath, quiet)
+		patchReact(packagesPath)
 
-		exec.run("cp", { "-R", `{packagesPath}/*`, dest }, {
-			quiet = quiet,
-		})
+		if not fs.isDir(dest) then
+			fs.writeDir(dest)
+		end
+		copyDir(packagesPath, dest)
 	end)
 end
 
