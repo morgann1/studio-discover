@@ -1,7 +1,6 @@
 local Discover = script.Parent.Parent
 local Packages = Discover.Packages
 
-local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 local ReactRoblox = require(Packages.ReactRoblox)
 
@@ -21,14 +20,7 @@ widget.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local root = ReactRoblox.createRoot(widget)
 
-root:render(e(Foundation.FoundationProvider, {
-	theme = "Dark",
-	device = "Desktop",
-	plugin = plugin,
-	overlayGui = widget,
-}, {
-	App = e(App, { plugin = plugin }),
-}))
+root:render(e(App, { plugin = plugin, overlayGui = widget }))
 
 button.Click:Connect(function()
 	widget.Enabled = not widget.Enabled

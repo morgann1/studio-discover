@@ -1,10 +1,12 @@
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
+local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
 local SettingsModule = require(Discover.Src.Settings)
+local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 
 local Home = require(Discover.Src.Pages.Home)
 local Manage = require(Discover.Src.Pages.Manage)
@@ -41,10 +43,18 @@ local function PageRouter()
 	})
 end
 
-local function App(props: { plugin: Plugin? })
-	return e(SettingsModule.SettingsProvider, { plugin = props.plugin }, {
-		Nav = e(Navigation.NavigationProvider, nil, {
-			Router = e(PageRouter),
+local function App(props: { plugin: Plugin?, overlayGui: Instance? })
+	local theme = useStudioTheme()
+	return e(Foundation.FoundationProvider, {
+		theme = theme,
+		device = "Desktop",
+		plugin = props.plugin,
+		overlayGui = props.overlayGui,
+	}, {
+		Settings = e(SettingsModule.SettingsProvider, { plugin = props.plugin }, {
+			Nav = e(Navigation.NavigationProvider, nil, {
+				Router = e(PageRouter),
+			}),
 		}),
 	})
 end
