@@ -17,6 +17,7 @@ local Divider = Foundation.Divider
 local ScrollView = Foundation.ScrollView
 local Loading = Foundation.Loading
 local SystemBanner = Foundation.SystemBanner
+local Dropdown = Foundation.Dropdown
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
@@ -214,59 +215,28 @@ local function Package()
 					LayoutOrder = 2,
 				}),
 
-				VersionLabel = e(Text, {
-					Text = "Version",
-					AutomaticSize = Enum.AutomaticSize.XY,
-					tag = "text-label-small content-emphasis",
+				VersionDropdown = e(Dropdown.Root, {
+					label = "Version",
+					value = selectedVersion,
+					size = InputSize.Small,
+					width = UDim.new(0, 180),
 					LayoutOrder = 3,
-				}),
-				VersionList = e("Frame", {
-					Size = UDim2.fromScale(1, 0),
-					AutomaticSize = Enum.AutomaticSize.Y,
-					BackgroundTransparency = 1,
-					LayoutOrder = 4,
-				}, {
-					Layout = e("UIListLayout", {
-						FillDirection = Enum.FillDirection.Horizontal,
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 6),
-						Wraps = true,
-					}),
-					VersionButtons = e(
-						React.Fragment,
-						nil,
-						(function()
-							local buttons = {}
-							if allVersions then
-								for i, versionData in allVersions do
-									local v = versionData.package.version
-									local isSelected = v == selectedVersion
-									buttons["v_" .. v] = e("TextButton", {
-										Text = i == 1 and `v{v} (latest)` or `v{v}`,
-										Size = UDim2.fromOffset(0, 28),
-										AutomaticSize = Enum.AutomaticSize.X,
-										BackgroundColor3 = if isSelected
-											then Color3.fromRGB(60, 120, 255)
-											else Color3.fromRGB(40, 42, 48),
-										TextColor3 = Color3.fromRGB(247, 247, 248),
-										FontFace = Font.fromEnum(Enum.Font.GothamMedium),
-										TextSize = 13,
-										LayoutOrder = i,
-										[React.Event.Activated] = function()
-											setSelectedVersion(v)
-										end,
-									}, {
-										Corner = e("UICorner", { CornerRadius = UDim.new(0, 6) }),
-										Padding = e("UIPadding", {
-											PaddingLeft = UDim.new(0, 10),
-											PaddingRight = UDim.new(0, 10),
-										}),
-									})
-								end
+					onItemChanged = function(id: string)
+						setSelectedVersion(id)
+					end,
+					items = (function()
+						local flat = {}
+						if allVersions then
+							for i, versionData in allVersions do
+								local v = versionData.package.version
+								table.insert(flat, {
+									id = v,
+									text = i == 1 and `v{v} (latest)` or `v{v}`,
+								})
 							end
-							return buttons
-						end)()
-					),
+						end
+						return flat
+					end)(),
 				}),
 			}),
 
