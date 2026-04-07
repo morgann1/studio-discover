@@ -37,3 +37,4 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: Discover.rbxm
+          generate_release_notes: true
