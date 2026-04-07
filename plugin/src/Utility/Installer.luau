@@ -273,7 +273,7 @@ function Installer.install(
 	version: string,
 	alias: string,
 	realm: string?
-): (boolean, string?)
+): (boolean, string?, { string }?)
 	local packagesFolder = Installer.getPackagesFolder(realm or "shared")
 	local indexFolder = packagesFolder:FindFirstChild("_Index")
 	if not indexFolder then
@@ -343,8 +343,12 @@ function Installer.install(
 
 	PackageTypes.processLink(link)
 
-	Installer._installDeps(packagesFolder, indexFolder, pkgFolder, scope, name, version, realm)
+	local failures = {}
+	Installer._installDeps(packagesFolder, indexFolder, pkgFolder, scope, name, version, realm, failures)
 
+	if #failures > 0 then
+		return true, nil, failures
+	end
 	return true, nil
 end
 
@@ -355,7 +359,8 @@ function Installer._installDeps(
 	scope: string,
 	name: string,
 	version: string,
-	realm: string?
+	realm: string?,
+	failures: { string }
 )
 	local meta = WallyAPI.metadata(scope, name)
 	if not meta or not meta.versions then
@@ -388,11 +393,13 @@ function Installer._installDeps(
 	for _, dep in allDeps do
 		local depScope, depName, satisfies = parseDependency(dep.value)
 		if not depScope or not depName then
+			table.insert(failures, `{dep.alias}: could not parse dependency "{dep.value}"`)
 			continue
 		end
 
 		local depVersion = resolveDependencyVersion(depScope, depName, satisfies)
 		if not depVersion then
+			table.insert(failures, `{depScope}/{depName}: no version satisfies "{dep.value}"`)
 			continue
 		end
 
@@ -421,8 +428,9 @@ function Installer._installDeps(
 				depPkgFolder:SetAttribute("ModuleName", depModuleName)
 				depPkgFolder.Parent = indexFolder
 
-				Installer._installDeps(packagesFolder, indexFolder, depPkgFolder, depScope, depName, depVersion, realm)
+				Installer._installDeps(packagesFolder, indexFolder, depPkgFolder, depScope, depName, depVersion, realm, failures)
 			else
+				table.insert(failures, `{depScope}/{depName}@{depVersion}: {depErr}`)
 				warn(`[Discover] Failed to install dependency {depScope}/{depName}@{depVersion}: {depErr}`)
 			end
 		end

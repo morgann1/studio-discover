@@ -16,11 +16,13 @@ local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local ScrollView = Foundation.ScrollView
 local Loading = Foundation.Loading
+local FeedbackAlert = Foundation.FeedbackAlert
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
 local IconSize = Foundation.Enums.IconSize
 local Visibility = Foundation.Enums.Visibility
+local AlertSeverity = Foundation.Enums.AlertSeverity
 
 local e = React.createElement
 
@@ -89,7 +91,7 @@ local function Package()
 	end, { allVersions, selectedVersion })
 
 	local installStatus, setInstallStatus = React.useState("idle")
-	local _, setInstallError = React.useState(nil :: string?)
+	local installError, setInstallError = React.useState(nil :: string?)
 
 	React.useEffect(function()
 		setInstallStatus("idle")
@@ -280,25 +282,48 @@ local function Package()
 					PaddingTop = UDim.new(0, 4),
 					PaddingBottom = UDim.new(0, 8),
 				}),
+				InstallLayout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Vertical,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UDim.new(0, 6),
+				}),
+				InstallMessage = installError and e(FeedbackAlert, {
+					severity = if installStatus == "partial" then AlertSeverity.Warning else AlertSeverity.Error,
+					title = if installStatus == "partial" then "Installed with warnings" else "Install failed",
+					description = installError,
+					LayoutOrder = 2,
+				}) or nil,
 				Install = e(Button, {
+					LayoutOrder = 1,
 					text = if installStatus == "installing"
-						then "Installing..."
+							then "Installing..."
 						elseif installStatus == "installed" then "Installed"
+						elseif installStatus == "partial" then "Installed (with warnings)"
 						elseif installStatus == "error" then "Error"
 						else "Install",
-					variant = if installStatus == "installed" then ButtonVariant.Standard else ButtonVariant.Emphasis,
+					variant = if installStatus == "installed" or installStatus == "partial"
+						then ButtonVariant.Standard
+						else ButtonVariant.Emphasis,
 					size = InputSize.Medium,
-					isDisabled = installStatus == "installing" or installStatus == "installed",
+					isDisabled = installStatus == "installing"
+						or installStatus == "installed"
+						or installStatus == "partial",
 					onActivated = function()
 						setInstallStatus("installing")
 						setInstallError(nil)
 
 						task.spawn(function()
 							local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention)
-							local success, err = Installer.install(scope, rawName, version, alias, installRealm)
+							local success, err, failures = Installer.install(scope, rawName, version, alias, installRealm)
 
 							if success then
-								setInstallStatus("installed")
+								if failures and #failures > 0 then
+									setInstallStatus("partial")
+									setInstallError(`Installed, but {#failures} dependency issue(s):\n• ` .. table.concat(failures, "\n• "))
+								else
+									setInstallStatus("installed")
+									setInstallError(nil)
+								end
 							else
 								setInstallStatus("error")
 								setInstallError(err)
