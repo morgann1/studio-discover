@@ -5,6 +5,7 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
+local SearchModule = require(Discover.Src.Search)
 local SettingsModule = require(Discover.Src.Settings)
 local PackageCard = require(Discover.Src.Components.PackageCard)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
@@ -17,13 +18,12 @@ local TextInput = Foundation.TextInput
 local ScrollView = Foundation.ScrollView
 local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
-local Loading = Foundation.Loading
 local Empty = Foundation.Empty
 local SystemBanner = Foundation.SystemBanner
+local Skeleton = Foundation.Skeleton
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
-local IconSize = Foundation.Enums.IconSize
 local Visibility = Foundation.Enums.Visibility
 local AlertSeverity = Foundation.Enums.AlertSeverity
 
@@ -31,34 +31,46 @@ local e = React.createElement
 
 local function Home()
 	local nav = Navigation.useNavigation()
-	local searchText, setSearchText = React.useState("")
-	local results, setResults = React.useState({} :: { any })
-	local isLoading, setIsLoading = React.useState(false)
-	local hasSearched, setHasSearched = React.useState(false)
-	local searchError: string?, setSearchError = React.useState(nil :: string?)
+	local search = SearchModule.useSearch()
+	local searchText = search.state.text
+	local results = search.state.results
+	local isLoading = search.state.isLoading
+	local hasSearched = search.state.hasSearched
+	local searchError = search.state.error
 
 	local searchVersion = React.useRef(0)
+	local debounceToken = React.useRef(0)
 
 	local onSearchChanged = React.useCallback(function(text: string)
-		setSearchText(text)
-
 		if text == "" then
-			setResults({})
-			setHasSearched(false)
-			setIsLoading(false)
-			setSearchError(nil)
+			search.setState({
+				text = "",
+				results = {},
+				hasSearched = false,
+				isLoading = false,
+				error = nil,
+			})
 			searchVersion.current += 1
+			debounceToken.current += 1
 			return
 		end
 
-		setIsLoading(true)
-		setHasSearched(true)
-		setSearchError(nil)
+		search.setState({
+			text = text,
+			isLoading = true,
+			hasSearched = true,
+			error = nil,
+		})
 
 		searchVersion.current += 1
 		local thisVersion = searchVersion.current
+		debounceToken.current += 1
+		local thisDebounce = debounceToken.current
 
-		task.spawn(function()
+		task.delay(0.3, function()
+			if debounceToken.current ~= thisDebounce then
+				return
+			end
 			local data, err = WallyAPI.search(text)
 
 			if searchVersion.current ~= thisVersion then
@@ -67,14 +79,18 @@ local function Home()
 
 			if not data then
 				warn("[Discover] Search failed:", err)
-				setIsLoading(false)
-				setResults({})
-				setSearchError(tostring(err) or "Couldn't reach the Wally registry.")
+				search.setState({
+					isLoading = false,
+					results = {},
+					error = tostring(err) or "Couldn't reach the Wally registry.",
+				})
 				return
 			end
 
-			setIsLoading(false)
-			setResults(data)
+			search.setState({
+				isLoading = false,
+				results = data,
+			})
 
 			local pending = #data
 			if pending == 0 then
@@ -109,12 +125,12 @@ local function Home()
 					end
 					pending -= 1
 					if pending == 0 and searchVersion.current == thisVersion then
-						setResults(table.clone(data))
+						search.setState({ results = table.clone(data) })
 					end
 				end)
 			end
 		end)
-	end, {})
+	end, { search })
 
 	local onSettingsPressed = React.useCallback(function()
 		nav.push("Settings")
@@ -177,14 +193,28 @@ local function Home()
 			}),
 		})
 	elseif isLoading then
-		content = e(View, {
-			Size = UDim2.fromScale(1, 1),
-			tag = "align-x-center align-y-center",
-		}, {
-			Loader = e(Loading, {
-				size = IconSize.Large,
+		local skeletonChildren = {
+			Layout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 8),
 			}),
-		})
+			Padding = e("UIPadding", {
+				PaddingLeft = UDim.new(0, 12),
+				PaddingRight = UDim.new(0, 12),
+				PaddingTop = UDim.new(0, 12),
+			}),
+		}
+		for i = 1, 5 do
+			skeletonChildren[`skeleton_{i}`] = e(Skeleton, {
+				Size = UDim2.new(1, 0, 0, 64),
+				LayoutOrder = i,
+			})
+		end
+		content = e("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+		}, skeletonChildren)
 	elseif hasSearched and #results == 0 then
 		content = e(View, {
 			Size = UDim2.fromScale(1, 1),
