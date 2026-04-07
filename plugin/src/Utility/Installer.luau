@@ -5,6 +5,7 @@ local zzlib = require(Discover.Src.Utility.zzlib)
 
 local WALLY_CONTENTS_API = "https://api.wally.run/v1/package-contents/"
 
+local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
 local PackageTypes = require(Discover.Src.Utility.PackageTypes)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 
@@ -465,32 +466,70 @@ function Installer._installDeps(
 	end
 end
 
-function Installer.uninstall(scope: string, name: string): (boolean, string?)
-	local packagePrefix = `{scope}_{name}@`
-	local removedAny = false
+-- Returns the set of packageIds currently reachable from any top-level
+-- alias link in the given _Index folder (i.e. "still needed" packages).
+local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { [string]: true }
+	local reachable: { [string]: true } = {}
 
-	for _, realm in { "shared", "server" } do
-		local packagesFolder = Installer.getPackagesFolder(realm)
-		local indexFolder = packagesFolder:FindFirstChild("_Index")
-		if indexFolder then
-			for _, child in indexFolder:GetChildren() do
-				if string.sub(child.Name, 1, #packagePrefix) == packagePrefix then
-					for _, link in packagesFolder:GetChildren() do
-						if link:IsA("ModuleScript") and string.find(link.Source, child.Name, 1, true) then
-							link:Destroy()
-							removedAny = true
-						end
-					end
-					child:Destroy()
-					removedAny = true
+	local function extractPackageId(source: string): string?
+		return source:match('_Index%["([^"]+)"%]')
+	end
+
+	local function visit(packageId: string)
+		if reachable[packageId] then
+			return
+		end
+		reachable[packageId] = true
+		local pkgFolder = indexFolder:FindFirstChild(packageId)
+		if not pkgFolder then
+			return
+		end
+		for _, child in pkgFolder:GetChildren() do
+			if child:IsA("ModuleScript") then
+				local depId = extractPackageId(child.Source)
+				if depId then
+					visit(depId)
 				end
 			end
 		end
 	end
 
-	if not removedAny then
+	for _, child in packagesFolder:GetChildren() do
+		if child:IsA("ModuleScript") then
+			local id = extractPackageId(child.Source)
+			if id then
+				visit(id)
+			end
+		end
+	end
+	return reachable
+end
+
+function Installer.uninstall(scope: string, name: string): (boolean, string?)
+	local installed = InstalledPackages.map()
+	local entry = installed[`{scope}/{name}`]
+	if not entry then
 		return false, "Package not found"
 	end
+
+	-- Remove the alias link (so subsequent reachability walk excludes it)
+	entry.aliasLink:Destroy()
+
+	local packagesFolder = Installer.getPackagesFolder(entry.realm)
+	local indexFolder = packagesFolder:FindFirstChild("_Index") :: Folder?
+	if not indexFolder then
+		return true, nil
+	end
+
+	-- After alias removal, recompute what's still reachable from remaining
+	-- top-level packages. Any indexed folder not in this set is garbage.
+	local reachable = collectReachable(packagesFolder, indexFolder)
+	for _, child in indexFolder:GetChildren() do
+		if not reachable[child.Name] then
+			child:Destroy()
+		end
+	end
+
 	return true, nil
 end
 
