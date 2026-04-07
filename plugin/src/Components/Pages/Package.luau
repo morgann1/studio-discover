@@ -95,11 +95,11 @@ local function Package()
 
 	local installStatus, setInstallStatus = React.useState("idle")
 	local installError: string?, setInstallError = React.useState(nil :: string?)
+	local installProgress: string?, setInstallProgress = React.useState(nil :: string?)
 
-	local installedMap = React.useMemo(function()
-		return InstalledPackages.map()
-	end, { installStatus })
-	local installedEntry = installedMap[`{scope}/{rawName}`]
+	-- Recompute on every render: cheap (just scans a few Instance children)
+	-- and guarantees we pick up changes made from other pages (e.g. Manage).
+	local installedEntry = InstalledPackages.map()[`{scope}/{rawName}`]
 
 	React.useEffect(function()
 		setInstallStatus("idle")
@@ -273,11 +273,21 @@ local function Package()
 				onActivated = function()
 					setInstallStatus("installing")
 					setInstallError(nil)
+					setInstallProgress("Starting install...")
 
 					task.spawn(function()
 						local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention)
-						local success, err, failures =
-							Installer.install(scope, rawName, version, alias, installRealm)
+						local success, err, failures = Installer.install(
+							scope,
+							rawName,
+							version,
+							alias,
+							installRealm,
+							function(msg)
+								setInstallProgress(msg)
+							end
+						)
+						setInstallProgress(nil)
 
 						if success then
 							if failures and #failures > 0 then
@@ -298,6 +308,16 @@ local function Package()
 					end)
 				end,
 			}),
+
+			InstallProgress = if installProgress
+				then e(Text, {
+					Text = installProgress,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.fromScale(1, 0),
+					tag = "text-caption-small text-align-x-left",
+					LayoutOrder = nextPageOrder(),
+				})
+				else nil,
 
 			InstallMessage = installError and e(SystemBanner, {
 				severity = if installStatus == "partial" then AlertSeverity.Warning else AlertSeverity.Error,
