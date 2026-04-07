@@ -18,19 +18,16 @@ local widget = plugin:CreateDockWidgetPluginGuiAsync("DiscoverWidget", widgetInf
 widget.Title = "Discover"
 widget.Name = "Discover"
 
-local root = ReactRoblox.createRoot(Instance.new("Folder"))
+local root = ReactRoblox.createRoot(widget)
 
-root:render(ReactRoblox.createPortal(
-	e(Foundation.FoundationProvider, {
-		theme = "Dark",
-		device = "Desktop",
-		plugin = plugin,
-		overlayGui = widget,
-	}, {
-		App = e(App, { plugin = plugin }),
-	}),
-	widget
-))
+root:render(e(Foundation.FoundationProvider, {
+	theme = "Dark",
+	device = "Desktop",
+	plugin = plugin,
+	overlayGui = widget,
+}, {
+	App = e(App, { plugin = plugin }),
+}))
 
 button.Click:Connect(function()
 	widget.Enabled = not widget.Enabled
