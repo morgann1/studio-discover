@@ -44,13 +44,9 @@ local ROBLOX_PACKAGES = {
 	"Foundation",
 	"FoundationImages",
 	"BuilderIcons",
-	-- Some extra nice-to-haves
+	"Otter",
+	"ReactOtter",
 	"ReactUtils",
-	"QRCode",
-
-	-- These are only included so the above dependencies work as expected.
-	-- It seems like roblox-packages has a bug with its dependency
-	-- resolution that is resulting in over-pruning
 	"Promise",
 	"Dash",
 }

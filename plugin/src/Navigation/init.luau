@@ -16,6 +16,7 @@ export type NavigationContext = {
 	pop: () -> (),
 	replace: (name: string, options: { [string]: any }?) -> (),
 	screen: Screen,
+	depth: number,
 }
 
 local BASE_SCREEN: Screen = {
@@ -80,6 +81,7 @@ local function NavigationProvider(props: { children: any })
 	end, {})
 
 	local screen = getScreen(stack)
+	local depth = #stack + 1
 
 	local value: NavigationContext = React.useMemo(function()
 		local v: NavigationContext = {
@@ -87,9 +89,10 @@ local function NavigationProvider(props: { children: any })
 			pop = pop,
 			replace = replace,
 			screen = screen,
+			depth = depth,
 		}
 		return v
-	end, { push, pop, replace, screen })
+	end, { push, pop, replace, screen, depth } :: { any })
 
 	return React.createElement(Context.Provider, {
 		value = value,
