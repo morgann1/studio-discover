@@ -19,11 +19,13 @@ local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local Loading = Foundation.Loading
 local Empty = Foundation.Empty
+local SystemBanner = Foundation.SystemBanner
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
 local IconSize = Foundation.Enums.IconSize
 local Visibility = Foundation.Enums.Visibility
+local AlertSeverity = Foundation.Enums.AlertSeverity
 
 local e = React.createElement
 
@@ -33,6 +35,7 @@ local function Home()
 	local results, setResults = React.useState({} :: { any })
 	local isLoading, setIsLoading = React.useState(false)
 	local hasSearched, setHasSearched = React.useState(false)
+	local searchError: string?, setSearchError = React.useState(nil :: string?)
 
 	local searchVersion = React.useRef(0)
 
@@ -43,12 +46,14 @@ local function Home()
 			setResults({})
 			setHasSearched(false)
 			setIsLoading(false)
+			setSearchError(nil)
 			searchVersion.current += 1
 			return
 		end
 
 		setIsLoading(true)
 		setHasSearched(true)
+		setSearchError(nil)
 
 		searchVersion.current += 1
 		local thisVersion = searchVersion.current
@@ -64,6 +69,7 @@ local function Home()
 				warn("[Discover] Search failed:", err)
 				setIsLoading(false)
 				setResults({})
+				setSearchError(tostring(err) or "Couldn't reach the Wally registry.")
 				return
 			end
 
@@ -155,7 +161,22 @@ local function Home()
 	end
 
 	local content
-	if isLoading then
+	if searchError then
+		content = e(View, {
+			Size = UDim2.fromScale(1, 1),
+		}, {
+			Padding = e("UIPadding", {
+				PaddingLeft = UDim.new(0, 16),
+				PaddingRight = UDim.new(0, 16),
+				PaddingTop = UDim.new(0, 16),
+			}),
+			Banner = e(SystemBanner, {
+				severity = AlertSeverity.Error,
+				title = "Couldn't reach Wally",
+				description = searchError,
+			}),
+		})
+	elseif isLoading then
 		content = e(View, {
 			Size = UDim2.fromScale(1, 1),
 			tag = "align-x-center align-y-center",
