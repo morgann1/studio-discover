@@ -428,7 +428,16 @@ function Installer._installDeps(
 				depPkgFolder:SetAttribute("ModuleName", depModuleName)
 				depPkgFolder.Parent = indexFolder
 
-				Installer._installDeps(packagesFolder, indexFolder, depPkgFolder, depScope, depName, depVersion, realm, failures)
+				Installer._installDeps(
+					packagesFolder,
+					indexFolder,
+					depPkgFolder,
+					depScope,
+					depName,
+					depVersion,
+					realm,
+					failures
+				)
 			else
 				table.insert(failures, `{depScope}/{depName}@{depVersion}: {depErr}`)
 				warn(`[Discover] Failed to install dependency {depScope}/{depName}@{depVersion}: {depErr}`)

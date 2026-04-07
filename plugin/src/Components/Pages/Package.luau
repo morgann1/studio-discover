@@ -296,7 +296,7 @@ local function Package()
 				Install = e(Button, {
 					LayoutOrder = 1,
 					text = if installStatus == "installing"
-							then "Installing..."
+						then "Installing..."
 						elseif installStatus == "installed" then "Installed"
 						elseif installStatus == "partial" then "Installed (with warnings)"
 						elseif installStatus == "error" then "Error"
@@ -314,12 +314,16 @@ local function Package()
 
 						task.spawn(function()
 							local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention)
-							local success, err, failures = Installer.install(scope, rawName, version, alias, installRealm)
+							local success, err, failures =
+								Installer.install(scope, rawName, version, alias, installRealm)
 
 							if success then
 								if failures and #failures > 0 then
 									setInstallStatus("partial")
-									setInstallError(`Installed, but {#failures} dependency issue(s):\n• ` .. table.concat(failures, "\n• "))
+									setInstallError(
+										`Installed, but {#failures} dependency issue(s):\n• `
+											.. table.concat(failures, "\n• ")
+									)
 								else
 									setInstallStatus("installed")
 									setInstallError(nil)
