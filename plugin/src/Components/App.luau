@@ -5,6 +5,7 @@ local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
 local SettingsModule = require(Discover.Src.Settings)
+local SearchModule = require(Discover.Src.Search)
 
 local Home = require(Discover.Src.Components.Pages.Home)
 local Package = require(Discover.Src.Components.Pages.Package)
@@ -43,8 +44,10 @@ end
 
 local function App(props: { plugin: Plugin? })
 	return e(SettingsModule.SettingsProvider, { plugin = props.plugin }, {
-		Nav = e(Navigation.NavigationProvider, nil, {
-			Router = e(PageRouter),
+		Search = e(SearchModule.SearchProvider, nil, {
+			Nav = e(Navigation.NavigationProvider, nil, {
+				Router = e(PageRouter),
+			}),
 		}),
 	})
 end
