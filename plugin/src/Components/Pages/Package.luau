@@ -16,7 +16,7 @@ local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local ScrollView = Foundation.ScrollView
 local Loading = Foundation.Loading
-local FeedbackAlert = Foundation.FeedbackAlert
+local SystemBanner = Foundation.SystemBanner
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
@@ -287,7 +287,7 @@ local function Package()
 					SortOrder = Enum.SortOrder.LayoutOrder,
 					Padding = UDim.new(0, 6),
 				}),
-				InstallMessage = installError and e(FeedbackAlert, {
+				InstallMessage = installError and e(SystemBanner, {
 					severity = if installStatus == "partial" then AlertSeverity.Warning else AlertSeverity.Error,
 					title = if installStatus == "partial" then "Installed with warnings" else "Install failed",
 					description = installError,
