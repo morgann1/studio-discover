@@ -7,6 +7,7 @@ local React = require(Packages.React)
 local Navigation = require(Discover.Src.Navigation)
 local PackageCard = require(Discover.Src.Components.PackageCard)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
+local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -78,11 +79,25 @@ local function Home()
 					if searchVersion.current ~= thisVersion then
 						return
 					end
-					if meta and meta.versions then
-						local latest = meta.versions[#meta.versions]
-						if latest and latest.package then
+					if meta and meta.versions and meta.versions[1] then
+						local latest = meta.versions[1]
+						if latest.package then
 							pkg.description = latest.package.description
+							pkg.latestVersion = latest.package.version
+							pkg.realm = latest.package.realm
 						end
+						local depCount = 0
+						if latest.dependencies then
+							for _ in latest.dependencies do
+								depCount += 1
+							end
+						end
+						if latest["server-dependencies"] then
+							for _ in latest["server-dependencies"] do
+								depCount += 1
+							end
+						end
+						pkg.depCount = depCount
 					end
 					pending -= 1
 					if pending == 0 and searchVersion.current == thisVersion then
@@ -96,6 +111,14 @@ local function Home()
 	local onSettingsPressed = React.useCallback(function()
 		nav.push("Settings")
 	end, { nav })
+
+	local onManagePressed = React.useCallback(function()
+		nav.push("Manage")
+	end, { nav })
+
+	local installedMap = React.useMemo(function()
+		return InstalledPackages.map()
+	end, { results })
 
 	local packageCards = {}
 	for i, pkg in results do
@@ -111,6 +134,10 @@ local function Home()
 			name = name,
 			scope = scope,
 			description = desc,
+			version = pkg.latestVersion,
+			realm = pkg.realm,
+			depCount = pkg.depCount,
+			isInstalled = installedMap[`{scope}/{name}`] ~= nil,
 			LayoutOrder = order - 1,
 			onActivated = function()
 				nav.push("Package", { scope = scope, name = name })
@@ -202,16 +229,23 @@ local function Home()
 				placeholder = "Search packages",
 				leadingIcon = "icons/common/search",
 				size = InputSize.Medium,
-				width = UDim.new(1, -44),
+				width = UDim.new(1, -80),
 				onChanged = onSearchChanged,
 				LayoutOrder = 1,
+			}),
+			Manage = e(IconButton, {
+				icon = Foundation.Enums.IconName.Folder,
+				size = InputSize.Medium,
+				variant = ButtonVariant.Standard,
+				onActivated = onManagePressed,
+				LayoutOrder = 2,
 			}),
 			Settings = e(IconButton, {
 				icon = Foundation.Enums.IconName.Gear,
 				size = InputSize.Medium,
 				variant = ButtonVariant.Standard,
 				onActivated = onSettingsPressed,
-				LayoutOrder = 2,
+				LayoutOrder = 3,
 			}),
 		}),
 

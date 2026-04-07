@@ -9,6 +9,7 @@ local SettingsModule = require(Discover.Src.Settings)
 local Home = require(Discover.Src.Components.Pages.Home)
 local Package = require(Discover.Src.Components.Pages.Package)
 local Settings = require(Discover.Src.Components.Pages.Settings)
+local Manage = require(Discover.Src.Components.Pages.Manage)
 
 local e = React.createElement
 
@@ -16,6 +17,7 @@ local Pages = {
 	Home = Home,
 	Package = Package,
 	Settings = Settings,
+	Manage = Manage,
 }
 
 local function PageRouter()

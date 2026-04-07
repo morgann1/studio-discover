@@ -8,6 +8,7 @@ local Installer = require(Discover.Src.Utility.Installer)
 local Navigation = require(Discover.Src.Navigation)
 local SettingsModule = require(Discover.Src.Settings)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
+local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -94,6 +95,11 @@ local function Package()
 	local installStatus, setInstallStatus = React.useState("idle")
 	local installError, setInstallError = React.useState(nil :: string?)
 
+	local installedMap = React.useMemo(function()
+		return InstalledPackages.map()
+	end, { installStatus })
+	local installedEntry = installedMap[`{scope}/{rawName}`]
+
 	React.useEffect(function()
 		setInstallStatus("idle")
 		setInstallError(nil)
@@ -120,6 +126,8 @@ local function Package()
 		local installRealm = pkg.realm or "shared"
 		local authors = pkg.authors
 		local authorStr = authors and table.concat(authors, ", ") or "Unknown"
+		local repository = pkg.repository
+		local homepage = pkg.homepage
 
 		if description == "" then
 			description = `{rawName} has no provided description.`
@@ -206,6 +214,15 @@ local function Package()
 					tag = "text-title-medium content-emphasis",
 					LayoutOrder = 1,
 				}),
+
+				InstalledBadge = if installedEntry
+					then e(Text, {
+						Text = `Installed v{installedEntry.version}`,
+						AutomaticSize = Enum.AutomaticSize.XY,
+						tag = "text-caption-small content-emphasis",
+						LayoutOrder = 1.5,
+					})
+					else nil,
 
 				Description = e(Text, {
 					Text = description,
@@ -344,6 +361,12 @@ local function Package()
 					Realm = e(MetadataRow, { label = "Realm", value = installRealm, LayoutOrder = 1 }),
 					License = e(MetadataRow, { label = "License", value = license, LayoutOrder = 2 }),
 					Authors = e(MetadataRow, { label = "Authors", value = authorStr, LayoutOrder = 3 }),
+					Repository = if repository and repository ~= ""
+						then e(MetadataRow, { label = "Repository", value = repository, LayoutOrder = 4 })
+						else nil,
+					Homepage = if homepage and homepage ~= ""
+						then e(MetadataRow, { label = "Homepage", value = homepage, LayoutOrder = 5 })
+						else nil,
 				}),
 
 				DepDivider = e(Divider, { LayoutOrder = 2 }),

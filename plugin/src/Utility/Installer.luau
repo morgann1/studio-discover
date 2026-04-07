@@ -465,4 +465,33 @@ function Installer._installDeps(
 	end
 end
 
+function Installer.uninstall(scope: string, name: string): (boolean, string?)
+	local packagePrefix = `{scope}_{name}@`
+	local removedAny = false
+
+	for _, realm in { "shared", "server" } do
+		local packagesFolder = Installer.getPackagesFolder(realm)
+		local indexFolder = packagesFolder:FindFirstChild("_Index")
+		if indexFolder then
+			for _, child in indexFolder:GetChildren() do
+				if string.sub(child.Name, 1, #packagePrefix) == packagePrefix then
+					for _, link in packagesFolder:GetChildren() do
+						if link:IsA("ModuleScript") and string.find(link.Source, child.Name, 1, true) then
+							link:Destroy()
+							removedAny = true
+						end
+					end
+					child:Destroy()
+					removedAny = true
+				end
+			end
+		end
+	end
+
+	if not removedAny then
+		return false, "Package not found"
+	end
+	return true, nil
+end
+
 return Installer

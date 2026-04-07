@@ -16,6 +16,10 @@ type PackageCardProps = {
 	name: string,
 	scope: string,
 	description: string?,
+	version: string?,
+	realm: string?,
+	depCount: number?,
+	isInstalled: boolean?,
 	onActivated: (() -> ())?,
 	LayoutOrder: number?,
 }
@@ -27,8 +31,23 @@ local function PackageCard(props: PackageCardProps)
 		end
 	end, { props.onActivated })
 
+	local metaParts = {}
+	if props.version then
+		table.insert(metaParts, `v{props.version}`)
+	end
+	if props.realm and props.realm ~= "" then
+		table.insert(metaParts, props.realm)
+	end
+	if props.depCount and props.depCount > 0 then
+		table.insert(metaParts, `{props.depCount} deps`)
+	end
+	if props.isInstalled then
+		table.insert(metaParts, "installed")
+	end
+	local metaText = table.concat(metaParts, "  •  ")
+
 	return e(View, {
-		Size = UDim2.new(1, 0, 0, 56),
+		Size = UDim2.new(1, 0, 0, 64),
 		onActivated = onActivated,
 		LayoutOrder = props.LayoutOrder,
 	}, {
@@ -70,6 +89,15 @@ local function PackageCard(props: PackageCardProps)
 				tag = "text-caption-small text-truncate-end text-align-x-left",
 				LayoutOrder = 2,
 			}),
+			Meta = if metaText ~= ""
+				then e(Text, {
+					Text = metaText,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.fromScale(1, 0),
+					tag = "text-caption-small text-align-x-left",
+					LayoutOrder = 3,
+				})
+				else nil,
 		}),
 
 		Arrow = e(Icon, {
