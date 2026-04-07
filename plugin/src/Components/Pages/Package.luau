@@ -9,6 +9,7 @@ local Navigation = require(Discover.Src.Navigation)
 local SettingsModule = require(Discover.Src.Settings)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
+local ReactHelpers = require(Discover.Src.Utility.React)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -63,8 +64,8 @@ local function Package()
 	local ctx = SettingsModule.useSettings()
 	local name = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention)
 
-	local allVersions, setAllVersions = React.useState(nil :: { any }?)
-	local selectedVersion, setSelectedVersion = React.useState(nil :: string?)
+	local allVersions: { any }?, setAllVersions = React.useState(nil :: { any }?)
+	local selectedVersion: string?, setSelectedVersion = React.useState(nil :: string?)
 	local isLoading, setIsLoading = React.useState(true)
 
 	React.useEffect(function()
@@ -93,7 +94,7 @@ local function Package()
 	end, { allVersions, selectedVersion })
 
 	local installStatus, setInstallStatus = React.useState("idle")
-	local installError, setInstallError = React.useState(nil :: string?)
+	local installError: string?, setInstallError = React.useState(nil :: string?)
 
 	local installedMap = React.useMemo(function()
 		return InstalledPackages.map()
@@ -154,13 +155,16 @@ local function Package()
 			return nil, nil
 		end
 
+		local nextMetaOrder = ReactHelpers.createNextOrder()
 		local depChildren = {}
 		depChildren.Layout = e("UIListLayout", {
 			FillDirection = Enum.FillDirection.Vertical,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Padding = UDim.new(0, 2),
 		})
-		for i, dep in allDeps do
+		local depKey = ReactHelpers.createUniqueKey()
+		local nextDepOrder = ReactHelpers.createNextOrder()
+		for _, dep in allDeps do
 			local depScope, depName = parseDepPath(tostring(dep.version))
 			local suffix = ""
 			if dep.category == "dev" then
@@ -170,11 +174,11 @@ local function Package()
 			end
 			local displayName = depScope and `{depScope}/{depName}` or dep.name
 
-			depChildren["dep_" .. i] = e(Button, {
+			depChildren[depKey(displayName)] = e(Button, {
 				text = displayName .. suffix,
 				variant = ButtonVariant.Link,
 				size = InputSize.Small,
-				LayoutOrder = i,
+				LayoutOrder = nextDepOrder(),
 				onActivated = depScope and function()
 					nav.push("Package", { scope = depScope, name = depName })
 				end or nil,
@@ -358,14 +362,14 @@ local function Package()
 						SortOrder = Enum.SortOrder.LayoutOrder,
 						Padding = UDim.new(0, 6),
 					}),
-					Realm = e(MetadataRow, { label = "Realm", value = installRealm, LayoutOrder = 1 }),
-					License = e(MetadataRow, { label = "License", value = license, LayoutOrder = 2 }),
-					Authors = e(MetadataRow, { label = "Authors", value = authorStr, LayoutOrder = 3 }),
+					Realm = e(MetadataRow, { label = "Realm", value = installRealm, LayoutOrder = nextMetaOrder() }),
+					License = e(MetadataRow, { label = "License", value = license, LayoutOrder = nextMetaOrder() }),
+					Authors = e(MetadataRow, { label = "Authors", value = authorStr, LayoutOrder = nextMetaOrder() }),
 					Repository = if repository and repository ~= ""
-						then e(MetadataRow, { label = "Repository", value = repository, LayoutOrder = 4 })
+						then e(MetadataRow, { label = "Repository", value = repository, LayoutOrder = nextMetaOrder() })
 						else nil,
 					Homepage = if homepage and homepage ~= ""
-						then e(MetadataRow, { label = "Homepage", value = homepage, LayoutOrder = 5 })
+						then e(MetadataRow, { label = "Homepage", value = homepage, LayoutOrder = nextMetaOrder() })
 						else nil,
 				}),
 
