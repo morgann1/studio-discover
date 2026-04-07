@@ -27,16 +27,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📦 Install packages
-        run: wally install
-
-      - name: 🗺️ Generate sourcemap
-        run: rojo sourcemap -o sourcemap.json
-
-      - name: 🔤 Generate package types
-        run: wally-package-types --sourcemap sourcemap.json Packages/
+        run: lune run install
 
       - name: 🏗️ Build Discover.rbxm
-        run: rojo build -o Discover.rbxm
+        run: rojo build plugin/default.project.jsonc -o Discover.rbxm
 
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v2

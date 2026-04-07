@@ -7,7 +7,5 @@ private = true
 
 [dependencies]
 Sift = "csqrl/sift@0.0.11"
-Foundation = "morgann1/foundation@0.5.3"
 React = "jsdotlua/react@17.2.1"
 ReactRoblox = "jsdotlua/react-roblox@17.2.1"
-Rodux = "roblox/rodux@3.0.0"

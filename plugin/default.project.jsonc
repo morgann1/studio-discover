@@ -3,10 +3,10 @@
   "tree": {
     "$className": "Folder",
     "Bin": {
-      "$path": "plugin/bin/"
+      "$path": "bin/"
     },
     "Src": {
-      "$path": "plugin/src/"
+      "$path": "src/"
     },
     "Packages": {
       "$path": "Packages/"
