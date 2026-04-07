@@ -11,6 +11,45 @@ local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 
 local Installer = {}
 
+-- Returns the set of packageIds currently reachable from any top-level
+-- alias link in the given _Index folder (i.e. "still needed" packages).
+local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { [string]: true }
+	local reachable: { [string]: true } = {}
+
+	local function extractPackageId(source: string): string?
+		return source:match('_Index%["([^"]+)"%]')
+	end
+
+	local function visit(packageId: string)
+		if reachable[packageId] then
+			return
+		end
+		reachable[packageId] = true
+		local pkgFolder = indexFolder:FindFirstChild(packageId)
+		if not pkgFolder then
+			return
+		end
+		for _, child in pkgFolder:GetChildren() do
+			if child:IsA("ModuleScript") then
+				local depId = extractPackageId(child.Source)
+				if depId then
+					visit(depId)
+				end
+			end
+		end
+	end
+
+	for _, child in packagesFolder:GetChildren() do
+		if child:IsA("ModuleScript") then
+			local id = extractPackageId(child.Source)
+			if id then
+				visit(id)
+			end
+		end
+	end
+	return reachable
+end
+
 local function parseSemver(version: string): { major: number, minor: number, patch: number }?
 	local major, minor, patch = version:match("^(%d+)%.(%d+)%.(%d+)")
 	if not major then
@@ -268,13 +307,21 @@ function Installer.getPackagesFolder(realm: string): Folder
 	end
 end
 
+export type ProgressCallback = (message: string) -> ()
+
 function Installer.install(
 	scope: string,
 	name: string,
 	version: string,
 	alias: string,
-	realm: string?
+	realm: string?,
+	onProgress: ProgressCallback?
 ): (boolean, string?, { string }?)
+	local function progress(msg: string)
+		if onProgress then
+			onProgress(msg)
+		end
+	end
 	local packagesFolder = Installer.getPackagesFolder(realm or "shared")
 	local indexFolder = packagesFolder:FindFirstChild("_Index")
 	if not indexFolder then
@@ -284,54 +331,53 @@ function Installer.install(
 	end
 
 	local packageId = `{scope}_{name}@{version}`
-	local packagePrefix = `{scope}_{name}@`
+	local pkgFolder = indexFolder:FindFirstChild(packageId) :: Folder?
+	local moduleName: string? = nil
 
-	if indexFolder:FindFirstChild(packageId) then
-		return true, "Already installed"
-	end
-
-	for _, child in indexFolder:GetChildren() do
-		if child.Name ~= packageId and string.sub(child.Name, 1, #packagePrefix) == packagePrefix then
-			for _, link in packagesFolder:GetChildren() do
-				if link:IsA("ModuleScript") and string.find(link.Source, child.Name, 1, true) then
-					link:Destroy()
-				end
-			end
-			child:Destroy()
-		end
-	end
-
-	local tree, err = Installer.downloadPackage(scope, name, version)
-	if not tree then
-		return false, err
-	end
-
-	local moduleName = name
-	if tree:IsA("ModuleScript") then
-		moduleName = tree.Name
-	else
-		for _, child in tree:GetChildren() do
+	if pkgFolder then
+		progress("Already downloaded, relinking...")
+		-- Reuse existing indexed folder; derive moduleName from its first ModuleScript child
+		for _, child in pkgFolder:GetChildren() do
 			if child:IsA("ModuleScript") then
 				moduleName = child.Name
 				break
 			end
 		end
-	end
-
-	local pkgFolder = Instance.new("Folder")
-	pkgFolder.Name = packageId
-
-	if tree:IsA("ModuleScript") then
-		tree.Parent = pkgFolder
 	else
-		for _, child in tree:GetChildren() do
-			child.Parent = pkgFolder
+		progress(`Downloading {scope}/{name}@{version}...`)
+		local tree, err = Installer.downloadPackage(scope, name, version)
+		if not tree then
+			return false, err
 		end
-		tree:Destroy()
+
+		moduleName = name
+		if tree:IsA("ModuleScript") then
+			moduleName = tree.Name
+		else
+			for _, child in tree:GetChildren() do
+				if child:IsA("ModuleScript") then
+					moduleName = child.Name
+					break
+				end
+			end
+		end
+
+		pkgFolder = Instance.new("Folder")
+		pkgFolder.Name = packageId
+
+		if tree:IsA("ModuleScript") then
+			tree.Parent = pkgFolder
+		else
+			for _, child in tree:GetChildren() do
+				child.Parent = pkgFolder
+			end
+			tree:Destroy()
+		end
+
+		pkgFolder.Parent = indexFolder
 	end
 
-	pkgFolder.Parent = indexFolder
-
+	-- Replace any existing alias link (e.g. version upgrade)
 	local existing = packagesFolder:FindFirstChild(alias)
 	if existing then
 		existing:Destroy()
@@ -344,8 +390,19 @@ function Installer.install(
 
 	PackageTypes.processLink(link)
 
+	progress("Resolving dependencies...")
 	local failures = {}
-	Installer._installDeps(packagesFolder, indexFolder, pkgFolder, scope, name, version, realm, failures)
+	Installer._installDeps(packagesFolder, indexFolder, pkgFolder, scope, name, version, realm, failures, progress)
+
+	-- GC: drop any _Index folders no longer reachable from a top-level alias.
+	-- This replaces the naive prefix-based delete that could orphan shared
+	-- transitive deps used by other installed packages.
+	local reachable = collectReachable(packagesFolder, indexFolder)
+	for _, child in indexFolder:GetChildren() do
+		if not reachable[child.Name] then
+			child:Destroy()
+		end
+	end
 
 	if #failures > 0 then
 		return true, nil, failures
@@ -361,8 +418,14 @@ function Installer._installDeps(
 	name: string,
 	version: string,
 	realm: string?,
-	failures: { string }
+	failures: { string },
+	progress: ((string) -> ())?
 )
+	local function report(msg: string)
+		if progress then
+			progress(msg)
+		end
+	end
 	local meta = WallyAPI.metadata(scope, name)
 	if not meta or not meta.versions then
 		return
@@ -390,6 +453,11 @@ function Installer._installDeps(
 			table.insert(allDeps, { alias = depAlias, value = depValue })
 		end
 	end
+	if versionData["dev-dependencies"] then
+		for depAlias, depValue in versionData["dev-dependencies"] do
+			table.insert(allDeps, { alias = depAlias, value = depValue })
+		end
+	end
 
 	for _, dep in allDeps do
 		local depScope, depName, satisfies = parseDependency(dep.value)
@@ -407,6 +475,7 @@ function Installer._installDeps(
 		local depPackageId = `{depScope}_{depName}@{depVersion}`
 
 		if not indexFolder:FindFirstChild(depPackageId) then
+			report(`Installing {depScope}/{depName}@{depVersion}...`)
 			local depTree, depErr = Installer.downloadPackage(depScope, depName, depVersion)
 			if depTree then
 				local depPkgFolder = Instance.new("Folder")
@@ -437,7 +506,8 @@ function Installer._installDeps(
 					depName,
 					depVersion,
 					realm,
-					failures
+					failures,
+					progress
 				)
 			else
 				table.insert(failures, `{depScope}/{depName}@{depVersion}: {depErr}`)
@@ -464,45 +534,6 @@ function Installer._installDeps(
 			PackageTypes.processLink(depLink)
 		end
 	end
-end
-
--- Returns the set of packageIds currently reachable from any top-level
--- alias link in the given _Index folder (i.e. "still needed" packages).
-local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { [string]: true }
-	local reachable: { [string]: true } = {}
-
-	local function extractPackageId(source: string): string?
-		return source:match('_Index%["([^"]+)"%]')
-	end
-
-	local function visit(packageId: string)
-		if reachable[packageId] then
-			return
-		end
-		reachable[packageId] = true
-		local pkgFolder = indexFolder:FindFirstChild(packageId)
-		if not pkgFolder then
-			return
-		end
-		for _, child in pkgFolder:GetChildren() do
-			if child:IsA("ModuleScript") then
-				local depId = extractPackageId(child.Source)
-				if depId then
-					visit(depId)
-				end
-			end
-		end
-	end
-
-	for _, child in packagesFolder:GetChildren() do
-		if child:IsA("ModuleScript") then
-			local id = extractPackageId(child.Source)
-			if id then
-				visit(id)
-			end
-		end
-	end
-	return reachable
 end
 
 function Installer.uninstall(scope: string, name: string): (boolean, string?)
