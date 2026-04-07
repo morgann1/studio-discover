@@ -22,7 +22,7 @@ jobs:
         run: lune run install --quiet
 
       - name: 🎨 StyLua check
-        run: stylua --check plugin/
+        run: stylua --check plugin/bin plugin/src
 
       - name: 🔍 Selene
-        run: selene plugin/
+        run: selene plugin/bin plugin/src
