@@ -1,9 +1,9 @@
 local Discover = script.Parent.Parent
 local Packages = Discover.Packages
 
+local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 local ReactRoblox = require(Packages.ReactRoblox)
-local Foundation = require(Packages.Foundation)
 
 local App = require(Discover.Src.Components.App)
 

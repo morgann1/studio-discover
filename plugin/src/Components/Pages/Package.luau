@@ -1,13 +1,13 @@
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
-local React = require(Packages.React)
 local Foundation = require(Packages.Foundation)
+local React = require(Packages.React)
 
+local Installer = require(Discover.Src.Utility.Installer)
 local Navigation = require(Discover.Src.Navigation)
 local SettingsModule = require(Discover.Src.Settings)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
-local Installer = require(Discover.Src.Utility.Installer)
 
 local View = Foundation.View
 local Text = Foundation.Text

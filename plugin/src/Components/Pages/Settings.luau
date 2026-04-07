@@ -1,8 +1,8 @@
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
-local React = require(Packages.React)
 local Foundation = require(Packages.Foundation)
+local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
 local SettingsModule = require(Discover.Src.Settings)

@@ -22,7 +22,7 @@ build.arguments = {
 		name = "output",
 		kind = "option",
 		options = {
-			help = "Output file path (default: StudioActivity.rbxm)",
+			help = "Output file path (default: Discover.rbxm)",
 			aliases = { "o" },
 		},
 	},
@@ -39,7 +39,7 @@ export type Options = {
 ]]
 function build.run(options_: Options?)
 	local options: Options = options_ or {}
-	local output = options.output or "StudioActivity.rbxm"
+	local output = options.output or "Discover.rbxm"
 
 	print(color.bold(color.white("Building for production...\n")))
 
