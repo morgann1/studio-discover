@@ -198,6 +198,7 @@ local function Home()
 			}),
 			Search = e(TextInput, {
 				text = searchText,
+				label = "",
 				placeholder = "Search packages",
 				leadingIcon = "icons/common/search",
 				size = InputSize.Medium,
