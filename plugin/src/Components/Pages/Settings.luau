@@ -5,8 +5,8 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local SettingsModule = require(Discover.Src.Settings)
 local ReactHelpers = require(Discover.Src.Utility.React)
+local SettingsModule = require(Discover.Src.Settings)
 
 local View = Foundation.View
 local Text = Foundation.Text

@@ -4,12 +4,12 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
+local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
 local Installer = require(Discover.Src.Utility.Installer)
 local Navigation = require(Discover.Src.Navigation)
+local ReactHelpers = require(Discover.Src.Utility.React)
 local SettingsModule = require(Discover.Src.Settings)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
-local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
-local ReactHelpers = require(Discover.Src.Utility.React)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -262,7 +262,7 @@ local function Package()
 			Install = e(Button, {
 				LayoutOrder = nextPageOrder(),
 				text = if installStatus == "installing"
-						then "Installing..."
+					then "Installing..."
 					elseif installStatus == "installed" then "Installed"
 					elseif installStatus == "partial" then "Installed (with warnings)"
 					elseif installStatus == "error" then "Error"

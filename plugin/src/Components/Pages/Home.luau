@@ -4,13 +4,13 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
+local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
 local Navigation = require(Discover.Src.Navigation)
+local PackageCard = require(Discover.Src.Components.PackageCard)
+local ReactHelpers = require(Discover.Src.Utility.React)
 local SearchModule = require(Discover.Src.Search)
 local SettingsModule = require(Discover.Src.Settings)
-local PackageCard = require(Discover.Src.Components.PackageCard)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
-local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
-local ReactHelpers = require(Discover.Src.Utility.React)
 
 local View = Foundation.View
 local Text = Foundation.Text

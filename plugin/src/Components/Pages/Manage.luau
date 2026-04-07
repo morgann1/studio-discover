@@ -4,12 +4,12 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
-local Navigation = require(Discover.Src.Navigation)
-local SettingsModule = require(Discover.Src.Settings)
-local Installer = require(Discover.Src.Utility.Installer)
 local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
-local WallyAPI = require(Discover.Src.Utility.WallyAPI)
+local Installer = require(Discover.Src.Utility.Installer)
+local Navigation = require(Discover.Src.Navigation)
 local ReactHelpers = require(Discover.Src.Utility.React)
+local SettingsModule = require(Discover.Src.Settings)
+local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -116,8 +116,7 @@ local function Manage()
 	local nav = Navigation.useNavigation()
 	local settingsCtx = SettingsModule.useSettings()
 	local refreshKey, setRefreshKey = React.useState(0)
-	local latestVersions, setLatestVersions =
-		React.useState({} :: { [string]: string })
+	local latestVersions, setLatestVersions = React.useState({} :: { [string]: string })
 	local pendingUninstall: { scope: string, name: string }?, setPendingUninstall =
 		React.useState(nil :: { scope: string, name: string }?)
 
@@ -182,8 +181,7 @@ local function Manage()
 			onUpdate = if latest and latest ~= pkg.version
 				then function()
 					task.spawn(function()
-						local alias =
-							SettingsModule.formatPackageName(pkg.name, settingsCtx.settings.namingConvention)
+						local alias = SettingsModule.formatPackageName(pkg.name, settingsCtx.settings.namingConvention)
 						local ok, err = Installer.install(pkg.scope, pkg.name, latest, alias, pkg.realm)
 						if not ok then
 							warn("[Discover] Update failed:", err)
@@ -249,8 +247,7 @@ local function Manage()
 							variant = ButtonVariant.Emphasis,
 							onActivated = function()
 								if pendingUninstall then
-									local ok, err =
-										Installer.uninstall(pendingUninstall.scope, pendingUninstall.name)
+									local ok, err = Installer.uninstall(pendingUninstall.scope, pendingUninstall.name)
 									if not ok then
 										warn("[Discover] Uninstall failed:", err)
 									end

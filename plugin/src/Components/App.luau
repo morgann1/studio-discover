@@ -4,13 +4,13 @@ local Packages = Discover.Packages
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local SettingsModule = require(Discover.Src.Settings)
 local SearchModule = require(Discover.Src.Search)
+local SettingsModule = require(Discover.Src.Settings)
 
 local Home = require(Discover.Src.Components.Pages.Home)
+local Manage = require(Discover.Src.Components.Pages.Manage)
 local Package = require(Discover.Src.Components.Pages.Package)
 local Settings = require(Discover.Src.Components.Pages.Settings)
-local Manage = require(Discover.Src.Components.Pages.Manage)
 
 local e = React.createElement
 
