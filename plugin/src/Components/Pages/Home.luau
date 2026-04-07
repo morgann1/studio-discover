@@ -5,6 +5,7 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
+local SettingsModule = require(Discover.Src.Settings)
 local PackageCard = require(Discover.Src.Components.PackageCard)
 local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
@@ -117,6 +118,8 @@ local function Home()
 		nav.push("Manage")
 	end, { nav })
 
+	local settingsCtx = SettingsModule.useSettings()
+
 	local installedMap = React.useMemo(function()
 		return InstalledPackages.map()
 	end, { results })
@@ -126,26 +129,27 @@ local function Home()
 	local nextCardOrder = ReactHelpers.createNextOrder()
 	for _, pkg in results do
 		local scope = pkg.scope or ""
-		local name = pkg.name or ""
+		local rawName = pkg.name or ""
+		local displayName = SettingsModule.formatPackageName(rawName, settingsCtx.settings.namingConvention)
 		local desc = pkg.description
 		if not desc or desc == "" then
-			desc = `{name} has no provided description.`
+			desc = `{displayName} has no provided description.`
 		end
 
-		packageCards[cardKey(`{scope}/{name}`)] = e(PackageCard, {
-			name = name,
+		packageCards[cardKey(`{scope}/{rawName}`)] = e(PackageCard, {
+			name = displayName,
 			scope = scope,
 			description = desc,
 			version = pkg.latestVersion,
 			realm = pkg.realm,
 			depCount = pkg.depCount,
-			isInstalled = installedMap[`{scope}/{name}`] ~= nil,
+			isInstalled = installedMap[`{scope}/{rawName}`] ~= nil,
 			LayoutOrder = nextCardOrder(),
 			onActivated = function()
-				nav.push("Package", { scope = scope, name = name })
+				nav.push("Package", { scope = scope, name = rawName })
 			end,
 		})
-		packageCards[cardKey(`divider_{scope}/{name}`)] = e(Divider, {
+		packageCards[cardKey(`divider_{scope}/{rawName}`)] = e(Divider, {
 			LayoutOrder = nextCardOrder(),
 		})
 	end

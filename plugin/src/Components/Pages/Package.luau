@@ -131,7 +131,7 @@ local function Package()
 		local homepage = pkg.homepage
 
 		if description == "" then
-			description = `{rawName} has no provided description.`
+			description = `{name} has no provided description.`
 		end
 
 		local allDeps = {}
