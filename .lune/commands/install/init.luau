@@ -46,7 +46,6 @@ local ROBLOX_PACKAGES = {
 	"BuilderIcons",
 	"Otter",
 	"ReactOtter",
-	"ReactUtils",
 	"Promise",
 	"Dash",
 }

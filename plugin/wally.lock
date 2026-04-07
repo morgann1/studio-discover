@@ -3,11 +3,6 @@
 registry = "test"
 
 [[package]]
-name = "csqrl/sift"
-version = "0.0.11"
-dependencies = []
-
-[[package]]
 name = "jsdotlua/boolean"
 version = "1.2.7"
 dependencies = [["number", "jsdotlua/number@1.2.7"]]
@@ -100,4 +95,4 @@ dependencies = []
 [[package]]
 name = "morgan/studio-discover"
 version = "0.1.0"
-dependencies = [["Charm", "littensy/charm@0.10.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["Sift", "csqrl/sift@0.0.11"]]
+dependencies = [["Charm", "littensy/charm@0.10.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"]]
