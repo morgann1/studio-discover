@@ -30,7 +30,7 @@ jobs:
         run: lune run install
 
       - name: 🏗️ Build Discover.rbxm
-        run: rojo build plugin/default.project.jsonc -o Discover.rbxm
+        run: rojo build plugin/default.project.json -o Discover.rbxm
 
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v2
