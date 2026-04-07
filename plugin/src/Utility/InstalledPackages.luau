@@ -25,10 +25,11 @@ local function parsePackageId(packageId: string): (string?, string?, string?)
 	return scope, name, version
 end
 
--- Extract "scope_name@version" from an alias link's Source:
---   return require(script.Parent._Index["jsdotlua_react@17.2.1"]["react"])
+-- Extract "scope_name@version" from a link's Source. Handles both forms:
+--   top-level: require(script.Parent._Index["scope_name@version"][...])
+--   dep link:  require(script.Parent.Parent["scope_name@version"][...])
 local function extractPackageId(source: string): string?
-	return source:match('_Index%["([^"]+)"%]')
+	return source:match('%["([^"]+@[^"]+)"%]')
 end
 
 local function scanRealm(packagesFolder: Folder?, realm: "shared" | "server", out: { InstalledPackage })

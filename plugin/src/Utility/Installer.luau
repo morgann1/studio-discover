@@ -17,7 +17,9 @@ local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { 
 	local reachable: { [string]: true } = {}
 
 	local function extractPackageId(source: string): string?
-		return source:match('_Index%["([^"]+)"%]')
+		-- Top-level alias: require(script.Parent._Index["scope_name@version"][...])
+		-- Dep link:        require(script.Parent.Parent["scope_name@version"][...])
+		return source:match('%["([^"]+@[^"]+)"%]')
 	end
 
 	local function visit(packageId: string)
