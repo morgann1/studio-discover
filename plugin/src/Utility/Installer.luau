@@ -291,6 +291,11 @@ function Installer.install(
 
 	for _, child in indexFolder:GetChildren() do
 		if child.Name ~= packageId and string.sub(child.Name, 1, #packagePrefix) == packagePrefix then
+			for _, link in packagesFolder:GetChildren() do
+				if link:IsA("ModuleScript") and string.find(link.Source, child.Name, 1, true) then
+					link:Destroy()
+				end
+			end
 			child:Destroy()
 		end
 	end
