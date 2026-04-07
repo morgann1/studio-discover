@@ -102,6 +102,7 @@ local function Settings()
 				LayoutOrder = nextContentOrder(),
 			}),
 			NamingConvention = e(Dropdown.Root, {
+				label = "",
 				size = InputSize.Small,
 				width = UDim.new(1, 0),
 				value = current,
