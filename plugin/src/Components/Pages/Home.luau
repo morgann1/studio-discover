@@ -10,7 +10,7 @@ local WallyAPI = require(Discover.Src.Utility.WallyAPI)
 
 local View = Foundation.View
 local Text = Foundation.Text
-local SearchInput = Foundation.SearchInput
+local TextInput = Foundation.TextInput
 local ScrollView = Foundation.ScrollView
 local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
@@ -18,8 +18,6 @@ local Loading = Foundation.Loading
 local Empty = Foundation.Empty
 
 local InputSize = Foundation.Enums.InputSize
-local InputVariant = Foundation.Enums.InputVariant
-local SearchInputShape = Foundation.Enums.SearchInputShape
 local ButtonVariant = Foundation.Enums.ButtonVariant
 local IconSize = Foundation.Enums.IconSize
 local Visibility = Foundation.Enums.Visibility
@@ -198,11 +196,11 @@ local function Home()
 				PaddingTop = UDim.new(0, 6),
 				PaddingBottom = UDim.new(0, 6),
 			}),
-			Search = e(SearchInput, {
+			Search = e(TextInput, {
 				text = searchText,
+				placeholder = "Search packages",
+				leadingIcon = "icons/common/search",
 				size = InputSize.Medium,
-				variant = InputVariant.Standard,
-				shape = SearchInputShape.Rounded,
 				width = UDim.new(1, -44),
 				onChanged = onSearchChanged,
 				LayoutOrder = 1,
