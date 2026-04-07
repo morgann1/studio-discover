@@ -9,3 +9,4 @@ private = true
 Sift = "csqrl/sift@0.0.11"
 React = "jsdotlua/react@17.2.1"
 ReactRoblox = "jsdotlua/react-roblox@17.2.1"
+Charm = "littensy/charm@0.10.0"

@@ -7,6 +7,10 @@ export type NamingConvention = "PascalCase" | "Normal"
 
 export type SettingsData = {
 	namingConvention: NamingConvention,
+	-- User-defined display name overrides, keyed by `scope/name` (lowercase).
+	-- These take precedence over both the curated overrides table and the
+	-- naming convention transform.
+	nameOverrides: { [string]: string },
 }
 
 export type SettingsContext = {
@@ -16,6 +20,7 @@ export type SettingsContext = {
 
 local DEFAULT_SETTINGS: SettingsData = {
 	namingConvention = "Normal",
+	nameOverrides = {},
 }
 
 local Context = React.createContext(nil :: SettingsContext?)
@@ -83,15 +88,68 @@ local function useSettings(): SettingsContext
 	return ctx
 end
 
+-- Hand-curated PascalCase overrides for popular packages whose lowercase
+-- Wally name can't be reliably segmented (e.g. "goodsignal" -> "GoodSignal").
+-- Keys must be lowercase. Add entries as you discover them.
+local PASCAL_OVERRIDES: { [string]: string } = {
+	goodsignal = "GoodSignal",
+	roactrouter = "RoactRouter",
+	roactrodux = "RoactRodux",
+	roactnavigation = "RoactNavigation",
+	testez = "TestEZ",
+	wally = "Wally",
+}
+
 local function toPascalCase(str: string): string
 	return (str:gsub("(%a)([%w]*)", function(first, rest)
 		return first:upper() .. rest
 	end):gsub("[-_]+", ""))
 end
 
-local function formatPackageName(name: string, convention: NamingConvention): string
+--[[
+	Derive a PascalCase display name. Resolution order:
+	1. `hint`, if provided and it matches `name` case-insensitively (after
+	   stripping separators). This lets callers pass an upstream-canonical
+	   name like a GitHub repository segment.
+	2. The hand-curated overrides table.
+	3. Mechanical first-letter capitalization (handles `foo-bar`/`foo_bar`).
+]]
+local function toPascalCaseWithHint(name: string, hint: string?): string
+	if hint and hint ~= "" then
+		local normalizedName = string.lower((string.gsub(name, "[-_]+", "")))
+		local normalizedHint = string.lower((string.gsub(hint, "[-_]+", "")))
+		if normalizedName == normalizedHint then
+			return (string.gsub(hint, "[-_]+", ""))
+		end
+	end
+
+	local override = PASCAL_OVERRIDES[string.lower(name)]
+	if override then
+		return override
+	end
+
+	return toPascalCase(name)
+end
+
+export type FormatOptions = {
+	hint: string?,
+	scope: string?,
+	overrides: { [string]: string }?,
+}
+
+local function formatPackageName(name: string, convention: NamingConvention, options: FormatOptions?): string
+	-- User overrides win over everything else, including the naming
+	-- convention setting. They are an explicit "I want this name".
+	if options and options.overrides and options.scope then
+		local key = string.lower(`{options.scope}/{name}`)
+		local override = options.overrides[key]
+		if override and override ~= "" then
+			return override
+		end
+	end
+
 	if convention == "PascalCase" then
-		return toPascalCase(name)
+		return toPascalCaseWithHint(name, options and options.hint)
 	else
 		return name
 	end

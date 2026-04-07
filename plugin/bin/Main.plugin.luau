@@ -5,7 +5,7 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 local ReactRoblox = require(Packages.ReactRoblox)
 
-local App = require(Discover.Src.Components.App)
+local App = require(Discover.Src.App)
 
 local e = React.createElement
 

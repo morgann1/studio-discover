@@ -4,12 +4,14 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
-local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
-local Installer = require(Discover.Src.Utility.Installer)
+local InstalledRow = require(script.InstalledRow)
+local InstalledState = require(Discover.Src.Installer.InstalledStore)
+local Installer = require(Discover.Src.Installer.Installer)
 local Navigation = require(Discover.Src.Navigation)
-local ReactHelpers = require(Discover.Src.Utility.React)
+local ReactHelpers = require(Discover.Src.Common.React)
 local SettingsModule = require(Discover.Src.Settings)
-local WallyAPI = require(Discover.Src.Utility.WallyAPI)
+local WallyAPI = require(Discover.Src.Wally.Api)
+local useAtom = require(Discover.Src.Common.useAtom)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -25,104 +27,13 @@ local Visibility = Foundation.Enums.Visibility
 
 local e = React.createElement
 
-local function InstalledRow(props: {
-	scope: string,
-	name: string,
-	version: string,
-	realm: string,
-	latestVersion: string?,
-	onOpen: () -> (),
-	onUpdate: (() -> ())?,
-	onUninstall: () -> (),
-	LayoutOrder: number,
-})
-	local updateAvailable = props.latestVersion ~= nil and props.latestVersion ~= props.version
-	local metaText = `v{props.version}  •  {props.realm}`
-	if updateAvailable then
-		metaText ..= `  •  update to v{props.latestVersion}`
-	end
-
-	return e(View, {
-		Size = UDim2.new(1, 0, 0, 56),
-		LayoutOrder = props.LayoutOrder,
-	}, {
-		RowLayout = e("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-			Padding = UDim.new(0, 6),
-		}),
-		Padding = e("UIPadding", {
-			PaddingLeft = UDim.new(0, 12),
-			PaddingRight = UDim.new(0, 12),
-		}),
-
-		Info = e("Frame", {
-			Size = UDim2.new(1, if updateAvailable then -220 else -160, 1, 0),
-			BackgroundTransparency = 1,
-			LayoutOrder = 1,
-		}, {
-			InfoLayout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = UDim.new(0, 2),
-			}),
-			Title = e(Text, {
-				Text = `{props.scope}/{props.name}`,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				tag = "text-label-medium content-emphasis text-truncate-end text-align-x-left",
-				LayoutOrder = 1,
-			}),
-			Meta = e(Text, {
-				Text = metaText,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				tag = "text-caption-small text-align-x-left",
-				LayoutOrder = 2,
-			}),
-		}),
-
-		Open = e(Button, {
-			text = "Open",
-			variant = ButtonVariant.Standard,
-			size = InputSize.Small,
-			onActivated = props.onOpen,
-			LayoutOrder = 2,
-		}),
-
-		Update = if updateAvailable and props.onUpdate
-			then e(Button, {
-				text = "Update",
-				variant = ButtonVariant.Emphasis,
-				size = InputSize.Small,
-				onActivated = props.onUpdate,
-				LayoutOrder = 3,
-			})
-			else nil,
-
-		Uninstall = e(Button, {
-			text = "Uninstall",
-			variant = ButtonVariant.Utility,
-			size = InputSize.Small,
-			onActivated = props.onUninstall,
-			LayoutOrder = 4,
-		}),
-	})
-end
-
 local function Manage()
 	local nav = Navigation.useNavigation()
 	local settingsCtx = SettingsModule.useSettings()
-	local refreshKey, setRefreshKey = React.useState(0)
+	local installed = useAtom(InstalledState.list)
 	local latestVersions, setLatestVersions = React.useState({} :: { [string]: string })
 	local pendingUninstall: { scope: string, name: string }?, setPendingUninstall =
 		React.useState(nil :: { scope: string, name: string }?)
-
-	local installed = React.useMemo(function()
-		return InstalledPackages.list()
-	end, { refreshKey })
 
 	-- Fetch latest version for each installed package to detect updates
 	React.useEffect(function()
@@ -153,9 +64,7 @@ local function Manage()
 	end, { nav })
 
 	local function refresh()
-		setRefreshKey(function(k)
-			return k + 1
-		end)
+		InstalledState.refresh()
 	end
 
 	local rows = {}
@@ -181,7 +90,11 @@ local function Manage()
 			onUpdate = if latest and latest ~= pkg.version
 				then function()
 					task.spawn(function()
-						local alias = SettingsModule.formatPackageName(pkg.name, settingsCtx.settings.namingConvention)
+						local alias =
+							SettingsModule.formatPackageName(pkg.name, settingsCtx.settings.namingConvention, {
+								scope = pkg.scope,
+								overrides = settingsCtx.settings.nameOverrides,
+							})
 						local ok, err = Installer.install(pkg.scope, pkg.name, latest, alias, pkg.realm)
 						if not ok then
 							warn("[Discover] Update failed:", err)
@@ -262,7 +175,7 @@ local function Manage()
 			else nil,
 
 		TopBar = e(View, {
-			Size = UDim2.new(1, 0, 0, 48),
+			Size = UDim2.new(1, 0, 0, 56),
 			LayoutOrder = 1,
 		}, {
 			RowLayout = e("UIListLayout", {
@@ -274,8 +187,8 @@ local function Manage()
 			Padding = e("UIPadding", {
 				PaddingLeft = UDim.new(0, 8),
 				PaddingRight = UDim.new(0, 8),
-				PaddingTop = UDim.new(0, 6),
-				PaddingBottom = UDim.new(0, 6),
+				PaddingTop = UDim.new(0, 8),
+				PaddingBottom = UDim.new(0, 8),
 			}),
 			Back = e(IconButton, {
 				icon = Foundation.Enums.IconName.ChevronLargeLeft,
@@ -297,7 +210,7 @@ local function Manage()
 		}),
 
 		Content = e("Frame", {
-			Size = UDim2.new(1, 0, 1, -50),
+			Size = UDim2.new(1, 0, 1, -58),
 			BackgroundTransparency = 1,
 			LayoutOrder = 3,
 		}, {

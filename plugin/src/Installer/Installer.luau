@@ -1,13 +1,13 @@
 local HttpService = game:GetService("HttpService")
 
 local Discover = script:FindFirstAncestor("Discover")
-local zzlib = require(Discover.Src.Utility.zzlib)
+local zzlib = require(Discover.Src.Installer.zzlib)
 
 local WALLY_CONTENTS_API = "https://api.wally.run/v1/package-contents/"
 
-local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
-local PackageTypes = require(Discover.Src.Utility.PackageTypes)
-local WallyAPI = require(Discover.Src.Utility.WallyAPI)
+local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
+local PackageTypes = require(Discover.Src.Common.PackageTypes)
+local WallyAPI = require(Discover.Src.Wally.Api)
 
 local Installer = {}
 

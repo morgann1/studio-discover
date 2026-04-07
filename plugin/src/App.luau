@@ -4,13 +4,12 @@ local Packages = Discover.Packages
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local SearchModule = require(Discover.Src.Search)
 local SettingsModule = require(Discover.Src.Settings)
 
-local Home = require(Discover.Src.Components.Pages.Home)
-local Manage = require(Discover.Src.Components.Pages.Manage)
-local Package = require(Discover.Src.Components.Pages.Package)
-local Settings = require(Discover.Src.Components.Pages.Settings)
+local Home = require(Discover.Src.Pages.Home)
+local Manage = require(Discover.Src.Pages.Manage)
+local Package = require(Discover.Src.Pages.Package)
+local Settings = require(Discover.Src.Pages.Settings)
 
 local e = React.createElement
 
@@ -44,10 +43,8 @@ end
 
 local function App(props: { plugin: Plugin? })
 	return e(SettingsModule.SettingsProvider, { plugin = props.plugin }, {
-		Search = e(SearchModule.SearchProvider, nil, {
-			Nav = e(Navigation.NavigationProvider, nil, {
-				Router = e(PageRouter),
-			}),
+		Nav = e(Navigation.NavigationProvider, nil, {
+			Router = e(PageRouter),
 		}),
 	})
 end

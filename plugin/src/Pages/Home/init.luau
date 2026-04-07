@@ -4,13 +4,15 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
-local InstalledPackages = require(Discover.Src.Utility.InstalledPackages)
+local InstalledState = require(Discover.Src.Installer.InstalledStore)
+local Installer = require(Discover.Src.Installer.Installer)
 local Navigation = require(Discover.Src.Navigation)
-local PackageCard = require(Discover.Src.Components.PackageCard)
-local ReactHelpers = require(Discover.Src.Utility.React)
-local SearchModule = require(Discover.Src.Search)
+local PackageCard = require(Discover.Src.Common.PackageCard)
+local ReactHelpers = require(Discover.Src.Common.React)
+local SearchState = require(Discover.Src.Wally.SearchStore)
 local SettingsModule = require(Discover.Src.Settings)
-local WallyAPI = require(Discover.Src.Utility.WallyAPI)
+local useAtom = require(Discover.Src.Common.useAtom)
+local useWallyStatusMessage = require(Discover.Src.Wally.useWallyStatus)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -31,106 +33,33 @@ local e = React.createElement
 
 local function Home()
 	local nav = Navigation.useNavigation()
-	local search = SearchModule.useSearch()
-	local searchText = search.state.text
-	local results = search.state.results
-	local isLoading = search.state.isLoading
-	local hasSearched = search.state.hasSearched
-	local searchError = search.state.error
+	local results = useAtom(SearchState.results)
+	local isLoading = useAtom(SearchState.isLoading)
+	local hasSearched = useAtom(SearchState.hasSearched)
+	local searchError = useAtom(SearchState.error)
+	local installedMap = useAtom(InstalledState.map)
 
-	local searchVersion = React.useRef(0)
-	local debounceToken = React.useRef(0)
+	-- Input value lives locally so typing doesn't re-render the (potentially
+	-- huge) results list on every keystroke. We only push to the shared
+	-- search atom on commit (Enter / focus lost).
+	local searchText, setSearchText = React.useState(function()
+		return SearchState.text()
+	end)
+
+	-- A ref to settings, refreshed each render, so the install callback below
+	-- doesn't need settings in its useCallback deps (which would invalidate
+	-- it on every settings change and bust card memoization).
+	local settingsCtx = SettingsModule.useSettings()
+	local settingsRef = React.useRef(settingsCtx)
+	settingsRef.current = settingsCtx
 
 	local onSearchChanged = React.useCallback(function(text: string)
-		if text == "" then
-			search.setState({
-				text = "",
-				results = {},
-				hasSearched = false,
-				isLoading = false,
-				error = nil,
-			})
-			searchVersion.current += 1
-			debounceToken.current += 1
-			return
-		end
+		setSearchText(text)
+	end, {})
 
-		search.setState({
-			text = text,
-			isLoading = true,
-			hasSearched = true,
-			error = nil,
-		})
-
-		searchVersion.current += 1
-		local thisVersion = searchVersion.current
-		debounceToken.current += 1
-		local thisDebounce = debounceToken.current
-
-		task.delay(0.3, function()
-			if debounceToken.current ~= thisDebounce then
-				return
-			end
-			local data, err = WallyAPI.search(text)
-
-			if searchVersion.current ~= thisVersion then
-				return
-			end
-
-			if not data then
-				warn("[Discover] Search failed:", err)
-				search.setState({
-					isLoading = false,
-					results = {},
-					error = tostring(err) or "Couldn't reach the Wally registry.",
-				})
-				return
-			end
-
-			search.setState({
-				isLoading = false,
-				results = data,
-			})
-
-			local pending = #data
-			if pending == 0 then
-				return
-			end
-
-			for _, pkg in data do
-				task.spawn(function()
-					local meta = WallyAPI.metadata(pkg.scope, pkg.name)
-					if searchVersion.current ~= thisVersion then
-						return
-					end
-					if meta and meta.versions and meta.versions[1] then
-						local latest = meta.versions[1]
-						if latest.package then
-							pkg.description = latest.package.description
-							pkg.latestVersion = latest.package.version
-							pkg.realm = latest.package.realm
-						end
-						local depCount = 0
-						if latest.dependencies then
-							for _ in latest.dependencies do
-								depCount += 1
-							end
-						end
-						if latest["server-dependencies"] then
-							for _ in latest["server-dependencies"] do
-								depCount += 1
-							end
-						end
-						pkg.depCount = depCount
-					end
-					pending -= 1
-					if pending == 0 and searchVersion.current == thisVersion then
-						search.setState({ results = table.clone(data) })
-					end
-				end)
-			end
-		end)
-	end, { search })
+	local onSearchCommit = React.useCallback(function()
+		SearchState.run(searchText)
+	end, { searchText })
 
 	local onSettingsPressed = React.useCallback(function()
 		nav.push("Settings")
@@ -140,11 +69,27 @@ local function Home()
 		nav.push("Manage")
 	end, { nav })
 
-	local settingsCtx = SettingsModule.useSettings()
+	local wallyWaitMessage = useWallyStatusMessage()
 
-	local installedMap = React.useMemo(function()
-		return InstalledPackages.map()
-	end, { results })
+	-- Stable callbacks shared across all cards so React.memo can bail out.
+	local onCardSelect = React.useCallback(function(scope: string, rawName: string)
+		nav.push("Package", { scope = scope, name = rawName })
+	end, { nav })
+
+	local onCardInstall = React.useCallback(function(scope: string, rawName: string, version: string)
+		task.spawn(function()
+			local ctx = settingsRef.current
+			local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
+				scope = scope,
+				overrides = ctx.settings.nameOverrides,
+			})
+			local ok, err = Installer.install(scope, rawName, version, alias, "shared")
+			if not ok then
+				warn("[Discover] Install failed:", err)
+			end
+			InstalledState.refresh()
+		end)
+	end, {})
 
 	local packageCards = {}
 	local cardKey = ReactHelpers.createUniqueKey()
@@ -152,24 +97,27 @@ local function Home()
 	for _, pkg in results do
 		local scope = pkg.scope or ""
 		local rawName = pkg.name or ""
-		local displayName = SettingsModule.formatPackageName(rawName, settingsCtx.settings.namingConvention)
+		local displayName = SettingsModule.formatPackageName(rawName, settingsCtx.settings.namingConvention, {
+			scope = scope,
+			overrides = settingsCtx.settings.nameOverrides,
+		})
 		local desc = pkg.description
 		if not desc or desc == "" then
 			desc = `{displayName} has no provided description.`
 		end
 
+		local pkgVersion = pkg.latestVersion
 		packageCards[cardKey(`{scope}/{rawName}`)] = e(PackageCard, {
 			name = rawName,
 			scope = scope,
 			description = desc,
-			version = pkg.latestVersion,
+			version = pkgVersion,
 			realm = pkg.realm,
 			depCount = pkg.depCount,
 			isInstalled = installedMap[`{scope}/{rawName}`] ~= nil,
 			LayoutOrder = nextCardOrder(),
-			onActivated = function()
-				nav.push("Package", { scope = scope, name = rawName })
-			end,
+			onSelect = onCardSelect,
+			onInstall = onCardInstall,
 		})
 		packageCards[cardKey(`divider_{scope}/{rawName}`)] = e(Divider, {
 			LayoutOrder = nextCardOrder(),
@@ -205,6 +153,15 @@ local function Home()
 				PaddingTop = UDim.new(0, 12),
 			}),
 		}
+		if wallyWaitMessage then
+			skeletonChildren.WaitMessage = e(Text, {
+				Text = wallyWaitMessage,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-caption-small text-align-x-left",
+				LayoutOrder = 0,
+			})
+		end
 		for i = 1, 5 do
 			skeletonChildren[`skeleton_{i}`] = e(Skeleton, {
 				Size = UDim2.new(1, 0, 0, 64),
@@ -232,25 +189,59 @@ local function Home()
 				FillDirection = Enum.FillDirection.Vertical,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
-			Header = e(Text, {
-				Text = resultCount,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				tag = "text-caption-small padding-small",
-				LayoutOrder = 0,
-			}),
 		}
 		for key, card in packageCards do
 			scrollChildren[key] = card
 		end
 
-		content = e(ScrollView, {
+		local sectionOrder = ReactHelpers.createNextOrder()
+		content = e("Frame", {
 			Size = UDim2.fromScale(1, 1),
-			scroll = {
-				scrollBarVisibility = Visibility.Auto,
-				ScrollingDirection = Enum.ScrollingDirection.Y,
-			},
-		}, scrollChildren)
+			BackgroundTransparency = 1,
+		}, {
+			SectionLayout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+			Header = e(View, {
+				Size = UDim2.new(1, 0, 0, 28),
+				LayoutOrder = sectionOrder(),
+				tag = "bg-surface-200",
+			}, {
+				Padding = e("UIPadding", {
+					PaddingLeft = UDim.new(0, 12),
+					PaddingRight = UDim.new(0, 12),
+				}),
+				HeaderLayout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+				Label = e(Text, {
+					Text = resultCount,
+					AutomaticSize = Enum.AutomaticSize.XY,
+					tag = "text-caption-small content-muted",
+				}),
+			}),
+			HeaderDivider = e(Divider, {
+				LayoutOrder = sectionOrder(),
+			}),
+			ListWrap = e("Frame", {
+				Size = UDim2.new(1, 0, 1, -29),
+				BackgroundTransparency = 1,
+				LayoutOrder = sectionOrder(),
+			}, {
+				List = e(ScrollView, {
+					Size = UDim2.fromScale(1, 1),
+					scroll = {
+						scrollBarVisibility = Visibility.Auto,
+						ScrollingDirection = Enum.ScrollingDirection.Y,
+						AutomaticCanvasSize = Enum.AutomaticSize.Y,
+						CanvasSize = UDim2.new(),
+					},
+				}, scrollChildren),
+			}),
+		})
 	else
 		content = e(View, {
 			Size = UDim2.fromScale(1, 1),
@@ -267,7 +258,7 @@ local function Home()
 	local nextTopBarOrder = ReactHelpers.createNextOrder()
 	return e(React.Fragment, nil, {
 		TopBar = e(View, {
-			Size = UDim2.new(1, 0, 0, 48),
+			Size = UDim2.new(1, 0, 0, 56),
 			LayoutOrder = nextOrder(),
 		}, {
 			RowLayout = e("UIListLayout", {
@@ -279,11 +270,12 @@ local function Home()
 			Padding = e("UIPadding", {
 				PaddingLeft = UDim.new(0, 8),
 				PaddingRight = UDim.new(0, 8),
-				PaddingTop = UDim.new(0, 6),
-				PaddingBottom = UDim.new(0, 6),
+				PaddingTop = UDim.new(0, 8),
+				PaddingBottom = UDim.new(0, 8),
 			}),
 			SearchWrap = e("Frame", {
-				Size = UDim2.fromScale(1, 1),
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				LayoutOrder = nextTopBarOrder(),
 			}, {
@@ -298,6 +290,8 @@ local function Home()
 					size = InputSize.Medium,
 					width = UDim.new(1, 0),
 					onChanged = onSearchChanged,
+					onReturnPressed = onSearchCommit,
+					onFocusLost = onSearchCommit,
 				}),
 			}),
 			Manage = e(IconButton, {
@@ -321,7 +315,7 @@ local function Home()
 		}),
 
 		Content = e("Frame", {
-			Size = UDim2.new(1, 0, 1, -50),
+			Size = UDim2.new(1, 0, 1, -58),
 			BackgroundTransparency = 1,
 			LayoutOrder = nextOrder(),
 		}, {
