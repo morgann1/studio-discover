@@ -143,7 +143,7 @@ local function Home()
 		end
 
 		packageCards[cardKey(`{scope}/{rawName}`)] = e(PackageCard, {
-			name = displayName,
+			name = rawName,
 			scope = scope,
 			description = desc,
 			version = pkg.latestVersion,
