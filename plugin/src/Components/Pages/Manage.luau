@@ -229,9 +229,11 @@ local function Manage()
 					setPendingUninstall(nil)
 				end,
 			}, {
-				DialogTitle = e(Dialog.Title, nil, "Uninstall package?"),
+				DialogTitle = e(Dialog.Title, { text = "Uninstall package?" }),
 				DialogContent = e(Dialog.Content, nil, {
-					Body = e(Dialog.Text, nil, `This will remove {pendingUninstall.scope}/{pendingUninstall.name} and any dependencies that are no longer needed.`),
+					Body = e(Dialog.Text, {
+						Text = `This will remove {pendingUninstall.scope}/{pendingUninstall.name} and any dependencies that are no longer needed.`,
+					}),
 				}),
 				DialogActions = e(Dialog.Actions, {
 					actions = {
