@@ -1,6 +1,8 @@
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
+local HttpService = game:GetService("HttpService")
+
 local React = require(Packages.React)
 
 export type Screen = {
@@ -25,13 +27,7 @@ local BASE_SCREEN: Screen = {
 local Context = React.createContext(nil :: NavigationContext?)
 
 local function generateId(): string
-	local chars = "abcdefghijklmnopqrstuvwxyz0123456789"
-	local result = {}
-	for _ = 1, 12 do
-		local i = math.random(1, #chars)
-		table.insert(result, string.sub(chars, i, i))
-	end
-	return table.concat(result)
+	return HttpService:GenerateGUID(false)
 end
 
 local function getScreen(stack: { Screen }): Screen
