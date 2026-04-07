@@ -156,8 +156,10 @@ function install.run(options_: Options?): boolean
 		print(color.bold(color.white("Successfully applied package patches!")))
 	end
 
-	-- Install Roblox packages to the OS temp directory and then extract Foundation
-	local robloxPackagesPath = `/tmp/roblox-packages`
+	-- Install Roblox packages to a temp directory and then extract Foundation.
+	-- Use platform temp dir (TEMP on Windows, TMPDIR on Unix), falling back to /tmp.
+	local tempBase = process.env.TEMP or process.env.TMPDIR or "/tmp"
+	local robloxPackagesPath = `{tempBase}/roblox-packages`
 	local robloxPackagesArgs = {
 		"install",
 		robloxPackagesPath,

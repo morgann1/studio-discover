@@ -54,7 +54,7 @@ function build.run(options_: Options?)
 	print()
 
 	local buildResult = rojo.build({
-		projectFile = "plugin/default.project.jsonc",
+		projectFile = "plugin/default.project.json",
 		output = output,
 		stdio = "inherit",
 	})
