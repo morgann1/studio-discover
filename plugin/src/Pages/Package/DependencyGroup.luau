@@ -21,7 +21,7 @@ export type Dependency = {
 }
 
 type DependencyGroupProps = {
-	label: string,
+	label: string?,
 	deps: { Dependency },
 	onSelect: (scope: string, name: string) -> (),
 	LayoutOrder: number,
@@ -44,16 +44,19 @@ local function DependencyGroup(props: DependencyGroupProps)
 		Layout = e("UIListLayout", {
 			FillDirection = Enum.FillDirection.Vertical,
 			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 2),
+			Padding = UDim.new(0, 4),
 		}),
-		Header = e(Text, {
+	}
+
+	if props.label then
+		children.Header = e(Text, {
 			Text = `{props.label} ({#props.deps})`,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			Size = UDim2.fromScale(1, 0),
 			tag = "text-caption-small content-muted text-align-x-left",
 			LayoutOrder = nextOrder(),
-		}),
-	}
+		})
+	end
 
 	for _, dep in props.deps do
 		local depScope, depName = parseDepPath(tostring(dep.version))

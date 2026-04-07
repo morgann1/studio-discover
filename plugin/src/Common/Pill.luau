@@ -26,9 +26,7 @@ local function Pill(props: PillProps)
 		Label = e(Text, {
 			Text = props.text,
 			AutomaticSize = Enum.AutomaticSize.XY,
-			tag = if props.emphasis
-				then "text-caption-small content-emphasis"
-				else "text-caption-small content-muted",
+			tag = if props.emphasis then "text-caption-small content-emphasis" else "text-caption-small content-muted",
 		}),
 	})
 end

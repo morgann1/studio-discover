@@ -15,11 +15,11 @@ local useAtom = require(Discover.Src.Common.useAtom)
 
 local View = Foundation.View
 local Text = Foundation.Text
-local Button = Foundation.Button
 local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local ScrollView = Foundation.ScrollView
 local Dialog = Foundation.Dialog
+local Empty = Foundation.Empty
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
@@ -35,7 +35,9 @@ local function Manage()
 	local pendingUninstall: { scope: string, name: string }?, setPendingUninstall =
 		React.useState(nil :: { scope: string, name: string }?)
 
-	-- Fetch latest version for each installed package to detect updates
+	local settingsRef = React.useRef(settingsCtx)
+	settingsRef.current = settingsCtx
+
 	React.useEffect(function()
 		local cancelled = false
 		for _, pkg in installed do
@@ -63,15 +65,49 @@ local function Manage()
 		nav.pop()
 	end, { nav })
 
-	local function refresh()
-		InstalledState.refresh()
-	end
+	local onRowSelect = React.useCallback(function(scope: string, name: string)
+		nav.push("Package", { scope = scope, name = name })
+	end, { nav })
 
-	local rows = {}
-	rows.Layout = e("UIListLayout", {
-		FillDirection = Enum.FillDirection.Vertical,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-	})
+	local onRowUpdate = React.useCallback(function(scope: string, name: string)
+		local target = latestVersions[`{scope}/{name}`]
+		if not target then
+			return
+		end
+		local pkg
+		for _, candidate in installed do
+			if candidate.scope == scope and candidate.name == name then
+				pkg = candidate
+				break
+			end
+		end
+		if not pkg then
+			return
+		end
+		task.spawn(function()
+			local ctx = settingsRef.current
+			local alias = SettingsModule.formatPackageName(name, ctx.settings.namingConvention, {
+				scope = scope,
+				overrides = ctx.settings.nameOverrides,
+			})
+			local ok, err = Installer.install(scope, name, target, alias, pkg.realm)
+			if not ok then
+				warn("[Discover] Update failed:", err)
+			end
+			InstalledState.refresh()
+		end)
+	end, { installed, latestVersions } :: { any })
+
+	local onRowUninstall = React.useCallback(function(scope: string, name: string)
+		setPendingUninstall({ scope = scope, name = name })
+	end, {})
+
+	local rows: { [string]: any } = {
+		Layout = e("UIListLayout", {
+			FillDirection = Enum.FillDirection.Vertical,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	}
 	local rowKey = ReactHelpers.createUniqueKey()
 	local nextRowOrder = ReactHelpers.createNextOrder()
 	for _, pkg in installed do
@@ -84,28 +120,9 @@ local function Manage()
 			realm = pkg.realm,
 			latestVersion = latest,
 			LayoutOrder = nextRowOrder(),
-			onOpen = function()
-				nav.push("Package", { scope = pkg.scope, name = pkg.name })
-			end,
-			onUpdate = if latest and latest ~= pkg.version
-				then function()
-					task.spawn(function()
-						local alias =
-							SettingsModule.formatPackageName(pkg.name, settingsCtx.settings.namingConvention, {
-								scope = pkg.scope,
-								overrides = settingsCtx.settings.nameOverrides,
-							})
-						local ok, err = Installer.install(pkg.scope, pkg.name, latest, alias, pkg.realm)
-						if not ok then
-							warn("[Discover] Update failed:", err)
-						end
-						refresh()
-					end)
-				end
-				else nil,
-			onUninstall = function()
-				setPendingUninstall({ scope = pkg.scope, name = pkg.name })
-			end,
+			onSelect = onRowSelect,
+			onUpdate = onRowUpdate,
+			onUninstall = onRowUninstall,
 		})
 		rows[rowKey(`divider_{key}`)] = e(Divider, { LayoutOrder = nextRowOrder() })
 	end
@@ -116,19 +133,73 @@ local function Manage()
 			Size = UDim2.fromScale(1, 1),
 			tag = "align-x-center align-y-center",
 		}, {
-			Empty = e(Text, {
+			EmptyState = e(Empty, {
+				icon = "icons/common/search",
+			}),
+			Layout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				Padding = UDim.new(0, 8),
+			}),
+			Label = e(Text, {
 				Text = "No packages installed",
-				tag = "text-label-medium",
+				AutomaticSize = Enum.AutomaticSize.XY,
+				tag = "text-label-medium content-muted",
+				LayoutOrder = 2,
 			}),
 		})
 	else
-		content = e(ScrollView, {
+		local installedCount = #installed .. " installed"
+		local sectionOrder = ReactHelpers.createNextOrder()
+		content = e("Frame", {
 			Size = UDim2.fromScale(1, 1),
-			scroll = {
-				scrollBarVisibility = Visibility.Auto,
-				ScrollingDirection = Enum.ScrollingDirection.Y,
-			},
-		}, rows)
+			BackgroundTransparency = 1,
+		}, {
+			SectionLayout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+			Header = e(View, {
+				Size = UDim2.new(1, 0, 0, 28),
+				LayoutOrder = sectionOrder(),
+				tag = "bg-surface-200",
+			}, {
+				Padding = e("UIPadding", {
+					PaddingLeft = UDim.new(0, 12),
+					PaddingRight = UDim.new(0, 12),
+				}),
+				HeaderLayout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+				Label = e(Text, {
+					Text = installedCount,
+					AutomaticSize = Enum.AutomaticSize.XY,
+					tag = "text-caption-small content-muted",
+				}),
+			}),
+			HeaderDivider = e(Divider, {
+				LayoutOrder = sectionOrder(),
+			}),
+			ListWrap = e("Frame", {
+				Size = UDim2.new(1, 0, 1, -29),
+				BackgroundTransparency = 1,
+				LayoutOrder = sectionOrder(),
+			}, {
+				List = e(ScrollView, {
+					Size = UDim2.fromScale(1, 1),
+					scroll = {
+						scrollBarVisibility = Visibility.Auto,
+						ScrollingDirection = Enum.ScrollingDirection.Y,
+						AutomaticCanvasSize = Enum.AutomaticSize.Y,
+						CanvasSize = UDim2.new(),
+					},
+				}, rows),
+			}),
+		})
 	end
 
 	return e(React.Fragment, nil, {
@@ -166,7 +237,7 @@ local function Manage()
 									end
 								end
 								setPendingUninstall(nil)
-								refresh()
+								InstalledState.refresh()
 							end,
 						},
 					},
@@ -198,7 +269,7 @@ local function Manage()
 				LayoutOrder = 1,
 			}),
 			Title = e(Text, {
-				Text = "Installed Packages",
+				Text = "Installed",
 				AutomaticSize = Enum.AutomaticSize.XY,
 				tag = "text-label-medium content-emphasis",
 				LayoutOrder = 2,

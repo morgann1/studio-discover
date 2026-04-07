@@ -58,6 +58,7 @@ local function PackageCard(props: PackageCardProps)
 			FillDirection = Enum.FillDirection.Horizontal,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Wraps = true,
 			Padding = UDim.new(0, 6),
 		}),
 	}

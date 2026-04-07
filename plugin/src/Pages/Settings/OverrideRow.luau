@@ -4,12 +4,9 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
-local View = Foundation.View
-local Text = Foundation.Text
-local IconButton = Foundation.IconButton
+local Chip = Foundation.Chip
 
-local InputSize = Foundation.Enums.InputSize
-local ButtonVariant = Foundation.Enums.ButtonVariant
+local ChipSize = Foundation.Enums.ChipSize
 
 local e = React.createElement
 
@@ -28,30 +25,15 @@ local function OverrideRow(props: OverrideRowProps)
 		onRemove(keyName)
 	end, { keyName, onRemove } :: { any })
 
-	return e(View, {
-		Size = UDim2.new(1, 0, 0, 24),
-		LayoutOrder = props.LayoutOrder,
-	}, {
-		RowLayout = e("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-			Padding = UDim.new(0, 6),
-		}),
-		Label = e(Text, {
-			Text = `{keyName} → {props.value}`,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.new(1, -32, 0, 0),
-			tag = "text-caption-small text-align-x-left text-truncate-end",
-			LayoutOrder = 1,
-		}),
-		Remove = e(IconButton, {
-			icon = Foundation.Enums.IconName.Close,
-			size = InputSize.Small,
-			variant = ButtonVariant.Standard,
+	return e(Chip, {
+		text = `{keyName} → {props.value}`,
+		size = ChipSize.Small,
+		trailing = {
+			iconName = "icons/navigation/close_small",
 			onActivated = handleRemove,
-			LayoutOrder = 2,
-		}),
+		},
+		onActivated = handleRemove,
+		LayoutOrder = props.LayoutOrder,
 	})
 end
 

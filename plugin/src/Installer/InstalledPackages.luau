@@ -108,4 +108,23 @@ function InstalledPackages.collectDependencies(indexFolder: Folder, packageId: s
 	return deps
 end
 
+function InstalledPackages.findDependents(scope: string, name: string): { InstalledPackage }
+	local dependents = {}
+	local targetPrefix = `{scope}_{name}@`
+	for _, pkg in InstalledPackages.list() do
+		if pkg.scope == scope and pkg.name == name then
+			continue
+		end
+		local root = pkg.indexFolder.Parent :: Folder
+		local deps = InstalledPackages.collectDependencies(root, pkg.packageId)
+		for depId in deps do
+			if string.sub(depId, 1, #targetPrefix) == targetPrefix then
+				table.insert(dependents, pkg)
+				break
+			end
+		end
+	end
+	return dependents
+end
+
 return InstalledPackages

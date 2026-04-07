@@ -5,6 +5,8 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local DependencyGroup = require(script.DependencyGroup)
+local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
+local SelectableText = require(Discover.Src.Common.SelectableText)
 local InstalledState = require(Discover.Src.Installer.InstalledStore)
 local Installer = require(Discover.Src.Installer.Installer)
 local LinkRow = require(Discover.Src.Common.LinkRow)
@@ -100,6 +102,10 @@ local function Package()
 	local installedMap = useAtom(InstalledState.map)
 	local installedEntry = installedMap[`{scope}/{rawName}`]
 
+	local dependents = React.useMemo(function()
+		return InstalledPackages.findDependents(scope, rawName)
+	end, { installedMap, scope, rawName } :: { any })
+
 	React.useEffect(function()
 		setInstallStatus("idle")
 		setInstallError(nil)
@@ -143,7 +149,7 @@ local function Package()
 		local installRealm = pkg.realm or "shared"
 		local alreadyInstalled = installedEntry ~= nil and installedEntry.version == selectedVersion
 		local authors = pkg.authors
-		local authorStr = authors and table.concat(authors, ", ") or "Unknown"
+		local authorStr = if authors and #authors > 0 then table.concat(authors, ", ") else scope
 		local repository = pkg.repository
 		local homepage = pkg.homepage
 
@@ -173,7 +179,7 @@ local function Package()
 			nav.push("Package", { scope = depScope, name = depName })
 		end
 
-		local function buildDepGroup(category: string, label: string, layoutOrder: number)
+		local function buildDepGroup(category: string, label: string?, layoutOrder: number)
 			local list = depGroups[category]
 			if #list == 0 then
 				return nil
@@ -338,8 +344,6 @@ local function Package()
 			end
 		end
 
-		-- Links section (repository + homepage)
-		local hasLinks = (repository and repository ~= "") or (homepage and homepage ~= "")
 		local linksChildren: { [string]: any } = {
 			Layout = e("UIListLayout", {
 				FillDirection = Enum.FillDirection.Vertical,
@@ -352,13 +356,42 @@ local function Package()
 			linkOrder += 1
 			return linkOrder
 		end
+		linksChildren.Wally = e(LinkRow, {
+			label = "Wally",
+			value = `https://wally.run/package/{scope}/{rawName}`,
+			LayoutOrder = nextLinkOrder(),
+		})
 		if repository and repository ~= "" then
 			linksChildren.Repository =
 				e(LinkRow, { label = "Repository", value = repository, LayoutOrder = nextLinkOrder() })
 		end
 		if homepage and homepage ~= "" then
-			linksChildren.Homepage =
-				e(LinkRow, { label = "Homepage", value = homepage, LayoutOrder = nextLinkOrder() })
+			linksChildren.Homepage = e(LinkRow, { label = "Homepage", value = homepage, LayoutOrder = nextLinkOrder() })
+		end
+
+		local snippetText = `{installAlias} = "{scope}/{rawName}@{version}"`
+
+		local dependentsChildren: { [string]: any } = {
+			Layout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 2),
+			}),
+		}
+		local dependentKey = ReactHelpers.createUniqueKey()
+		local nextDependentOrder = ReactHelpers.createNextOrder()
+		for _, dep in dependents do
+			local depScope = dep.scope
+			local depName = dep.name
+			dependentsChildren[dependentKey(`{depScope}/{depName}`)] = e(Button, {
+				text = `{depScope}/{depName}`,
+				variant = ButtonVariant.Link,
+				size = InputSize.Small,
+				LayoutOrder = nextDependentOrder(),
+				onActivated = function()
+					nav.push("Package", { scope = depScope, name = depName })
+				end,
+			})
 		end
 
 		content = e(ScrollView, {
@@ -420,7 +453,9 @@ local function Package()
 				}),
 				Install = e(Button, {
 					text = installButtonText,
-					variant = if installStatus == "installed" or installStatus == "partial" or alreadyInstalled
+					variant = if installStatus == "installed"
+							or installStatus == "partial"
+							or alreadyInstalled
 						then ButtonVariant.Standard
 						else ButtonVariant.Emphasis,
 					size = InputSize.Medium,
@@ -430,7 +465,17 @@ local function Package()
 				}),
 			}),
 
-			OlderVersionBanner = if not isLatestSelected and installStatus == "idle" and not alreadyInstalled
+			InstallHint = e(Text, {
+				Text = `Will install as {installAlias}`,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-caption-small content-muted text-align-x-left",
+				LayoutOrder = nextPageOrder(),
+			}),
+
+			OlderVersionBanner = if not isLatestSelected
+					and installStatus == "idle"
+					and not alreadyInstalled
 				then e(SystemBanner, {
 					severity = AlertSeverity.Warning,
 					title = "Installing an older version",
@@ -464,27 +509,87 @@ local function Package()
 				LayoutOrder = nextPageOrder(),
 			}, factsChildren),
 
-			LinksSection = if hasLinks
-				then e("Frame", {
+			Snippet = e(View, {
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				LayoutOrder = nextPageOrder(),
+				tag = "bg-surface-200 radius-small",
+			}, {
+				Padding = e("UIPadding", {
+					PaddingLeft = UDim.new(0, 16),
+					PaddingRight = UDim.new(0, 16),
+					PaddingTop = UDim.new(0, 16),
+					PaddingBottom = UDim.new(0, 16),
+				}),
+				Layout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Vertical,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UDim.new(0, 4),
+				}),
+				Label = e(Text, {
+					Text = "wally.toml",
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.fromScale(1, 0),
+					tag = "text-caption-small content-muted text-align-x-left",
+					LayoutOrder = 1,
+				}),
+				Code = e(SelectableText, {
+					text = snippetText,
+					emphasis = true,
+					LayoutOrder = 2,
+				}),
+			}),
+
+			LinksSection = e("Frame", {
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+				LayoutOrder = nextPageOrder(),
+			}, {
+				Layout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Vertical,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UDim.new(0, 8),
+				}),
+				Header = e(SectionHeader, { text = "Links", LayoutOrder = 1 }),
+				List = e("Frame", {
 					Size = UDim2.new(1, 0, 0, 0),
 					AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundTransparency = 1,
-					LayoutOrder = nextPageOrder(),
-				}, {
-					Layout = e("UIListLayout", {
-						FillDirection = Enum.FillDirection.Vertical,
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 8),
-					}),
-					Header = e(SectionHeader, { text = "Links", LayoutOrder = 1 }),
-					List = e("Frame", {
+					LayoutOrder = 2,
+				}, linksChildren),
+			}),
+
+			UsedBySection = e("Frame", {
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+				LayoutOrder = nextPageOrder(),
+			}, {
+				Layout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Vertical,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UDim.new(0, 8),
+				}),
+				Header = e(SectionHeader, {
+					text = #dependents > 0 and `Used by ({#dependents})` or "Used by",
+					LayoutOrder = 1,
+				}),
+				List = if #dependents > 0
+					then e("Frame", {
 						Size = UDim2.new(1, 0, 0, 0),
 						AutomaticSize = Enum.AutomaticSize.Y,
 						BackgroundTransparency = 1,
 						LayoutOrder = 2,
-					}, linksChildren),
-				})
-				else nil,
+					}, dependentsChildren)
+					else e(Text, {
+						Text = "Nothing installed depends on this yet.",
+						AutomaticSize = Enum.AutomaticSize.Y,
+						Size = UDim2.fromScale(1, 0),
+						tag = "text-caption-small content-muted text-align-x-left",
+						LayoutOrder = 2,
+					}),
+			}),
 
 			DepsSection = e("Frame", {
 				Size = UDim2.new(1, 0, 0, 0),
@@ -501,7 +606,7 @@ local function Package()
 					text = #allDeps > 0 and `Dependencies ({#allDeps})` or "No dependencies",
 					LayoutOrder = 1,
 				}),
-				Runtime = buildDepGroup("dependency", "Runtime", 2),
+				Runtime = buildDepGroup("dependency", nil, 2),
 				Server = buildDepGroup("server", "Server", 3),
 				Dev = buildDepGroup("dev", "Dev", 4),
 			}),
