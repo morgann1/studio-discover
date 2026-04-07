@@ -1,15 +1,42 @@
+--[[
+	Wally API client.
+
+	Per https://wally.run/policies the registry requires no more than
+	1 request per second. This module enforces that via a shared serial
+	queue: callers still get normal return values, but internally only
+	one request is in flight at a time and each request waits at least
+	MIN_INTERVAL seconds after the previous one started.
+]]
+
 local HttpService = game:GetService("HttpService")
 
 local WALLY_SEARCH_API = "https://api.wally.run/v1/package-search?query="
 local WALLY_METADATA_API = "https://api.wally.run/v1/package-metadata/"
 
 local CACHE_TTL = 300
+local MIN_INTERVAL = 1.05 -- seconds between requests (small buffer over 1/sec)
 
 local WallyAPI = {}
 
 local cache: { [string]: { data: any, time: number } } = {}
 
+-- Next clock time at which a new request may be sent. Each caller
+-- atomically reserves a slot and waits. Because Luau coroutines don't
+-- preempt, the reservation (before any yield) is effectively atomic.
+local nextSlotClock = 0
+
+local function acquireSlot()
+	local now = os.clock()
+	local mySlot = if nextSlotClock > now then nextSlotClock else now
+	nextSlotClock = mySlot + MIN_INTERVAL
+	local wait = mySlot - now
+	if wait > 0 then
+		task.wait(wait)
+	end
+end
+
 local function wallyGet(url: string)
+	acquireSlot()
 	local ok, result = pcall(function()
 		return HttpService:GetAsync(url)
 	end)
