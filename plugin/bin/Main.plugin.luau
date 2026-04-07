@@ -12,7 +12,7 @@ local e = React.createElement
 local toolbar = plugin:CreateToolbar("Discover")
 local button = toolbar:CreateButton("Discover", "Browse and install packages", "rbxassetid://6031360355")
 
-local widgetInfo = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 405, 492, 405, 492)
+local widgetInfo = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 405, 492, 280, 320)
 
 local widget = plugin:CreateDockWidgetPluginGuiAsync("DiscoverWidget", widgetInfo)
 widget.Title = "Discover"
