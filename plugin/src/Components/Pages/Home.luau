@@ -66,6 +66,14 @@ local function Home()
 				return
 			end
 
+			setIsLoading(false)
+			setResults(data)
+
+			local pending = #data
+			if pending == 0 then
+				return
+			end
+
 			for _, pkg in data do
 				task.spawn(function()
 					local meta = WallyAPI.metadata(pkg.scope, pkg.name)
@@ -78,14 +86,12 @@ local function Home()
 							pkg.description = latest.package.description
 						end
 					end
-					if searchVersion.current == thisVersion then
+					pending -= 1
+					if pending == 0 and searchVersion.current == thisVersion then
 						setResults(table.clone(data))
 					end
 				end)
 			end
-
-			setIsLoading(false)
-			setResults(data)
 		end)
 	end, {})
 
