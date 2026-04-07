@@ -139,23 +139,6 @@ function install.run(options_: Options?): boolean
 		print(color.bold(color.white("Successfully installed Wally packages!")))
 	end
 
-	-- Apply patches to Wally packages
-	if not quiet then
-		print(color.dim("Applying package patches..."))
-	end
-
-	local patchResult = applyPatches(quiet)
-	if not patchResult then
-		if not quiet then
-			print(color.bold(color.red("Failed to apply package patches")))
-		end
-		return false
-	end
-
-	if not quiet then
-		print(color.bold(color.white("Successfully applied package patches!")))
-	end
-
 	-- Install Roblox packages to a temp directory and then extract Foundation.
 	-- Use platform temp dir (TEMP on Windows, TMPDIR on Unix), falling back to /tmp.
 	local tempBase = process.env.TEMP or process.env.TMPDIR or "/tmp"
@@ -180,6 +163,23 @@ function install.run(options_: Options?): boolean
 
 	if not quiet then
 		print(color.bold(color.white("Successfully installed Foundation packages!")))
+	end
+
+	-- Apply patches after all packages (Wally + Foundation) are installed
+	if not quiet then
+		print(color.dim("Applying package patches..."))
+	end
+
+	local patchResult = applyPatches(quiet)
+	if not patchResult then
+		if not quiet then
+			print(color.bold(color.red("Failed to apply package patches")))
+		end
+		return false
+	end
+
+	if not quiet then
+		print(color.bold(color.white("Successfully applied package patches!")))
 	end
 
 	return true
