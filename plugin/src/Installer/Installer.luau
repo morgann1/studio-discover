@@ -324,6 +324,17 @@ function Installer.install(
 			onProgress(msg)
 		end
 	end
+	if not realm then
+		local meta = WallyAPI.metadata(scope, name)
+		if meta and meta.versions then
+			for _, vd in meta.versions do
+				if vd.package.version == version then
+					realm = vd.package.realm
+					break
+				end
+			end
+		end
+	end
 	local packagesFolder = Installer.getPackagesFolder(realm or "shared")
 	local indexFolder = packagesFolder:FindFirstChild("_Index")
 	if not indexFolder then
