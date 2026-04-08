@@ -249,7 +249,16 @@ local function buildTree(entries: { { path: string, content: string } }, package
 	return root
 end
 
-function Installer.downloadPackage(scope: string, name: string, version: string): (Folder?, string?)
+local function isTestFile(path: string): boolean
+	return string.match(path, "%.spec%.luau?$") ~= nil or string.match(path, "%.test%.luau?$") ~= nil
+end
+
+function Installer.downloadPackage(
+	scope: string,
+	name: string,
+	version: string,
+	skipTests: boolean?
+): (Folder?, string?)
 	local url = `{WALLY_CONTENTS_API}{scope}/{name}/{version}`
 
 	local ok, result = pcall(function()
@@ -274,6 +283,9 @@ function Installer.downloadPackage(scope: string, name: string, version: string)
 	local filesOk, filesErr = pcall(function()
 		for _, filename, _, _ in zzlib.files(result) do
 			if filename:sub(-1) ~= "/" then
+				if skipTests and isTestFile(filename) then
+					continue
+				end
 				local content = zzlib.unzip(result, filename)
 				table.insert(entries, { path = filename, content = content })
 			end
@@ -317,7 +329,8 @@ function Installer.install(
 	version: string,
 	alias: string,
 	realm: string?,
-	onProgress: ProgressCallback?
+	onProgress: ProgressCallback?,
+	skipTests: boolean?
 ): (boolean, string?, { string }?)
 	local function progress(msg: string)
 		if onProgress then
@@ -358,7 +371,7 @@ function Installer.install(
 		end
 	else
 		progress(`Downloading {scope}/{name}@{version}...`)
-		local tree, err = Installer.downloadPackage(scope, name, version)
+		local tree, err = Installer.downloadPackage(scope, name, version, skipTests)
 		if not tree then
 			return false, err
 		end
@@ -405,7 +418,18 @@ function Installer.install(
 
 	progress("Resolving dependencies...")
 	local failures = {}
-	Installer._installDeps(packagesFolder, indexFolder, pkgFolder, scope, name, version, realm, failures, progress)
+	Installer._installDeps(
+		packagesFolder,
+		indexFolder,
+		pkgFolder,
+		scope,
+		name,
+		version,
+		realm,
+		failures,
+		progress,
+		skipTests
+	)
 
 	-- GC: drop any _Index folders no longer reachable from a top-level alias.
 	-- This replaces the naive prefix-based delete that could orphan shared
@@ -432,7 +456,8 @@ function Installer._installDeps(
 	version: string,
 	realm: string?,
 	failures: { string },
-	progress: ((string) -> ())?
+	progress: ((string) -> ())?,
+	skipTests: boolean?
 )
 	local function report(msg: string)
 		if progress then
@@ -489,7 +514,7 @@ function Installer._installDeps(
 
 		if not indexFolder:FindFirstChild(depPackageId) then
 			report(`Installing {depScope}/{depName}@{depVersion}...`)
-			local depTree, depErr = Installer.downloadPackage(depScope, depName, depVersion)
+			local depTree, depErr = Installer.downloadPackage(depScope, depName, depVersion, skipTests)
 			if depTree then
 				local depPkgFolder = Instance.new("Folder")
 				depPkgFolder.Name = depPackageId
@@ -520,7 +545,8 @@ function Installer._installDeps(
 					depVersion,
 					realm,
 					failures,
-					progress
+					progress,
+					skipTests
 				)
 			else
 				table.insert(failures, `{depScope}/{depName}@{depVersion}: {depErr}`)

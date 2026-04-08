@@ -11,6 +11,7 @@ export type SettingsData = {
 	-- These take precedence over both the curated overrides table and the
 	-- naming convention transform.
 	nameOverrides: { [string]: string },
+	skipTests: boolean,
 }
 
 export type SettingsContext = {
@@ -21,6 +22,7 @@ export type SettingsContext = {
 local DEFAULT_SETTINGS: SettingsData = {
 	namingConvention = "Normal",
 	nameOverrides = {},
+	skipTests = false,
 }
 
 local Context = React.createContext(nil :: SettingsContext?)

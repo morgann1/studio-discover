@@ -212,7 +212,8 @@ local function Package()
 					installRealm,
 					function(msg)
 						setInstallProgress(msg)
-					end
+					end,
+					ctx.settings.skipTests
 				)
 				setInstallProgress(nil)
 

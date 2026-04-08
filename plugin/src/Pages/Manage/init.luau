@@ -90,7 +90,7 @@ local function Manage()
 				scope = scope,
 				overrides = ctx.settings.nameOverrides,
 			})
-			local ok, err = Installer.install(scope, name, target, alias, pkg.realm)
+			local ok, err = Installer.install(scope, name, target, alias, pkg.realm, nil, ctx.settings.skipTests)
 			if not ok then
 				warn("[Discover] Update failed:", err)
 			end

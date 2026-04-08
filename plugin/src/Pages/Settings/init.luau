@@ -13,6 +13,7 @@ local SettingsModule = require(Discover.Src.Settings)
 local View = Foundation.View
 local Text = Foundation.Text
 local IconButton = Foundation.IconButton
+local Checkbox = Foundation.Checkbox
 local Divider = Foundation.Divider
 local Dropdown = Foundation.Dropdown
 local TextInput = Foundation.TextInput
@@ -198,6 +199,37 @@ local function Settings()
 						Size = UDim2.fromScale(1, 0),
 						tag = "text-caption-small content-muted text-align-x-left",
 						LayoutOrder = 4,
+					}),
+				}),
+
+				InstallSection = e("Frame", {
+					Size = UDim2.fromScale(1, 0),
+					AutomaticSize = Enum.AutomaticSize.Y,
+					BackgroundTransparency = 1,
+					LayoutOrder = nextContentOrder(),
+				}, {
+					Layout = e("UIListLayout", {
+						FillDirection = Enum.FillDirection.Vertical,
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						Padding = UDim.new(0, 8),
+					}),
+					Header = e(SectionHeader, { text = "Install Options", LayoutOrder = 1 }),
+					SkipTests = e(Checkbox, {
+						label = "Skip test files (.spec.luau, .test.luau)",
+						isChecked = ctx.settings.skipTests == true,
+						onActivated = function()
+							ctx.setSetting("skipTests", not (ctx.settings.skipTests == true))
+						end,
+						size = InputSize.Medium,
+						LayoutOrder = 2,
+					}),
+					Description = e(Text, {
+						Text = "Wally installs test files by default. Enable to exclude them from installs.",
+						AutomaticSize = Enum.AutomaticSize.Y,
+						Size = UDim2.fromScale(1, 0),
+						TextWrapped = true,
+						tag = "text-caption-small content-muted text-align-x-left",
+						LayoutOrder = 3,
 					}),
 				}),
 
