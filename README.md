@@ -6,6 +6,12 @@
 
 </div>
 
+<div align="center">
+
+<img src="media/search.png" width="250" /> <img src="media/manager.png" width="250" /> <img src="media/settings.png" width="250" />
+
+</div>
+
 ## Why?
 
 Wally is the go-to package manager for Roblox, but using it normally means jumping between a terminal, Rojo, and a sync workflow just to try a package. Studio Discover skips all of that. You can search, browse, and install Wally packages without ever leaving Studio.
