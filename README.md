@@ -25,8 +25,9 @@ Discover is a pure-Luau alternative. It talks directly to the Wally registry ove
 ### 📥 From Release
 
 1. Grab `Discover.rbxm` from the [latest release](https://github.com/morgann1/studio-discover/releases/latest).
-2. In Roblox Studio, drag the file into your Plugins folder (or right-click it and pick **Open with Roblox Studio**).
-3. A **Discover** button should show up in your toolbar.
+2. Drag the file into Roblox Studio. It'll usually land in Workspace.
+3. Right-click the **Discover** folder and pick **Save / Export > Save as Local Plugin**.
+4. A **Discover** button should show up in your toolbar.
 
 ### 🔧 From Source
 
@@ -37,10 +38,10 @@ git clone https://github.com/morgann1/studio-discover.git
 cd studio-discover
 rokit install
 lune run install
-rojo build plugin/default.project.json -o Discover.rbxm
+lune run build
 ```
 
-Then drag `Discover.rbxm` into your Plugins folder in Studio.
+Then follow the same steps as above: drag `Discover.rbxm` into Studio and save it as a local plugin.
 
 > `lune run install` handles the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
 
