@@ -9,7 +9,7 @@ local App = require(Discover.Src.App)
 local e = React.createElement
 
 local toolbar = plugin:CreateToolbar("Discover")
-local button = toolbar:CreateButton("Discover", "Browse and install packages", "rbxassetid://6031360355")
+local button = toolbar:CreateButton("Discover", "Browse and install packages", "rbxassetid://125842588490194")
 
 local widgetInfo = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 405, 492, 280, 320)
 
