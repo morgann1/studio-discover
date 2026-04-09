@@ -32,9 +32,16 @@ jobs:
       - name: 🏗️ Build Discover.rbxm
         run: rojo build plugin/default.project.json -o Discover.rbxm
 
+      - name: 📝 Generate changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: Discover.rbxm
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.content }}
