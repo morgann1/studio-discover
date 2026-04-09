@@ -222,7 +222,8 @@ local function Package()
 					if failures and #failures > 0 then
 						setInstallStatus("partial")
 						setInstallError(
-							`Installed, but {#failures} dependency issue(s):\n• ` .. table.concat(failures, "\n• ")
+							`Installed, but {#failures} {if #failures == 1 then "dependency" else "dependencies"} failed:\n• `
+								.. table.concat(failures, "\n• ")
 						)
 					else
 						setInstallStatus("installed")
