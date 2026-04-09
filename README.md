@@ -8,7 +8,7 @@
 
 <div align="center">
 
-<img src="media/search.png" width="250" /> <img src="media/manager.png" width="250" /> <img src="media/settings.png" width="250" />
+<img src="/media/search.png" width="250" /> <img src="/media/manager.png" width="250" /> <img src="/media/settings.png" width="250" />
 
 </div>
 
