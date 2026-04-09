@@ -37,6 +37,7 @@ You'll need [Rokit](https://github.com/rojo-rbx/rokit) and [Lune](https://github
 git clone https://github.com/morgann1/studio-discover.git
 cd studio-discover
 rokit install
+git config core.hooksPath .githooks
 lune run install
 lune run build
 ```

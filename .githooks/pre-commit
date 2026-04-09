@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Normalize CRLF to LF before checking, since StyLua expects Unix line endings
+find .lune plugin/src plugin/bin -name '*.luau' -exec sed -i 's/\r$//' {} +
+
+lune run ci
