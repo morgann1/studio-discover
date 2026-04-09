@@ -14,7 +14,11 @@
 
 ## Why?
 
-Wally is the go-to package manager for Roblox, but using it normally means jumping between a terminal, Rojo, and a sync workflow just to try a package. Studio Discover skips all of that. You can search, browse, and install Wally packages without ever leaving Studio.
+[Wally](https://wally.run) is the go-to package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a developer who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package — and not everyone wants to make that switch.
+
+[studio-wally](https://github.com/fewkz/studio-wally) exists, but it hasn't been updated in a few years, doesn't support the `server` realm, and depends on the experimental Rojo headless API.
+
+Studio Discover is a pure-Luau alternative. It talks directly to the Wally registry over HTTP, handles both `shared` and `server` realms, generates package types, and writes everything into the DataModel — no external tools required. It aims to replicate what `wally install` and `wally-package-types` do, entirely from inside Studio.
 
 ## Install
 
