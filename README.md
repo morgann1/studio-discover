@@ -53,3 +53,7 @@ The first time you use the plugin, Studio will ask for a couple of permissions:
 - **Script injection**, so it can create the Wally alias `ModuleScript`s and drop package code into `ReplicatedStorage.Packages` or `ServerStorage.ServerPackages`.
 
 Click **Allow** on both and you're set.
+
+## Credits
+
+The Lune build scripts were originally taken from [grilme99/studio-activity](https://github.com/grilme99/studio-activity) and updated to work cross-platform.
