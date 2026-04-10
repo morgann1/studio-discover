@@ -39,16 +39,10 @@ local function Home()
 	local searchError = useAtom(SearchState.error)
 	local installedMap = useAtom(InstalledState.map)
 
-	-- Input value lives locally so typing doesn't re-render the (potentially
-	-- huge) results list on every keystroke. We only push to the shared
-	-- search atom on commit (Enter / focus lost).
 	local searchText, setSearchText = React.useState(function()
 		return SearchState.text()
 	end)
 
-	-- A ref to settings, refreshed each render, so the install callback below
-	-- doesn't need settings in its useCallback deps (which would invalidate
-	-- it on every settings change and bust card memoization).
 	local settingsCtx = SettingsModule.useSettings()
 	local settingsRef = React.useRef(settingsCtx)
 	settingsRef.current = settingsCtx
@@ -71,7 +65,6 @@ local function Home()
 
 	local wallyWaitMessage = useWallyStatusMessage()
 
-	-- Stable callbacks shared across all cards so React.memo can bail out.
 	local onCardSelect = React.useCallback(function(scope: string, rawName: string)
 		nav.push("Package", { scope = scope, name = rawName })
 	end, { nav })

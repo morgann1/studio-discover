@@ -1,9 +1,3 @@
---[[
-	React hook that returns a human-readable Wally rate-limit wait
-	message, or nil when no wait is in progress. While waiting, it
-	re-renders every 0.5s so the countdown stays fresh.
-]]
-
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 

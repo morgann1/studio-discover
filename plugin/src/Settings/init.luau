@@ -7,9 +7,6 @@ export type NamingConvention = "PascalCase" | "Normal"
 
 export type SettingsData = {
 	namingConvention: NamingConvention,
-	-- User-defined display name overrides, keyed by `scope/name` (lowercase).
-	-- These take precedence over both the curated overrides table and the
-	-- naming convention transform.
 	nameOverrides: { [string]: string },
 }
 
@@ -88,9 +85,6 @@ local function useSettings(): SettingsContext
 	return ctx
 end
 
--- Hand-curated PascalCase overrides for popular packages whose lowercase
--- Wally name can't be reliably segmented (e.g. "goodsignal" -> "GoodSignal").
--- Keys must be lowercase. Add entries as you discover them.
 local PASCAL_OVERRIDES: { [string]: string } = {
 	goodsignal = "GoodSignal",
 	roactrouter = "RoactRouter",
@@ -106,14 +100,6 @@ local function toPascalCase(str: string): string
 	end):gsub("[-_]+", ""))
 end
 
---[[
-	Derive a PascalCase display name. Resolution order:
-	1. `hint`, if provided and it matches `name` case-insensitively (after
-	   stripping separators). This lets callers pass an upstream-canonical
-	   name like a GitHub repository segment.
-	2. The hand-curated overrides table.
-	3. Mechanical first-letter capitalization (handles `foo-bar`/`foo_bar`).
-]]
 local function toPascalCaseWithHint(name: string, hint: string?): string
 	if hint and hint ~= "" then
 		local normalizedName = string.lower((string.gsub(name, "[-_]+", "")))
@@ -138,8 +124,6 @@ export type FormatOptions = {
 }
 
 local function formatPackageName(name: string, convention: NamingConvention, options: FormatOptions?): string
-	-- User overrides win over everything else, including the naming
-	-- convention setting. They are an explicit "I want this name".
 	if options and options.overrides and options.scope then
 		local key = string.lower(`{options.scope}/{name}`)
 		local override = options.overrides[key]

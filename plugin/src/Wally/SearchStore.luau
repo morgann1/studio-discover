@@ -1,9 +1,3 @@
---[[
-	Charm atoms for search state. Each piece of state is its own atom so
-	that components subscribe only to what they read — typing into the
-	search box does not re-render the results list, etc.
-]]
-
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 

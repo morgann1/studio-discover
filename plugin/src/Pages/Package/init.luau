@@ -73,9 +73,6 @@ local function Package()
 		return allVersions[#allVersions]
 	end, { allVersions, selectedVersion })
 
-	-- Pull a casing hint from the upstream repository URL when available,
-	-- so packages like `goodsignal` render as `GoodSignal` in PascalCase
-	-- mode without us having to guess word boundaries.
 	local repoHint: string? = nil
 	if metadata and metadata.package and metadata.package.repository then
 		local repo = metadata.package.repository
@@ -169,7 +166,6 @@ local function Package()
 		collectDeps(metadata["server-dependencies"], "server")
 		collectDeps(metadata["dev-dependencies"], "dev")
 
-		-- Group deps by category
 		local depGroups: { [string]: { any } } = { dependency = {}, server = {}, dev = {} }
 		for _, dep in allDeps do
 			table.insert(depGroups[dep.category], dep)
@@ -249,7 +245,6 @@ local function Package()
 
 		local nextPageOrder = ReactHelpers.createNextOrder()
 
-		-- Header card: title, installed chip, author, description
 		local headerChildren: { [string]: any } = {
 			Padding = e("UIPadding", {
 				PaddingLeft = UDim.new(0, 16),
@@ -309,7 +304,6 @@ local function Package()
 			}),
 		}
 
-		-- Pills row (facts)
 		local factPillOrder = 0
 		local function nextFactOrder()
 			factPillOrder += 1
@@ -333,7 +327,6 @@ local function Package()
 			})
 		end
 
-		-- Action row: version dropdown + install button
 		local versionItems = {}
 		if allVersions then
 			for i, versionData in allVersions do

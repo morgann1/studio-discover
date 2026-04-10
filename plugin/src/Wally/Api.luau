@@ -1,39 +1,21 @@
---[[
-	Wally API client.
-
-	Per https://wally.run/policies the registry requires no more than
-	1 request per second. This module enforces that via a shared serial
-	queue: callers still get normal return values, but internally only
-	one request is in flight at a time and each request waits at least
-	MIN_INTERVAL seconds after the previous one started.
-
-	If the registry still returns 429, we honor the Retry-After header
-	and retry once. While a request is waiting (queued or rate-limited),
-	subscribers are notified so the UI can show a real package-manager
-	style "rate limited, retrying in Ns" message.
-]]
-
 local HttpService = game:GetService("HttpService")
 
 local WALLY_SEARCH_API = "https://api.wally.run/v1/package-search?query="
 local WALLY_METADATA_API = "https://api.wally.run/v1/package-metadata/"
 
 local CACHE_TTL = 300
-local MIN_INTERVAL = 1.05 -- seconds between requests (small buffer over 1/sec)
+local MIN_INTERVAL = 1.05
 
 export type Status = {
 	state: "idle" | "waiting",
 	reason: "queue" | "rate-limited" | nil,
-	untilClock: number, -- os.clock() time at which the wait ends
+	untilClock: number,
 }
 
 local WallyAPI = {}
 
 local cache: { [string]: { data: any, time: number } } = {}
 
--- Next clock time at which a new request may be sent. Each caller
--- atomically reserves a slot and waits. Because Luau coroutines don't
--- preempt, the reservation (before any yield) is effectively atomic.
 local nextSlotClock = 0
 
 local status: Status = { state = "idle", reason = nil, untilClock = 0 }
@@ -67,8 +49,6 @@ function WallyAPI.getStatus(): Status
 	return status
 end
 
--- Human-readable wait message, or nil when idle. Recomputes the
--- remaining seconds from os.clock() so the caller doesn't need to.
 function WallyAPI.formatWaitMessage(s: Status): string?
 	if s.state ~= "waiting" then
 		return nil
@@ -111,7 +91,6 @@ end
 
 local function waitRateLimited(seconds: number)
 	local untilClock = os.clock() + seconds
-	-- Push the shared queue out so other callers also wait.
 	if untilClock > nextSlotClock then
 		nextSlotClock = untilClock
 	end

@@ -1,8 +1,3 @@
---[[
-	React hook for subscribing to a Charm atom or selector. The component
-	re-renders only when the atom's value changes (compared with `~=`).
-]]
-
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
@@ -13,7 +8,6 @@ local function useAtom<T>(selector: Charm.Selector<T>): T
 	local value, setValue = React.useState(selector)
 
 	React.useEffect(function()
-		-- Re-sync in case the value changed between render and effect.
 		setValue(function(prev)
 			local current = selector()
 			if current ~= prev then

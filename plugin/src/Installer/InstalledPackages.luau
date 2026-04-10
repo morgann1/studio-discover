@@ -6,9 +6,9 @@ export type InstalledPackage = {
 	name: string,
 	version: string,
 	realm: "shared" | "server",
-	packageId: string, -- e.g. "jsdotlua_react@17.2.1"
+	packageId: string,
 	indexFolder: Folder,
-	aliasLink: ModuleScript, -- The top-level alias ModuleScript the user installed
+	aliasLink: ModuleScript,
 }
 
 local InstalledPackages = {}
@@ -25,9 +25,6 @@ local function parsePackageId(packageId: string): (string?, string?, string?)
 	return scope, name, version
 end
 
--- Extract "scope_name@version" from a link's Source. Handles both forms:
---   top-level: require(script.Parent._Index["scope_name@version"][...])
---   dep link:  require(script.Parent.Parent["scope_name@version"][...])
 local function extractPackageId(source: string): string?
 	return source:match('%["([^"]+@[^"]+)"%]')
 end
@@ -40,7 +37,6 @@ local function scanRealm(packagesFolder: Folder?, realm: "shared" | "server", ou
 	if not indexFolder then
 		return
 	end
-	-- Top-level packages are alias ModuleScripts (direct children, not _Index)
 	for _, child in packagesFolder:GetChildren() do
 		if not child:IsA("ModuleScript") then
 			continue
@@ -84,8 +80,6 @@ function InstalledPackages.map(): { [string]: InstalledPackage }
 	return out
 end
 
--- Returns the set of packageIds that `packageId` depends on (transitively),
--- by walking the alias ModuleScripts inside the package's indexed folder.
 function InstalledPackages.collectDependencies(indexFolder: Folder, packageId: string): { [string]: true }
 	local deps: { [string]: true } = {}
 	local function walk(pkgId: string)
