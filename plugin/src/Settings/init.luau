@@ -11,6 +11,7 @@ export type SettingsData = {
 	namingConvention: NamingConvention,
 	nameOverrides: { [string]: string },
 	checkForUpdates: boolean,
+	skipUninstallConfirm: boolean,
 	dismissedUpdateVersion: string?,
 }
 
@@ -22,6 +23,7 @@ export type SettingsContext = {
 local DEFAULT_SETTINGS: SettingsData = {
 	namingConvention = "Normal",
 	nameOverrides = {},
+	skipUninstallConfirm = false,
 	checkForUpdates = true,
 }
 

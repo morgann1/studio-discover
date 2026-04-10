@@ -15,6 +15,7 @@ local useAtom = require(Discover.Src.Common.useAtom)
 
 local View = Foundation.View
 local Text = Foundation.Text
+local Checkbox = Foundation.Checkbox
 local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local ScrollView = Foundation.ScrollView
@@ -98,8 +99,16 @@ local function Manage()
 	end, { installed, latestVersions } :: { any })
 
 	local onRowUninstall = React.useCallback(function(scope: string, name: string)
-		setPendingUninstall({ scope = scope, name = name })
-	end, {})
+		if settingsCtx.settings.skipUninstallConfirm then
+			local ok, err = Installer.uninstall(scope, name)
+			if not ok then
+				warn("[Discover] Uninstall failed:", err)
+			end
+			InstalledState.refresh()
+		else
+			setPendingUninstall({ scope = scope, name = name })
+		end
+	end, { settingsCtx })
 
 	local rows: { [string]: any } = {
 		Layout = e("UIListLayout", {
@@ -128,26 +137,9 @@ local function Manage()
 
 	local content
 	if #installed == 0 then
-		content = e(View, {
-			Size = UDim2.fromScale(1, 1),
-			tag = "align-x-center align-y-center",
-		}, {
-			EmptyState = e(Empty, {
-				icon = "icons/common/search",
-			}),
-			Layout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = UDim.new(0, 8),
-			}),
-			Label = e(Text, {
-				Text = "No packages installed",
-				AutomaticSize = Enum.AutomaticSize.XY,
-				tag = "text-label-medium content-muted",
-				LayoutOrder = 2,
-			}),
+		content = e(Empty, {
+			icon = { name = "icons/common/search" },
+			text = "No packages installed",
 		})
 	else
 		local installedCount = #installed .. " installed"
@@ -212,8 +204,23 @@ local function Manage()
 			}, {
 				DialogTitle = e(Dialog.Title, { text = "Uninstall package?" }),
 				DialogContent = e(Dialog.Content, nil, {
+					Layout = e("UIListLayout", {
+						FillDirection = Enum.FillDirection.Vertical,
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						Padding = UDim.new(0, 12),
+					}),
 					Body = e(Dialog.Text, {
 						Text = `This will remove {pendingUninstall.scope}/{pendingUninstall.name} and any dependencies that are no longer needed.`,
+						LayoutOrder = 1,
+					}),
+					DoNotAsk = e(Checkbox, {
+						label = "Don't ask me again",
+						isChecked = false,
+						onActivated = function()
+							settingsCtx.setSetting("skipUninstallConfirm", true)
+						end,
+						size = InputSize.Small,
+						LayoutOrder = 2,
 					}),
 				}),
 				DialogActions = e(Dialog.Actions, {
