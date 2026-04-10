@@ -1,6 +1,6 @@
 [package]
 name = "morgan/studio-discover"
-version = "0.1.0"
+version = "2.4.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 private = true
