@@ -1,63 +1,43 @@
 local HttpService = game:GetService("HttpService")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Discover = script:FindFirstAncestor("Discover")
 local zzlib = require(Discover.Src.Installer.zzlib)
-
-local WALLY_CONTENTS_API = "https://api.wally.run/v1/package-contents/"
 
 local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
 local PackageTypes = require(Discover.Src.Common.PackageTypes)
 local WallyAPI = require(Discover.Src.Wally.Api)
 
+local CONTENTS_API = "https://api.wally.run/v1/package-contents/"
+local DEFAULT_EXCLUDE = { ".*", "wally.lock", "Packages", "ServerPackages", "DevPackages", "node_modules", "*.toml" }
+local LOCKFILE_NAME = "WallyLock"
+
 local Installer = {}
 
--- Returns the set of packageIds currently reachable from any top-level
--- alias link in the given _Index folder (i.e. "still needed" packages).
-local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { [string]: true }
-	local reachable: { [string]: true } = {}
+export type ProgressCallback = (message: string) -> ()
 
-	local function extractPackageId(source: string): string?
-		-- Top-level alias: require(script.Parent._Index["scope_name@version"][...])
-		-- Dep link:        require(script.Parent.Parent["scope_name@version"][...])
-		return source:match('%["([^"]+@[^"]+)"%]')
-	end
+type ResolvedPackage = {
+	scope: string,
+	name: string,
+	version: string,
+	realm: "shared" | "server",
+	packageId: string,
+	dependencies: { { alias: string, packageId: string, realm: "shared" | "server" } },
+}
 
-	local function visit(packageId: string)
-		if reachable[packageId] then
-			return
-		end
-		reachable[packageId] = true
-		local pkgFolder = indexFolder:FindFirstChild(packageId)
-		if not pkgFolder then
-			return
-		end
-		for _, child in pkgFolder:GetChildren() do
-			if child:IsA("ModuleScript") then
-				local depId = extractPackageId(child.Source)
-				if depId then
-					visit(depId)
-				end
-			end
-		end
-	end
-
-	for _, child in packagesFolder:GetChildren() do
-		if child:IsA("ModuleScript") then
-			local id = extractPackageId(child.Source)
-			if id then
-				visit(id)
-			end
-		end
-	end
-	return reachable
-end
+type LockEntry = {
+	name: string,
+	version: string,
+	realm: "shared" | "server",
+	dependencies: { { alias: string, packageId: string } },
+}
 
 local function parseSemver(version: string): { major: number, minor: number, patch: number }?
 	local major, minor, patch = version:match("^(%d+)%.(%d+)%.(%d+)")
 	if not major then
 		return nil
 	end
-	return { major = tonumber(major), minor = tonumber(minor), patch = tonumber(patch) }
+	return { major = tonumber(major) :: number, minor = tonumber(minor) :: number, patch = tonumber(patch) :: number }
 end
 
 local function compareSemver(a: any, b: any): number
@@ -73,21 +53,27 @@ local function compareSemver(a: any, b: any): number
 	return 0
 end
 
-local function parseDependency(depValue: string): (string?, string?, (string) -> boolean)
-	local path, constraints = depValue:match("^([^@]+)@(.+)$")
-	if not path then
-		return nil, nil, function()
-			return false
-		end
+local function semverCompatible(a: any, b: any): boolean
+	if a.major == b.major and a.minor == b.minor and a.patch == b.patch then
+		return true
 	end
-
-	local depScope, depName = path:match("^(.+)/(.+)$")
-	if not depScope then
-		return nil, nil, function()
-			return false
-		end
+	if a.major == 0 and b.major == 0 then
+		return a.minor == b.minor
 	end
+	return a.major == b.major
+end
 
+local function caretUpperBound(sv: any): any
+	if sv.major ~= 0 then
+		return { major = sv.major + 1, minor = 0, patch = 0 }
+	end
+	if sv.minor ~= 0 then
+		return { major = 0, minor = sv.minor + 1, patch = 0 }
+	end
+	return { major = 0, minor = 0, patch = sv.patch + 1 }
+end
+
+local function buildSatisfies(constraints: string): (string) -> boolean
 	local checks = {}
 	for constraint in constraints:gmatch("[^,]+") do
 		constraint = constraint:match("^%s*(.-)%s*$")
@@ -96,7 +82,7 @@ local function parseDependency(depValue: string): (string?, string?, (string) ->
 			local sv = parseSemver(constraint)
 			if sv then
 				table.insert(checks, { op = ">=", version = sv })
-				table.insert(checks, { op = "<", version = { major = sv.major + 1, minor = 0, patch = 0 } })
+				table.insert(checks, { op = "<", version = caretUpperBound(sv) })
 			end
 		else
 			local sv = parseSemver(ver)
@@ -106,7 +92,7 @@ local function parseDependency(depValue: string): (string?, string?, (string) ->
 		end
 	end
 
-	local function satisfies(version: string): boolean
+	return function(version: string): boolean
 		local sv = parseSemver(version)
 		if not sv then
 			return false
@@ -131,43 +117,464 @@ local function parseDependency(depValue: string): (string?, string?, (string) ->
 		end
 		return true
 	end
-
-	return depScope, depName, satisfies
 end
 
-local function resolveDependencyVersion(depScope: string, depName: string, satisfies: (string) -> boolean): string?
-	local meta = WallyAPI.metadata(depScope, depName)
-	if not meta or not meta.versions then
-		return nil
-	end
+local function formatPackageId(scope: string, name: string, version: string): string
+	return `{scope}_{name}@{version}`
+end
 
-	for _, versionData in meta.versions do
-		local v = versionData.package.version
-		if satisfies(v) then
-			return v
+local function promoteRealm(existing: string, incoming: string): string
+	if existing == "shared" or incoming == "shared" then
+		return "shared"
+	end
+	return "server"
+end
+
+local function isDependencyValid(requestRealm: string, depRealm: string): boolean
+	if requestRealm == "server" then
+		return true
+	end
+	return depRealm == "shared"
+end
+
+local function loadLockfile(): { [string]: LockEntry }
+	local lockModule = ServerStorage:FindFirstChild(LOCKFILE_NAME) :: ModuleScript?
+	if not lockModule or not lockModule:IsA("ModuleScript") then
+		return {}
+	end
+	local ok, data = pcall(require, lockModule)
+	if not ok or type(data) ~= "table" then
+		return {}
+	end
+	local entries: { [string]: LockEntry } = {}
+	for _, entry in data :: any do
+		local scope, name = entry.name:match("^(.+)/(.+)$")
+		if not scope or not name then
+			continue
+		end
+		local packageId = formatPackageId(scope, name, entry.version)
+		entries[packageId] = {
+			name = entry.name,
+			version = entry.version,
+			realm = entry.realm or "shared",
+			dependencies = entry.dependencies or {},
+		}
+	end
+	return entries
+end
+
+local function saveLockfile(resolved: { [string]: ResolvedPackage })
+	local lines = { "return {" }
+	local sortedIds = {}
+	for packageId in resolved do
+		table.insert(sortedIds, packageId)
+	end
+	table.sort(sortedIds)
+
+	for _, packageId in sortedIds do
+		local pkg = resolved[packageId]
+		table.insert(lines, "\t{")
+		table.insert(lines, `\t\tname = "{pkg.scope}/{pkg.name}",`)
+		table.insert(lines, `\t\tversion = "{pkg.version}",`)
+		table.insert(lines, `\t\trealm = "{pkg.realm}",`)
+		if #pkg.dependencies > 0 then
+			table.insert(lines, "\t\tdependencies = {")
+			for _, dep in pkg.dependencies do
+				local depLine = '\t\t\t{ alias = "' .. dep.alias .. '", packageId = "' .. dep.packageId .. '" },'
+				table.insert(lines, depLine)
+			end
+			table.insert(lines, "\t\t},")
+		else
+			table.insert(lines, "\t\tdependencies = {},")
+		end
+		table.insert(lines, "\t},")
+	end
+	table.insert(lines, "}")
+
+	local existing = ServerStorage:FindFirstChild(LOCKFILE_NAME)
+	if existing then
+		existing:Destroy()
+	end
+	local lockModule = Instance.new("ModuleScript")
+	lockModule.Name = LOCKFILE_NAME
+	lockModule.Source = table.concat(lines, "\n")
+	lockModule.Parent = ServerStorage
+end
+
+type ActivatedEntry = {
+	scope: string,
+	name: string,
+	version: string,
+	semver: { major: number, minor: number, patch: number },
+	realm: string,
+	packageId: string,
+}
+
+local function resolve(
+	scope: string,
+	name: string,
+	version: string,
+	realm: string?,
+	onProgress: ProgressCallback?
+): ({ [string]: ResolvedPackage }, { string })
+	local resolved: { [string]: ResolvedPackage } = {}
+	local failures: { string } = {}
+
+	local activated: { [string]: ActivatedEntry } = {}
+	local activatedByName: { [string]: { ActivatedEntry } } = {}
+	local lockfile = loadLockfile()
+
+	if not realm then
+		local meta = WallyAPI.metadata(scope, name)
+		if meta and meta.versions then
+			for _, vd in meta.versions do
+				if vd.package.version == version then
+					realm = vd.package.realm
+					break
+				end
+			end
 		end
 	end
-	return nil
+	realm = realm or "shared"
+
+	type DependencyRequest = {
+		scope: string,
+		name: string,
+		constraints: string,
+		requestRealm: string,
+		originRealm: string,
+		requestedBy: string,
+		alias: string,
+	}
+
+	local queue: { DependencyRequest } = {}
+
+	local function activate(depScope: string, depName: string, depVersion: string, depRealm: string, packageId: string)
+		local sv = parseSemver(depVersion)
+		if not sv then
+			return
+		end
+		local entry: ActivatedEntry = {
+			scope = depScope,
+			name = depName,
+			version = depVersion,
+			semver = sv,
+			realm = depRealm,
+			packageId = packageId,
+		}
+		activated[packageId] = entry
+		local fullName = `{depScope}/{depName}`
+		if not activatedByName[fullName] then
+			activatedByName[fullName] = {}
+		end
+		table.insert(activatedByName[fullName], entry)
+	end
+
+	local rootRealm = realm :: string
+	local rootPackageId = formatPackageId(scope, name, version)
+	activate(scope, name, version, rootRealm, rootPackageId)
+
+	if onProgress then
+		onProgress(`Resolving {scope}/{name}@{version}...`)
+	end
+	local rootMeta = WallyAPI.metadata(scope, name)
+	if not rootMeta or not rootMeta.versions then
+		return resolved, { `{scope}/{name}: metadata unavailable` }
+	end
+
+	local rootVersionData = nil
+	for _, vd in rootMeta.versions do
+		if vd.package.version == version then
+			rootVersionData = vd
+			break
+		end
+	end
+	if not rootVersionData then
+		return resolved, { `{scope}/{name}@{version}: version not found` }
+	end
+
+	local rootDeps: { { alias: string, packageId: string, realm: "shared" | "server" } } = {}
+	resolved[rootPackageId] = {
+		scope = scope,
+		name = name,
+		version = version,
+		realm = rootRealm :: "shared" | "server",
+		packageId = rootPackageId,
+		dependencies = rootDeps,
+	}
+
+	local depSources = {}
+	if rootVersionData.dependencies then
+		table.insert(depSources, { deps = rootVersionData.dependencies, requestRealm = "shared" })
+	end
+	if rootVersionData["server-dependencies"] then
+		table.insert(depSources, { deps = rootVersionData["server-dependencies"], requestRealm = "server" })
+	end
+
+	for _, source in depSources do
+		for depAlias, depValue in source.deps do
+			local _, _, constraints = depValue:match("^([^@]+)@(.+)$")
+			if not constraints then
+				constraints = ""
+			end
+			table.insert(queue, {
+				scope = depValue:match("^(.+)/") or "",
+				name = depValue:match("/([^@]+)") or "",
+				constraints = constraints,
+				requestRealm = source.requestRealm,
+				originRealm = source.requestRealm,
+				requestedBy = rootPackageId,
+				alias = depAlias,
+			})
+		end
+	end
+
+	while #queue > 0 do
+		local req = table.remove(queue, 1) :: DependencyRequest
+		local fullName = `{req.scope}/{req.name}`
+		local satisfies = buildSatisfies(req.constraints)
+
+		local existingMatches = activatedByName[fullName]
+		local reused = false
+		if existingMatches then
+			for _, entry in existingMatches do
+				if satisfies(entry.version) then
+					local promoted = promoteRealm(entry.realm, req.originRealm)
+					if promoted ~= entry.realm then
+						entry.realm = promoted
+						if resolved[entry.packageId] then
+							(resolved[entry.packageId] :: any).realm = promoted
+						end
+					end
+
+					local parentResolved = resolved[req.requestedBy]
+					if parentResolved then
+						table.insert(parentResolved.dependencies, {
+							alias = req.alias,
+							packageId = entry.packageId,
+							realm = promoted :: "shared" | "server",
+						})
+					end
+					reused = true
+					break
+				end
+			end
+		end
+
+		if reused then
+			continue
+		end
+
+		if onProgress then
+			onProgress(`Resolving {fullName}...`)
+		end
+
+		local meta = WallyAPI.metadata(req.scope, req.name)
+		if not meta or not meta.versions then
+			table.insert(failures, `{fullName}: metadata unavailable`)
+			continue
+		end
+
+		local candidates = {}
+		for _, vd in meta.versions do
+			if satisfies(vd.package.version) then
+				table.insert(candidates, vd)
+			end
+		end
+
+		table.sort(candidates, function(a, b)
+			local aId = formatPackageId(req.scope, req.name, a.package.version)
+			local bId = formatPackageId(req.scope, req.name, b.package.version)
+			local aLocked = lockfile[aId] ~= nil
+			local bLocked = lockfile[bId] ~= nil
+			if aLocked ~= bLocked then
+				return aLocked
+			end
+			local aSv = parseSemver(a.package.version)
+			local bSv = parseSemver(b.package.version)
+			if aSv and bSv then
+				return compareSemver(aSv, bSv) > 0
+			end
+			return false
+		end)
+
+		local chosen = nil
+		for _, candidate in candidates do
+			local depRealm = candidate.package.realm or "shared"
+			if not isDependencyValid(req.requestRealm, depRealm) then
+				continue
+			end
+
+			local candidateSv = parseSemver(candidate.package.version)
+			if not candidateSv then
+				continue
+			end
+
+			local hasConflict = false
+			if existingMatches then
+				for _, entry in existingMatches do
+					if semverCompatible(candidateSv, entry.semver) then
+						hasConflict = true
+						break
+					end
+				end
+			end
+			if hasConflict then
+				continue
+			end
+
+			chosen = candidate
+			break
+		end
+
+		if not chosen then
+			table.insert(failures, `{fullName}: no compatible version for "{req.constraints}"`)
+			continue
+		end
+
+		local chosenVersion = chosen.package.version
+		local chosenRealm = promoteRealm(chosen.package.realm or "shared", req.originRealm)
+		local chosenPackageId = formatPackageId(req.scope, req.name, chosenVersion)
+
+		activate(req.scope, req.name, chosenVersion, chosenRealm, chosenPackageId)
+
+		local deps: { { alias: string, packageId: string, realm: "shared" | "server" } } = {}
+		resolved[chosenPackageId] = {
+			scope = req.scope,
+			name = req.name,
+			version = chosenVersion,
+			realm = chosenRealm :: "shared" | "server",
+			packageId = chosenPackageId,
+			dependencies = deps,
+		}
+
+		local parentResolved = resolved[req.requestedBy]
+		if parentResolved then
+			table.insert(parentResolved.dependencies, {
+				alias = req.alias,
+				packageId = chosenPackageId,
+				realm = chosenRealm :: "shared" | "server",
+			})
+		end
+
+		local chosenDepSources = {}
+		if chosen.dependencies then
+			table.insert(chosenDepSources, { deps = chosen.dependencies, requestRealm = "shared" })
+		end
+		if chosen["server-dependencies"] then
+			table.insert(chosenDepSources, { deps = chosen["server-dependencies"], requestRealm = "server" })
+		end
+
+		for _, source in chosenDepSources do
+			for depAlias, depValue in source.deps do
+				local depPath, depConstraints = depValue:match("^([^@]+)@(.+)$")
+				if not depPath or not depConstraints then
+					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
+					continue
+				end
+				local depScope, depName = depPath:match("^(.+)/(.+)$")
+				if not depScope or not depName then
+					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
+					continue
+				end
+				table.insert(queue, {
+					scope = depScope,
+					name = depName,
+					constraints = depConstraints,
+					requestRealm = source.requestRealm,
+					originRealm = promoteRealm(source.requestRealm, chosenRealm),
+					requestedBy = chosenPackageId,
+					alias = depAlias,
+				})
+			end
+		end
+	end
+
+	return resolved, failures
 end
 
-local function classifyFile(path: string): (string, string?)
+local function globToPattern(glob: string): string
+	local pattern = glob:gsub("([%(%)%.%%%+%-%?%[%]%^%$])", function(c)
+		return "%" .. c
+	end)
+	pattern = pattern:gsub("%*%*", "\0")
+	pattern = pattern:gsub("%*", "[^/]*")
+	pattern = pattern:gsub("\0", ".*")
+	return pattern
+end
+
+local function matchesAnyGlob(path: string, globs: { string }): boolean
+	for _, glob in globs do
+		local pattern = globToPattern(glob)
+		if
+			string.match(path, "^" .. pattern .. "$")
+			or string.match(path, "^" .. pattern .. "/")
+			or string.match(path, "/" .. pattern .. "/")
+			or string.match(path, "/" .. pattern .. "$")
+		then
+			return true
+		end
+	end
+	return false
+end
+
+local function parseTomlStringArray(toml: string, key: string): { string }?
+	local contents = string.match(toml, key .. "%s*=%s*%[([^%]]*)%]")
+	if not contents then
+		return nil
+	end
+	local items = {}
+	for value in string.gmatch(contents, '"([^"]*)"') do
+		table.insert(items, value)
+	end
+	return items
+end
+
+local function buildFileFilter(wallyToml: string?): (string) -> boolean
+	local include: { string }? = nil
+	local exclude = table.clone(DEFAULT_EXCLUDE)
+
+	if wallyToml then
+		include = parseTomlStringArray(wallyToml, "include")
+		local extraExclude = parseTomlStringArray(wallyToml, "exclude")
+		if extraExclude then
+			for _, pattern in extraExclude do
+				table.insert(exclude, pattern)
+			end
+		end
+	end
+
+	return function(path: string): boolean
+		local relativePath = path:match("^[^/]+/(.+)$") or path
+
+		if matchesAnyGlob(relativePath, exclude) then
+			return false
+		end
+		if include and #include > 0 then
+			return matchesAnyGlob(relativePath, include)
+		end
+		return true
+	end
+end
+
+local function classifyFile(path: string): string
 	if string.match(path, "%.server%.luau?$") then
-		return "Script", "Server"
+		return "Script"
 	elseif string.match(path, "%.client%.luau?$") then
-		return "LocalScript", "Client"
+		return "LocalScript"
 	elseif string.match(path, "%.luau?$") then
-		return "ModuleScript", nil
+		return "ModuleScript"
 	else
-		return "skip", nil
+		return "skip"
 	end
 end
 
 local function getInstanceName(filename: string): string
-	local name = filename
-	name = name:gsub("%.server%.luau?$", "")
-	name = name:gsub("%.client%.luau?$", "")
-	name = name:gsub("%.luau?$", "")
-	return name
+	local instanceName = filename
+	instanceName = instanceName:gsub("%.server%.luau?$", "")
+	instanceName = instanceName:gsub("%.client%.luau?$", "")
+	instanceName = instanceName:gsub("%.luau?$", "")
+	return instanceName
 end
 
 local function buildTree(entries: { { path: string, content: string } }, packageName: string): Folder
@@ -186,15 +593,12 @@ local function buildTree(entries: { { path: string, content: string } }, package
 	for _, entry in entries do
 		local parts = string.split(entry.path, "/")
 
-		local className, _ = classifyFile(entry.path)
+		local className = classifyFile(entry.path)
 		if className == "skip" then
 			continue
 		end
 
-		local startIdx = 1
-		if #parts > 1 then
-			startIdx = 2
-		end
+		local startIdx = if #parts > 1 then 2 else 1
 
 		local parent: Instance = root
 		for i = startIdx, #parts - 1 do
@@ -239,27 +643,40 @@ local function buildTree(entries: { { path: string, content: string } }, package
 				end
 			end
 		else
-			local script = Instance.new(className)
-			script.Name = instanceName
-			script.Source = entry.content
-			script.Parent = parent
+			local inst = Instance.new(className)
+			inst.Name = instanceName
+			inst.Source = entry.content
+			inst.Parent = parent
 		end
 	end
 
 	return root
 end
 
-local function isTestFile(path: string): boolean
-	return string.match(path, "%.spec%.luau?$") ~= nil or string.match(path, "%.test%.luau?$") ~= nil
+local function findSourcePath(zipData: string, prefix: string): string?
+	local projectFileName = prefix .. "default.project.json"
+	local projectJson: string? = nil
+	pcall(function()
+		projectJson = zzlib.unzip(zipData, projectFileName)
+	end)
+	if not projectJson then
+		return nil
+	end
+
+	local decoded = HttpService:JSONDecode(projectJson)
+	if not decoded or not decoded.tree then
+		return nil
+	end
+
+	local path = decoded.tree["$path"]
+	if type(path) == "string" and path ~= "" then
+		return path
+	end
+	return nil
 end
 
-function Installer.downloadPackage(
-	scope: string,
-	name: string,
-	version: string,
-	skipTests: boolean?
-): (Folder?, string?)
-	local url = `{WALLY_CONTENTS_API}{scope}/{name}/{version}`
+local function downloadAndExtract(scope: string, name: string, version: string): (Folder?, string?)
+	local url = `{CONTENTS_API}{scope}/{name}/{version}`
 
 	local ok, result = pcall(function()
 		return HttpService:RequestAsync({
@@ -279,15 +696,48 @@ function Installer.downloadPackage(
 		return nil, `Failed to download: {result}`
 	end
 
+	local prefix = ""
+	for _, filename in zzlib.files(result) do
+		if string.match(filename, "wally%.toml$") or string.match(filename, "default%.project%.json$") then
+			local dir = filename:match("^(.+/)[^/]+$")
+			prefix = dir or ""
+			break
+		end
+	end
+
+	local wallyToml: string? = nil
+	pcall(function()
+		wallyToml = zzlib.unzip(result, prefix .. "wally.toml")
+	end)
+
+	local shouldInclude = buildFileFilter(wallyToml)
+	local sourcePath = findSourcePath(result, prefix)
+
 	local entries = {}
 	local filesOk, filesErr = pcall(function()
 		for _, filename, _, _ in zzlib.files(result) do
-			if filename:sub(-1) ~= "/" then
-				if skipTests and isTestFile(filename) then
+			if filename:sub(-1) == "/" then
+				continue
+			end
+			if not shouldInclude(filename) then
+				continue
+			end
+
+			if sourcePath then
+				local relativePath = string.sub(filename, #prefix + 1)
+				local isUnderSource = string.sub(relativePath, 1, #sourcePath + 1) == sourcePath .. "/"
+				if not isUnderSource then
 					continue
 				end
-				local content = zzlib.unzip(result, filename)
-				table.insert(entries, { path = filename, content = content })
+			end
+
+			local content = zzlib.unzip(result, filename)
+			local path = string.sub(filename, #prefix + 1)
+			if sourcePath and string.sub(path, 1, #sourcePath + 1) == sourcePath .. "/" then
+				path = string.sub(path, #sourcePath + 2)
+			end
+			if path ~= "" then
+				table.insert(entries, { path = name .. "/" .. path, content = content })
 			end
 		end
 	end)
@@ -295,18 +745,39 @@ function Installer.downloadPackage(
 		return nil, `Failed to extract ZIP: {filesErr}`
 	end
 
-	local tree = buildTree(entries, name)
-	return tree, nil, entries
+	return buildTree(entries, name)
+end
+
+local function getModuleName(tree: Instance, fallbackName: string): string
+	if tree:IsA("ModuleScript") then
+		return tree.Name
+	end
+	for _, child in tree:GetChildren() do
+		if child:IsA("ModuleScript") then
+			return child.Name
+		end
+	end
+	return fallbackName
+end
+
+local function placeTreeInFolder(tree: Instance, folder: Folder)
+	if tree:IsA("ModuleScript") then
+		tree.Parent = folder
+	else
+		for _, child in tree:GetChildren() do
+			child.Parent = folder
+		end
+		tree:Destroy()
+	end
 end
 
 function Installer.getPackagesFolder(realm: string): Folder
 	if realm == "server" then
-		local serverStorage = game:GetService("ServerStorage")
-		local folder = serverStorage:FindFirstChild("ServerPackages")
+		local folder = ServerStorage:FindFirstChild("ServerPackages")
 		if not folder then
 			folder = Instance.new("Folder")
 			folder.Name = "ServerPackages"
-			folder.Parent = serverStorage
+			folder.Parent = ServerStorage
 		end
 		return folder
 	else
@@ -321,7 +792,113 @@ function Installer.getPackagesFolder(realm: string): Folder
 	end
 end
 
-export type ProgressCallback = (message: string) -> ()
+local function getOrCreateIndex(packagesFolder: Folder): Folder
+	local index = packagesFolder:FindFirstChild("_Index")
+	if not index then
+		index = Instance.new("Folder")
+		index.Name = "_Index"
+		index.Parent = packagesFolder
+	end
+	return index :: Folder
+end
+
+local function linkSameIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
+	local link = Instance.new("ModuleScript")
+	link.Name = linkName
+	link.Source = `return require(script.Parent.Parent["{packageId}"]["{moduleName}"])`
+	return link
+end
+
+local function linkRootSameIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
+	local link = Instance.new("ModuleScript")
+	link.Name = linkName
+	link.Source = `return require(script.Parent._Index["{packageId}"]["{moduleName}"])`
+	return link
+end
+
+local function linkSharedIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
+	local link = Instance.new("ModuleScript")
+	link.Name = linkName
+	link.Source = `return require(game.ReplicatedStorage.Packages._Index["{packageId}"]["{moduleName}"])`
+	return link
+end
+
+local function linkServerIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
+	local link = Instance.new("ModuleScript")
+	link.Name = linkName
+	link.Source = `return require(game.ServerStorage.ServerPackages._Index["{packageId}"]["{moduleName}"])`
+	return link
+end
+
+local function buildPackageLink(
+	linkName: string,
+	packageId: string,
+	moduleName: string,
+	sourceRealm: string,
+	depRealm: string,
+	isRoot: boolean
+): ModuleScript
+	if sourceRealm == depRealm then
+		if isRoot then
+			return linkRootSameIndex(linkName, packageId, moduleName)
+		end
+		return linkSameIndex(linkName, packageId, moduleName)
+	elseif depRealm == "shared" then
+		return linkSharedIndex(linkName, packageId, moduleName)
+	else
+		return linkServerIndex(linkName, packageId, moduleName)
+	end
+end
+
+local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { [string]: true }
+	local reachable: { [string]: true } = {}
+
+	local function extractPackageId(source: string): string?
+		return source:match('%["([^"]+@[^"]+)"%]')
+	end
+
+	local function visit(packageId: string)
+		if reachable[packageId] then
+			return
+		end
+		reachable[packageId] = true
+		local pkgFolder = indexFolder:FindFirstChild(packageId)
+		if not pkgFolder then
+			return
+		end
+		for _, child in pkgFolder:GetChildren() do
+			if child:IsA("ModuleScript") then
+				local depId = extractPackageId(child.Source)
+				if depId then
+					visit(depId)
+				end
+			end
+		end
+	end
+
+	for _, child in packagesFolder:GetChildren() do
+		if child:IsA("ModuleScript") then
+			local id = extractPackageId(child.Source)
+			if id then
+				visit(id)
+			end
+		end
+	end
+	return reachable
+end
+
+local function garbageCollect(packagesFolder: Folder)
+	local indexFolder = packagesFolder:FindFirstChild("_Index") :: Folder?
+	if not indexFolder then
+		return
+	end
+	local reachable = collectReachable(packagesFolder, indexFolder)
+	for _, child in indexFolder:GetChildren() do
+		if not reachable[child.Name] then
+			child:Destroy()
+		end
+	end
+end
 
 function Installer.install(
 	scope: string,
@@ -329,250 +906,107 @@ function Installer.install(
 	version: string,
 	alias: string,
 	realm: string?,
-	onProgress: ProgressCallback?,
-	skipTests: boolean?
+	onProgress: ProgressCallback?
 ): (boolean, string?, { string }?)
 	local function progress(msg: string)
 		if onProgress then
 			onProgress(msg)
 		end
 	end
-	if not realm then
-		local meta = WallyAPI.metadata(scope, name)
-		if meta and meta.versions then
-			for _, vd in meta.versions do
-				if vd.package.version == version then
-					realm = vd.package.realm
-					break
+
+	progress("Resolving dependencies...")
+	local resolved, failures = resolve(scope, name, version, realm, onProgress)
+
+	local rootPackageId = formatPackageId(scope, name, version)
+	local rootResolved = resolved[rootPackageId]
+	if not rootResolved then
+		return false, "Failed to resolve root package"
+	end
+
+	local moduleNames: { [string]: string } = {}
+
+	for packageId in resolved do
+		for _, realmName in { "shared", "server" } do
+			local packagesFolder = Installer.getPackagesFolder(realmName)
+			local indexFolder = packagesFolder:FindFirstChild("_Index")
+			if indexFolder then
+				local existing = indexFolder:FindFirstChild(packageId)
+				if existing then
+					existing:Destroy()
 				end
 			end
 		end
 	end
-	local packagesFolder = Installer.getPackagesFolder(realm or "shared")
-	local indexFolder = packagesFolder:FindFirstChild("_Index")
-	if not indexFolder then
-		indexFolder = Instance.new("Folder")
-		indexFolder.Name = "_Index"
-		indexFolder.Parent = packagesFolder
-	end
 
-	local packageId = `{scope}_{name}@{version}`
-	local pkgFolder = indexFolder:FindFirstChild(packageId) :: Folder?
-	local moduleName: string? = nil
+	for packageId, pkg in resolved do
+		local packagesFolder = Installer.getPackagesFolder(pkg.realm)
+		local indexFolder = getOrCreateIndex(packagesFolder)
 
-	if pkgFolder then
-		progress("Already downloaded, relinking...")
-		-- Reuse existing indexed folder; derive moduleName from its first ModuleScript child
-		for _, child in pkgFolder:GetChildren() do
-			if child:IsA("ModuleScript") then
-				moduleName = child.Name
-				break
-			end
-		end
-	else
-		progress(`Downloading {scope}/{name}@{version}...`)
-		local tree, err = Installer.downloadPackage(scope, name, version, skipTests)
+		progress(`Downloading {pkg.scope}/{pkg.name}@{pkg.version}...`)
+		local tree, err = downloadAndExtract(pkg.scope, pkg.name, pkg.version)
 		if not tree then
-			return false, err
+			table.insert(failures, `{pkg.scope}/{pkg.name}@{pkg.version}: {err}`)
+			warn(`[Discover] Failed to download {pkg.scope}/{pkg.name}@{pkg.version}: {err}`)
+			continue
 		end
 
-		moduleName = name
-		if tree:IsA("ModuleScript") then
-			moduleName = tree.Name
-		else
-			for _, child in tree:GetChildren() do
-				if child:IsA("ModuleScript") then
-					moduleName = child.Name
-					break
-				end
-			end
-		end
+		local moduleName = getModuleName(tree, pkg.name)
+		moduleNames[packageId] = moduleName
 
-		pkgFolder = Instance.new("Folder")
+		local pkgFolder = Instance.new("Folder")
 		pkgFolder.Name = packageId
-
-		if tree:IsA("ModuleScript") then
-			tree.Parent = pkgFolder
-		else
-			for _, child in tree:GetChildren() do
-				child.Parent = pkgFolder
-			end
-			tree:Destroy()
-		end
-
+		pkgFolder:SetAttribute("ModuleName", moduleName)
+		placeTreeInFolder(tree, pkgFolder)
 		pkgFolder.Parent = indexFolder
 	end
 
-	-- Replace any existing alias link (e.g. version upgrade)
-	local existing = packagesFolder:FindFirstChild(alias)
-	if existing then
-		existing:Destroy()
-	end
+	for packageId, pkg in resolved do
+		local packagesFolder = Installer.getPackagesFolder(pkg.realm)
+		local indexFolder = getOrCreateIndex(packagesFolder)
+		local pkgFolder = indexFolder:FindFirstChild(packageId)
+		if not pkgFolder then
+			continue
+		end
 
-	local link = Instance.new("ModuleScript")
-	link.Name = alias
-	link.Source = `return require(script.Parent._Index["{packageId}"]["{moduleName}"])`
-	link.Parent = packagesFolder
+		for _, dep in pkg.dependencies do
+			if pkgFolder:FindFirstChild(dep.alias) then
+				continue
+			end
 
-	PackageTypes.processLink(link)
+			local depResolved = resolved[dep.packageId]
+			if not depResolved then
+				continue
+			end
 
-	progress("Resolving dependencies...")
-	local failures = {}
-	Installer._installDeps(
-		packagesFolder,
-		indexFolder,
-		pkgFolder,
-		scope,
-		name,
-		version,
-		realm,
-		failures,
-		progress,
-		skipTests
-	)
-
-	-- GC: drop any _Index folders no longer reachable from a top-level alias.
-	-- This replaces the naive prefix-based delete that could orphan shared
-	-- transitive deps used by other installed packages.
-	local reachable = collectReachable(packagesFolder, indexFolder)
-	for _, child in indexFolder:GetChildren() do
-		if not reachable[child.Name] then
-			child:Destroy()
+			local depModuleName = moduleNames[dep.packageId] or depResolved.name
+			local link = buildPackageLink(dep.alias, dep.packageId, depModuleName, pkg.realm, depResolved.realm, false)
+			link.Parent = pkgFolder
+			PackageTypes.processLink(link)
 		end
 	end
+
+	local rootModuleName = moduleNames[rootPackageId] or name
+	local packagesFolder = Installer.getPackagesFolder(rootResolved.realm)
+
+	local existingAlias = packagesFolder:FindFirstChild(alias)
+	if existingAlias then
+		existingAlias:Destroy()
+	end
+
+	local rootLink =
+		buildPackageLink(alias, rootPackageId, rootModuleName, rootResolved.realm, rootResolved.realm, true)
+	rootLink.Parent = packagesFolder
+	PackageTypes.processLink(rootLink)
+
+	garbageCollect(Installer.getPackagesFolder("shared"))
+	garbageCollect(Installer.getPackagesFolder("server"))
+
+	saveLockfile(resolved)
 
 	if #failures > 0 then
 		return true, nil, failures
 	end
 	return true, nil
-end
-
-function Installer._installDeps(
-	packagesFolder: Folder,
-	indexFolder: Folder,
-	pkgFolder: Folder,
-	scope: string,
-	name: string,
-	version: string,
-	realm: string?,
-	failures: { string },
-	progress: ((string) -> ())?,
-	skipTests: boolean?
-)
-	local function report(msg: string)
-		if progress then
-			progress(msg)
-		end
-	end
-	local meta = WallyAPI.metadata(scope, name)
-	if not meta or not meta.versions then
-		return
-	end
-
-	local versionData = nil
-	for _, vd in meta.versions do
-		if vd.package.version == version then
-			versionData = vd
-			break
-		end
-	end
-	if not versionData then
-		return
-	end
-
-	local allDeps = {}
-	if versionData.dependencies then
-		for depAlias, depValue in versionData.dependencies do
-			table.insert(allDeps, { alias = depAlias, value = depValue })
-		end
-	end
-	if versionData["server-dependencies"] then
-		for depAlias, depValue in versionData["server-dependencies"] do
-			table.insert(allDeps, { alias = depAlias, value = depValue })
-		end
-	end
-	if versionData["dev-dependencies"] then
-		for depAlias, depValue in versionData["dev-dependencies"] do
-			table.insert(allDeps, { alias = depAlias, value = depValue })
-		end
-	end
-
-	for _, dep in allDeps do
-		local depScope, depName, satisfies = parseDependency(dep.value)
-		if not depScope or not depName then
-			table.insert(failures, `{dep.alias}: could not parse dependency "{dep.value}"`)
-			continue
-		end
-
-		local depVersion = resolveDependencyVersion(depScope, depName, satisfies)
-		if not depVersion then
-			table.insert(failures, `{depScope}/{depName}: no version satisfies "{dep.value}"`)
-			continue
-		end
-
-		local depPackageId = `{depScope}_{depName}@{depVersion}`
-
-		if not indexFolder:FindFirstChild(depPackageId) then
-			report(`Installing {depScope}/{depName}@{depVersion}...`)
-			local depTree, depErr = Installer.downloadPackage(depScope, depName, depVersion, skipTests)
-			if depTree then
-				local depPkgFolder = Instance.new("Folder")
-				depPkgFolder.Name = depPackageId
-
-				local depModuleName = depName
-				if depTree:IsA("ModuleScript") then
-					depModuleName = depTree.Name
-					depTree.Parent = depPkgFolder
-				else
-					for _, child in depTree:GetChildren() do
-						if child:IsA("ModuleScript") and depModuleName == depName then
-							depModuleName = child.Name
-						end
-						child.Parent = depPkgFolder
-					end
-					depTree:Destroy()
-				end
-
-				depPkgFolder:SetAttribute("ModuleName", depModuleName)
-				depPkgFolder.Parent = indexFolder
-
-				Installer._installDeps(
-					packagesFolder,
-					indexFolder,
-					depPkgFolder,
-					depScope,
-					depName,
-					depVersion,
-					realm,
-					failures,
-					progress,
-					skipTests
-				)
-			else
-				table.insert(failures, `{depScope}/{depName}@{depVersion}: {depErr}`)
-				warn(`[Discover] Failed to install dependency {depScope}/{depName}@{depVersion}: {depErr}`)
-			end
-		end
-
-		local existingLink = pkgFolder:FindFirstChild(dep.alias)
-		if not existingLink then
-			local depModuleName = depName
-			local depPkg = indexFolder:FindFirstChild(depPackageId)
-			if depPkg then
-				local stored = depPkg:GetAttribute("ModuleName")
-				if stored then
-					depModuleName = stored
-				end
-			end
-
-			local depLink = Instance.new("ModuleScript")
-			depLink.Name = dep.alias
-			depLink.Source = `return require(script.Parent.Parent["{depPackageId}"]["{depModuleName}"])`
-			depLink.Parent = pkgFolder
-
-			PackageTypes.processLink(depLink)
-		end
-	end
 end
 
 function Installer.uninstall(scope: string, name: string): (boolean, string?)
@@ -582,23 +1016,26 @@ function Installer.uninstall(scope: string, name: string): (boolean, string?)
 		return false, "Package not found"
 	end
 
-	-- Remove the alias link (so subsequent reachability walk excludes it)
 	entry.aliasLink:Destroy()
 
-	local packagesFolder = Installer.getPackagesFolder(entry.realm)
-	local indexFolder = packagesFolder:FindFirstChild("_Index") :: Folder?
-	if not indexFolder then
-		return true, nil
-	end
+	garbageCollect(Installer.getPackagesFolder("shared"))
+	garbageCollect(Installer.getPackagesFolder("server"))
 
-	-- After alias removal, recompute what's still reachable from remaining
-	-- top-level packages. Any indexed folder not in this set is garbage.
-	local reachable = collectReachable(packagesFolder, indexFolder)
-	for _, child in indexFolder:GetChildren() do
-		if not reachable[child.Name] then
-			child:Destroy()
+	local allResolved: { [string]: ResolvedPackage } = {}
+	for _, pkg in InstalledPackages.list() do
+		if pkg.scope == scope and pkg.name == name then
+			continue
 		end
+		allResolved[pkg.packageId] = {
+			scope = pkg.scope,
+			name = pkg.name,
+			version = pkg.version,
+			realm = pkg.realm,
+			packageId = pkg.packageId,
+			dependencies = {},
+		}
 	end
+	saveLockfile(allResolved)
 
 	return true, nil
 end

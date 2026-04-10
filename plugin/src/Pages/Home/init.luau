@@ -83,7 +83,7 @@ local function Home()
 				scope = scope,
 				overrides = ctx.settings.nameOverrides,
 			})
-			local ok, err = Installer.install(scope, rawName, version, alias, nil, nil, ctx.settings.skipTests)
+			local ok, err = Installer.install(scope, rawName, version, alias)
 			if not ok then
 				warn("[Discover] Install failed:", err)
 			end
