@@ -545,13 +545,11 @@ local function buildFileFilter(wallyToml: string?): (string) -> boolean
 	end
 
 	return function(path: string): boolean
-		local relativePath = path:match("^[^/]+/(.+)$") or path
-
-		if matchesAnyGlob(relativePath, exclude) then
-			return false
-		end
 		if include and #include > 0 then
-			return matchesAnyGlob(relativePath, include)
+			return matchesAnyGlob(path, include)
+		end
+		if matchesAnyGlob(path, exclude) then
+			return false
 		end
 		return true
 	end
@@ -719,7 +717,7 @@ local function downloadAndExtract(scope: string, name: string, version: string):
 			if filename:sub(-1) == "/" then
 				continue
 			end
-			if not shouldInclude(filename) then
+			if not shouldInclude(string.sub(filename, #prefix + 1)) then
 				continue
 			end
 
