@@ -669,7 +669,7 @@ local function findSourcePath(zipData: string, prefix: string): string?
 	end
 
 	local path = decoded.tree["$path"]
-	if type(path) == "string" and path ~= "" then
+	if type(path) == "string" and path ~= "" and path ~= "." then
 		return path
 	end
 	return nil
@@ -726,7 +726,8 @@ local function downloadAndExtract(scope: string, name: string, version: string):
 			if sourcePath then
 				local relativePath = string.sub(filename, #prefix + 1)
 				local isUnderSource = string.sub(relativePath, 1, #sourcePath + 1) == sourcePath .. "/"
-				if not isUnderSource then
+				local isSourceFile = relativePath == sourcePath
+				if not isUnderSource and not isSourceFile then
 					continue
 				end
 			end
@@ -850,18 +851,43 @@ local function buildPackageLink(
 	end
 end
 
-local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { [string]: true }
-	local reachable: { [string]: true } = {}
+local function extractPackageId(source: string): string?
+	return source:match('%["([^"]+@[^"]+)"%]')
+end
 
-	local function extractPackageId(source: string): string?
-		return source:match('%["([^"]+@[^"]+)"%]')
+local function detectDepRealm(source: string, currentRealm: string): string
+	if string.find(source, "ReplicatedStorage") then
+		return "shared"
+	elseif string.find(source, "ServerStorage") then
+		return "server"
 	end
+	return currentRealm
+end
 
-	local function visit(packageId: string)
-		if reachable[packageId] then
+local function garbageCollectAll()
+	local folders = {
+		shared = Installer.getPackagesFolder("shared"),
+		server = Installer.getPackagesFolder("server"),
+	}
+	local indexes: { [string]: Folder? } = {
+		shared = folders.shared:FindFirstChild("_Index") :: Folder?,
+		server = folders.server:FindFirstChild("_Index") :: Folder?,
+	}
+
+	local reachable: { [string]: { [string]: true } } = {
+		shared = {},
+		server = {},
+	}
+
+	local function visit(packageId: string, realm: string)
+		if reachable[realm][packageId] then
 			return
 		end
-		reachable[packageId] = true
+		reachable[realm][packageId] = true
+		local indexFolder = indexes[realm]
+		if not indexFolder then
+			return
+		end
 		local pkgFolder = indexFolder:FindFirstChild(packageId)
 		if not pkgFolder then
 			return
@@ -870,32 +896,30 @@ local function collectReachable(packagesFolder: Folder, indexFolder: Folder): { 
 			if child:IsA("ModuleScript") then
 				local depId = extractPackageId(child.Source)
 				if depId then
-					visit(depId)
+					visit(depId, detectDepRealm(child.Source, realm))
 				end
 			end
 		end
 	end
 
-	for _, child in packagesFolder:GetChildren() do
-		if child:IsA("ModuleScript") then
-			local id = extractPackageId(child.Source)
-			if id then
-				visit(id)
+	for realmName, folder in folders do
+		for _, child in folder:GetChildren() do
+			if child:IsA("ModuleScript") then
+				local id = extractPackageId(child.Source)
+				if id then
+					visit(id, realmName)
+				end
 			end
 		end
 	end
-	return reachable
-end
 
-local function garbageCollect(packagesFolder: Folder)
-	local indexFolder = packagesFolder:FindFirstChild("_Index") :: Folder?
-	if not indexFolder then
-		return
-	end
-	local reachable = collectReachable(packagesFolder, indexFolder)
-	for _, child in indexFolder:GetChildren() do
-		if not reachable[child.Name] then
-			child:Destroy()
+	for realmName, indexFolder in indexes do
+		if indexFolder then
+			for _, child in indexFolder:GetChildren() do
+				if not reachable[realmName][child.Name] then
+					child:Destroy()
+				end
+			end
 		end
 	end
 end
@@ -998,10 +1022,25 @@ function Installer.install(
 	rootLink.Parent = packagesFolder
 	PackageTypes.processLink(rootLink)
 
-	garbageCollect(Installer.getPackagesFolder("shared"))
-	garbageCollect(Installer.getPackagesFolder("server"))
+	garbageCollectAll()
 
-	saveLockfile(resolved)
+	local allResolved: { [string]: ResolvedPackage } = {}
+	for _, pkg in InstalledPackages.list() do
+		if not resolved[pkg.packageId] then
+			allResolved[pkg.packageId] = {
+				scope = pkg.scope,
+				name = pkg.name,
+				version = pkg.version,
+				realm = pkg.realm,
+				packageId = pkg.packageId,
+				dependencies = {},
+			}
+		end
+	end
+	for packageId, pkg in resolved do
+		allResolved[packageId] = pkg
+	end
+	saveLockfile(allResolved)
 
 	if #failures > 0 then
 		return true, nil, failures
@@ -1018,8 +1057,7 @@ function Installer.uninstall(scope: string, name: string): (boolean, string?)
 
 	entry.aliasLink:Destroy()
 
-	garbageCollect(Installer.getPackagesFolder("shared"))
-	garbageCollect(Installer.getPackagesFolder("server"))
+	garbageCollectAll()
 
 	local allResolved: { [string]: ResolvedPackage } = {}
 	for _, pkg in InstalledPackages.list() do
