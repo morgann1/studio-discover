@@ -7,6 +7,7 @@ local React = require(Packages.React)
 local Navigation = require(Discover.Src.Navigation)
 local Page = require(Discover.Src.Common.Page)
 local SettingsModule = require(Discover.Src.Settings)
+local UpdateChecker = require(Discover.Src.UpdateChecker)
 local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 
 local Home = require(Discover.Src.Pages.Home)
@@ -85,6 +86,63 @@ local function PageRouter()
 	}, children)
 end
 
+local SystemBanner = Foundation.SystemBanner
+local AlertSeverity = Foundation.Enums.AlertSeverity
+
+local function AppContent()
+	local ctx = SettingsModule.useSettings()
+	local isEnabled = ctx.settings.checkForUpdates
+	local update = UpdateChecker.useUpdateChecker(isEnabled)
+
+	local isDismissed = update ~= nil and ctx.settings.dismissedUpdateVersion == update.version
+
+	local onDismiss = React.useCallback(function()
+		if update then
+			ctx.setSetting("dismissedUpdateVersion", update.version)
+		end
+	end, { update, ctx } :: { any })
+
+	return e("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+	}, {
+		Layout = e("UIListLayout", {
+			FillDirection = Enum.FillDirection.Vertical,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+
+		UpdateBanner = update and not isDismissed and e("Frame", {
+			Size = UDim2.fromScale(1, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			LayoutOrder = 1,
+		}, {
+			Padding = e("UIPadding", {
+				PaddingLeft = UDim.new(0, 8),
+				PaddingRight = UDim.new(0, 8),
+				PaddingTop = UDim.new(0, 8),
+			}),
+			Banner = e(SystemBanner, {
+				severity = AlertSeverity.Info,
+				title = `Discover v{update.version} is available`,
+				description = "Visit GitHub releases to download the latest version.",
+				onClose = onDismiss,
+			}),
+		}),
+
+		Content = e("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			LayoutOrder = 2,
+		}, {
+			Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
+			Nav = e(Navigation.NavigationProvider, nil, {
+				Router = e(PageRouter),
+			}),
+		}),
+	})
+end
+
 local function App(props: { plugin: Plugin?, overlayGui: Instance? })
 	local theme = useStudioTheme()
 	return e(Foundation.FoundationProvider, {
@@ -94,9 +152,7 @@ local function App(props: { plugin: Plugin?, overlayGui: Instance? })
 		overlayGui = props.overlayGui,
 	}, {
 		Settings = e(SettingsModule.SettingsProvider, { plugin = props.plugin }, {
-			Nav = e(Navigation.NavigationProvider, nil, {
-				Router = e(PageRouter),
-			}),
+			AppContent = e(AppContent),
 		}),
 	})
 end

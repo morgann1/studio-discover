@@ -10,6 +10,8 @@ export type NamingConvention = "PascalCase" | "Normal"
 export type SettingsData = {
 	namingConvention: NamingConvention,
 	nameOverrides: { [string]: string },
+	checkForUpdates: boolean,
+	dismissedUpdateVersion: string?,
 }
 
 export type SettingsContext = {
@@ -20,6 +22,7 @@ export type SettingsContext = {
 local DEFAULT_SETTINGS: SettingsData = {
 	namingConvention = "Normal",
 	nameOverrides = {},
+	checkForUpdates = true,
 }
 
 local Context = React.createContext(nil :: SettingsContext?)
