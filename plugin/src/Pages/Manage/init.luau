@@ -215,9 +215,12 @@ local function Manage()
 					}),
 					DoNotAsk = e(Checkbox, {
 						label = "Don't ask me again",
-						isChecked = false,
+						isChecked = settingsCtx.settings.skipUninstallConfirm,
 						onActivated = function()
-							settingsCtx.setSetting("skipUninstallConfirm", true)
+							settingsCtx.setSetting(
+								"skipUninstallConfirm",
+								not settingsCtx.settings.skipUninstallConfirm
+							)
 						end,
 						size = InputSize.Small,
 						LayoutOrder = 2,
