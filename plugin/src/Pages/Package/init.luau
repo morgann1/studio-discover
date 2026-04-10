@@ -310,11 +310,7 @@ local function Package()
 			}),
 		}
 
-		local factPillOrder = 0
-		local function nextFactOrder()
-			factPillOrder += 1
-			return factPillOrder
-		end
+		local nextFactOrder = ReactHelpers.createNextOrder()
 		local factsChildren: { [string]: any } = {
 			Layout = e("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,

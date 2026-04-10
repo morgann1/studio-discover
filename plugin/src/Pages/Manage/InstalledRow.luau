@@ -5,6 +5,7 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Pill = require(Discover.Src.Common.Pill)
+local ReactHelpers = require(Discover.Src.Common.React)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -50,11 +51,7 @@ local function InstalledRow(props: InstalledRowProps)
 		onUninstall(scope, name)
 	end, { scope, name, onUninstall } :: { any })
 
-	local pillOrder = 0
-	local function nextPill()
-		pillOrder += 1
-		return pillOrder
-	end
+	local nextPill = ReactHelpers.createNextOrder()
 
 	local pills: { [string]: any } = {
 		PillLayout = e("UIListLayout", {
