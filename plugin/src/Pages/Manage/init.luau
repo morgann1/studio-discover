@@ -87,7 +87,6 @@ local function Manage()
 		task.spawn(function()
 			local ctx = settingsRef.current
 			local alias = SettingsModule.formatPackageName(name, ctx.settings.namingConvention, {
-				scope = scope,
 				overrides = ctx.settings.nameOverrides,
 			})
 			local ok, err = Installer.install(scope, name, target, alias, pkg.realm)

@@ -90,7 +90,6 @@ local function Package()
 	end
 	local name = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
 		hint = repoHint,
-		scope = scope,
 		overrides = ctx.settings.nameOverrides,
 	})
 
@@ -196,7 +195,6 @@ local function Package()
 
 		local installAlias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
 			hint = repoHint,
-			scope = scope,
 			overrides = ctx.settings.nameOverrides,
 		})
 

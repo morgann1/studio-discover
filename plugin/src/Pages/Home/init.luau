@@ -70,7 +70,6 @@ local function Home()
 		local scope = pkg.scope or ""
 		local rawName = pkg.name or ""
 		local displayName = SettingsModule.formatPackageName(rawName, settingsCtx.settings.namingConvention, {
-			scope = scope,
 			overrides = settingsCtx.settings.nameOverrides,
 		})
 		local desc = pkg.description

@@ -50,9 +50,6 @@ local function Settings()
 		if trimmedKey == "" or trimmedValue == "" then
 			return
 		end
-		if not string.find(trimmedKey, "/") then
-			return
-		end
 		local next = table.clone(ctx.settings.nameOverrides)
 		next[trimmedKey] = trimmedValue
 		ctx.setSetting("nameOverrides", next)
@@ -147,7 +144,7 @@ local function Settings()
 				ScrollLayout = e("UIListLayout", {
 					FillDirection = Enum.FillDirection.Vertical,
 					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 16),
+					Padding = UDim.new(0, 24),
 				}),
 				ScrollPadding = e("UIPadding", {
 					PaddingLeft = UDim.new(0, 16),
@@ -165,7 +162,7 @@ local function Settings()
 					Layout = e("UIListLayout", {
 						FillDirection = Enum.FillDirection.Vertical,
 						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 8),
+						Padding = UDim.new(0, 12),
 					}),
 					Header = e(SectionHeader, { text = "Naming Convention", LayoutOrder = 1 }),
 					Description = e(Text, {
@@ -201,6 +198,10 @@ local function Settings()
 					}),
 				}),
 
+				SectionDivider = e(Divider, {
+					LayoutOrder = nextContentOrder(),
+				}),
+
 				OverridesSection = e("Frame", {
 					Size = UDim2.fromScale(1, 0),
 					AutomaticSize = Enum.AutomaticSize.Y,
@@ -210,11 +211,11 @@ local function Settings()
 					Layout = e("UIListLayout", {
 						FillDirection = Enum.FillDirection.Vertical,
 						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 8),
+						Padding = UDim.new(0, 12),
 					}),
 					Header = e(SectionHeader, { text = "Package Name Overrides", LayoutOrder = 1 }),
 					Description = e(Text, {
-						Text = "Force a custom display/install name for a specific package. Use the form scope/name (e.g. sleitnick/signal).",
+						Text = "Force a custom display/install name for packages matching a given name, regardless of scope.",
 						AutomaticSize = Enum.AutomaticSize.Y,
 						Size = UDim2.fromScale(1, 0),
 						TextWrapped = true,
@@ -256,7 +257,7 @@ local function Settings()
 							Input = e(TextInput, {
 								text = newKey,
 								label = "",
-								placeholder = "scope/name",
+								placeholder = "package name",
 								size = InputSize.Medium,
 								width = UDim.new(1, 0),
 								onChanged = function(text: string)

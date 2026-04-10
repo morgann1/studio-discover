@@ -119,13 +119,12 @@ end
 
 export type FormatOptions = {
 	hint: string?,
-	scope: string?,
 	overrides: { [string]: string }?,
 }
 
 local function formatPackageName(name: string, convention: NamingConvention, options: FormatOptions?): string
-	if options and options.overrides and options.scope then
-		local key = string.lower(`{options.scope}/{name}`)
+	if options and options.overrides then
+		local key = string.lower(name)
 		local override = options.overrides[key]
 		if override and override ~= "" then
 			return override
