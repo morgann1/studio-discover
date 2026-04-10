@@ -3,6 +3,8 @@ local Packages = Discover.Packages
 
 local React = require(Packages.React)
 
+local e = React.createElement
+
 export type NamingConvention = "PascalCase" | "Normal"
 
 export type SettingsData = {
@@ -74,7 +76,7 @@ local function SettingsProvider(props: { plugin: Plugin?, children: any })
 		return v
 	end, { settings, setSetting })
 
-	return React.createElement(Context.Provider, {
+	return e(Context.Provider, {
 		value = value,
 	}, props.children)
 end

@@ -5,6 +5,8 @@ local HttpService = game:GetService("HttpService")
 
 local React = require(Packages.React)
 
+local e = React.createElement
+
 export type Screen = {
 	id: string,
 	name: string,
@@ -94,7 +96,7 @@ local function NavigationProvider(props: { children: any })
 		return v
 	end, { push, pop, replace, screen, depth } :: { any })
 
-	return React.createElement(Context.Provider, {
+	return e(Context.Provider, {
 		value = value,
 	}, props.children)
 end
