@@ -7,6 +7,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Code Style**: Only write code that is self-explanatory.
 - **Improvements**: Do not add comments explaining your changes.
 
+## Code style guide
+
+Follow these principles when writing or modifying Luau code in this project. Use `camelCase` for variables and functions, `PascalCase` for classes/types.
+
+1. **Use descriptive, obvious names.**
+    - No abbreviations; use full English words. `player` not `plr`.
+    - Name things directly. `wasCalled` not `hasBeenCalled`. `notify` not `doNotification`.
+    - Booleans read as yes/no questions. `isFirstRun` not `firstRun`.
+    - Functions use verb forms. `increment` not `plusOne`. `unzip` not `filesFromZip`.
+    - Event handlers express when they run. `onClick` not `click`.
+    - Prefer positive form. `isFlying` not `isNotFlying`. `late` not `notOnTime`. Lead with positive conditionals; avoid `if not x then ... else ... end`. Use `missingValue` instead of `not hasValue`.
+
+2. **Function signatures should be obvious at the call site.**
+    - Avoid boolean arguments that change behavior.
+    - Avoid `nil` arguments. Use an options dictionary as the last parameter instead.
+
+3. **Write less code.**
+    - Be concise: fewer lines means fewer places for bugs to hide.
+    - Use well-supported open source libraries when possible.
+    - Omit needless variables. Don't name values you only use once.
+    - Write good abstractions. Don't repeat yourself.
+
+4. **Colocate code by feature, not by type.**
+    - Each feature manages its own state and explicitly defines methods to access and change it.
+
+5. **One job per function. Keep code reusable.**
+    - Don't combine loading and calculating in one function.
+    - Prefer functions with few or no side effects.
+
+6. **Avoid features and patterns that consistently lead to mistakes.**
+
+7. **Prefer stateful instances (classes) over excessive data structuring.**
+    - Avoid global state.
+    - Prefer composition over inheritance.
+    - Ensure anything created can also be cleaned up (event listeners, instance-bound state).
+    - Prefer getter/setter functions for public access to private state.
+
+8. **Prefer generic solutions over specific ones.** When a generic solution doesn't fit, write parallel code for parallel concepts.
+
+9. **Optimize for reading, not writing.**
+    - Be idiomatic. Follow convention.
+    - Code should not be surprising.
+
+10. **Exceptions should be exceptional.**
+    - Don't use errors as standard control flow.
+    - Return a success value or status. Reserve errors for unrecoverable states.
+
+11. **Code should be boring.**
+
+12. **Untestable code is bad code.**
+
 ## What this is
 
 Studio Discover is a Roblox Studio plugin (Luau + React) that lets users browse, install, and manage Wally packages without leaving Studio. The plugin talks directly to the Wally registry HTTP API and writes installed packages into `ReplicatedStorage.Packages` / `ServerStorage.ServerPackages` as alias `ModuleScript`s.
