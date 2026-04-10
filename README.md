@@ -18,7 +18,7 @@
 
 [studio-wally](https://github.com/fewkz/studio-wally) exists, but it hasn't been updated in a few years, doesn't support the `server` realm, and depends on the experimental Rojo headless API.
 
-Discover is a pure-Luau alternative. It talks directly to the Wally registry over HTTP, handles both `shared` and `server` realms, generates package types, and writes everything into the DataModel. No external tools required. It aims to replicate what `wally install` and `wally-package-types` do, entirely from inside Studio.
+Discover is a pure-Luau alternative. It talks directly to the Wally registry over HTTP, handles both `shared` and `server` realms, re-exports package types through link modules, and writes everything into the DataModel. No external tools required. It aims to replicate what `wally install` does, entirely from inside Studio.
 
 ## Install
 
