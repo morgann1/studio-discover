@@ -7,12 +7,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Code Style**: Only write code that is self-explanatory.
 - **Improvements**: Do not add comments explaining your changes.
 
+## React-Lua conventions
+
+These are community-standard patterns for React-Lua (react-lua / roact). Follow them in all React component code.
+
+- **`e = React.createElement`** is the accepted community abbreviation. Use `e` everywhere, not `createElement` or the full path. This is the one exception to the "no abbreviations" rule.
+- **`createNextOrder()`** for `LayoutOrder` values. Never hand-number layout orders. Use the helper from `Common/React.luau` to get an auto-incrementing function.
+- **`createUniqueKey()`** for dynamic child keys. Every child in a React component needs a stable key. Use the helper from `Common/React.luau` when mapping over lists to avoid key collisions.
+- **Conditional rendering with `and`**. Use `condition and e(Component)` to conditionally show components. Use `if/then/else` expressions only when both branches produce a value.
+- **Strict mode typing for `useState`**. When the initial value is `nil` or a union, cast both sides: `local value: number?, setValue = React.useState(nil :: number?)`.
+- **Component return type**. Annotate components that can return nil as `: React.ReactNode?`.
+- **Stable callbacks**. Use `React.useCallback` for callbacks passed to child components, especially those wrapped in `React.memo`. Never create inline closures per list item.
+- **Event cleanup**. Always return a cleanup function from `useEffect` when connecting to events or spawning tasks.
+
 ## Code style guide
 
 Follow these principles when writing or modifying Luau code in this project. Use `camelCase` for variables and functions, `PascalCase` for classes/types.
 
 1. **Use descriptive, obvious names.**
-    - No abbreviations; use full English words. `player` not `plr`.
+    - No abbreviations; use full English words. `player` not `plr`. Exception: `e = React.createElement` is the community standard.
     - Name things directly. `wasCalled` not `hasBeenCalled`. `notify` not `doNotification`.
     - Booleans read as yes/no questions. `isFirstRun` not `firstRun`.
     - Functions use verb forms. `increment` not `plusOne`. `unzip` not `filesFromZip`.
