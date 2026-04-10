@@ -49,16 +49,22 @@ local function Package()
 	local isLoading, setIsLoading = React.useState(true)
 
 	React.useEffect(function()
+		local cancelled = false
 		setIsLoading(true)
 		task.spawn(function()
 			local data = WallyAPI.metadata(scope, rawName)
+			if cancelled then
+				return
+			end
 			if data and data.versions and #data.versions > 0 then
 				setAllVersions(data.versions)
 				setSelectedVersion(data.versions[1].package.version)
 			end
 			setIsLoading(false)
 		end)
-		return nil
+		return function()
+			cancelled = true
+		end
 	end, { scope, rawName })
 
 	local metadata = React.useMemo(function()
