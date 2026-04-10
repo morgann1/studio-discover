@@ -4,8 +4,6 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
-local InstalledState = require(Discover.Src.Installer.InstalledStore)
-local Installer = require(Discover.Src.Installer.Installer)
 local Navigation = require(Discover.Src.Navigation)
 local PackageCard = require(Discover.Src.Common.PackageCard)
 local ReactHelpers = require(Discover.Src.Common.React)
@@ -37,15 +35,11 @@ local function Home()
 	local isLoading = useAtom(SearchState.isLoading)
 	local hasSearched = useAtom(SearchState.hasSearched)
 	local searchError = useAtom(SearchState.error)
-	local installedMap = useAtom(InstalledState.map)
-
 	local searchText, setSearchText = React.useState(function()
 		return SearchState.text()
 	end)
 
 	local settingsCtx = SettingsModule.useSettings()
-	local settingsRef = React.useRef(settingsCtx)
-	settingsRef.current = settingsCtx
 
 	local onSearchChanged = React.useCallback(function(text: string)
 		setSearchText(text)
@@ -68,21 +62,6 @@ local function Home()
 	local onCardSelect = React.useCallback(function(scope: string, rawName: string)
 		nav.push("Package", { scope = scope, name = rawName })
 	end, { nav })
-
-	local onCardInstall = React.useCallback(function(scope: string, rawName: string, version: string)
-		task.spawn(function()
-			local ctx = settingsRef.current
-			local alias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
-				scope = scope,
-				overrides = ctx.settings.nameOverrides,
-			})
-			local ok, err = Installer.install(scope, rawName, version, alias)
-			if not ok then
-				warn("[Discover] Install failed:", err)
-			end
-			InstalledState.refresh()
-		end)
-	end, {})
 
 	local packageCards = {}
 	local cardKey = ReactHelpers.createUniqueKey()
@@ -107,10 +86,8 @@ local function Home()
 			version = pkgVersion,
 			realm = pkg.realm,
 			depCount = pkg.depCount,
-			isInstalled = installedMap[`{scope}/{rawName}`] ~= nil,
 			LayoutOrder = nextCardOrder(),
 			onSelect = onCardSelect,
-			onInstall = onCardInstall,
 		})
 		packageCards[cardKey(`divider_{scope}/{rawName}`)] = e(Divider, {
 			LayoutOrder = nextCardOrder(),
