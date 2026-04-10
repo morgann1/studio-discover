@@ -1,13 +1,20 @@
+local BUILTIN_TYPES = {
+	["any"] = true,
+	["boolean"] = true,
+	["buffer"] = true,
+	["never"] = true,
+	["number"] = true,
+	["string"] = true,
+	["thread"] = true,
+	["unknown"] = true,
+}
+
 local PackageTypes = {}
 
-local function stripGenericDefaults(generics: string): string
-	if generics == "" then
-		return ""
-	end
-
+local function splitGenerics(generics: string): { string }
 	local inner = generics:match("^<(.+)>$")
 	if not inner then
-		return generics
+		return {}
 	end
 
 	local params = {}
@@ -31,21 +38,87 @@ local function stripGenericDefaults(generics: string): string
 	if current ~= "" then
 		table.insert(params, current)
 	end
+	return params
+end
 
-	local names = {}
-	for _, param in params do
-		local name = param:match("^%s*([%w_]+)")
-		if name then
-			table.insert(names, name)
+local function extractParamName(param: string): string?
+	return param:match("^%s*([%w_]+)")
+end
+
+local function extractDefaultType(param: string): string?
+	return param:match("=%s*([%w_%.]+)%s*$")
+end
+
+local function shouldKeepDefault(defaultType: string, resolvedTypes: { [string]: true }): boolean
+	return BUILTIN_TYPES[defaultType] == true or resolvedTypes[defaultType] == true
+end
+
+local function stripUnknownDefaults(generics: string, resolvedTypes: { [string]: true }): string
+	if generics == "" then
+		return ""
+	end
+
+	local params = splitGenerics(generics)
+	if #params == 0 then
+		return generics
+	end
+
+	local hasDefault = {}
+	local keepDefault = {}
+	for i, param in params do
+		local defaultType = extractDefaultType(param)
+		hasDefault[i] = defaultType ~= nil
+		keepDefault[i] = defaultType ~= nil and shouldKeepDefault(defaultType, resolvedTypes)
+	end
+
+	local lastStrippedIndex = 0
+	for i = #params, 1, -1 do
+		if hasDefault[i] and not keepDefault[i] then
+			lastStrippedIndex = i
+			break
+		end
+		if not hasDefault[i] then
+			lastStrippedIndex = i
+			break
 		end
 	end
 
+	local result = {}
+	for i, param in params do
+		if i <= lastStrippedIndex then
+			local name = extractParamName(param)
+			local isVariadic = param:match("%.%.%.") ~= nil
+			if isVariadic then
+				table.insert(result, name .. "...")
+			else
+				table.insert(result, name or param)
+			end
+		else
+			table.insert(result, param)
+		end
+	end
+
+	return "<" .. table.concat(result, ", ") .. ">"
+end
+
+local function extractParamNames(generics: string): string
+	if generics == "" then
+		return ""
+	end
+
+	local params = splitGenerics(generics)
+	local names = {}
+	for _, param in params do
+		local name = extractParamName(param)
+		if name then
+			local isVariadic = param:match("%.%.%.") ~= nil
+			table.insert(names, if isVariadic then name .. "..." else name)
+		end
+	end
 	return "<" .. table.concat(names, ", ") .. ">"
 end
 
-function PackageTypes.extractExportedTypes(
-	source: string
-): { { name: string, generics: string, genericsStripped: string } }
+function PackageTypes.extractExportedTypes(source: string): { { name: string, generics: string } }
 	local types = {}
 
 	for line in source:gmatch("[^\n]+") do
@@ -55,11 +128,9 @@ function PackageTypes.extractExportedTypes(
 			generics = nil
 		end
 		if name then
-			local g = generics or ""
 			table.insert(types, {
 				name = name,
-				generics = g,
-				genericsStripped = stripGenericDefaults(g),
+				generics = generics or "",
 			})
 		end
 	end
@@ -116,15 +187,31 @@ function PackageTypes.processLink(linkModule: ModuleScript): boolean
 		return false
 	end
 
+	local resolvedTypes: { [string]: true } = {}
+	for _, typeInfo in types do
+		resolvedTypes[typeInfo.name] = true
+	end
+
 	local requirePath = `{prefix}["{packageId}"]["{moduleName}"]`
 	local lines = {}
 	table.insert(lines, `local REQUIRED_MODULE = require({requirePath})`)
 
 	for _, typeInfo in types do
 		if typeInfo.generics ~= "" then
+			local paramNames = extractParamNames(typeInfo.generics)
+
+			local paramResolvedTypes = table.clone(resolvedTypes)
+			for _, param in splitGenerics(typeInfo.generics) do
+				local paramName = extractParamName(param)
+				if paramName then
+					paramResolvedTypes[paramName] = true
+				end
+			end
+
+			local declaration = stripUnknownDefaults(typeInfo.generics, paramResolvedTypes)
 			table.insert(
 				lines,
-				`export type {typeInfo.name}{typeInfo.generics} = REQUIRED_MODULE.{typeInfo.name}{typeInfo.genericsStripped}`
+				`export type {typeInfo.name}{declaration} = REQUIRED_MODULE.{typeInfo.name}{paramNames}`
 			)
 		else
 			table.insert(lines, `export type {typeInfo.name} = REQUIRED_MODULE.{typeInfo.name}`)
