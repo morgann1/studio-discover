@@ -5,7 +5,7 @@ local React = require(Packages.React)
 
 local e = React.createElement
 
-export type NamingConvention = "PascalCase" | "Normal"
+export type NamingConvention = "Normal" | "PascalCase" | "camelCase" | "snake_case"
 
 export type SettingsData = {
 	namingConvention: NamingConvention,
@@ -107,6 +107,15 @@ local function toPascalCase(str: string): string
 	end):gsub("[-_]+", ""))
 end
 
+local function toCamelCase(str: string): string
+	local pascal = toPascalCase(str)
+	return pascal:sub(1, 1):lower() .. pascal:sub(2)
+end
+
+local function toSnakeCase(str: string): string
+	return (str:gsub("[-]+", "_"):lower())
+end
+
 local function toPascalCaseWithHint(name: string, hint: string?): string
 	if hint and hint ~= "" then
 		local normalizedName = string.lower((string.gsub(name, "[-_]+", "")))
@@ -140,6 +149,10 @@ local function formatPackageName(name: string, convention: NamingConvention, opt
 
 	if convention == "PascalCase" then
 		return toPascalCaseWithHint(name, options and options.hint)
+	elseif convention == "camelCase" then
+		return toCamelCase(name)
+	elseif convention == "snake_case" then
+		return toSnakeCase(name)
 	else
 		return name
 	end

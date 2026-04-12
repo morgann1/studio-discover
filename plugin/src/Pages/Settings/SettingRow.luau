@@ -13,6 +13,7 @@ type SettingRowProps = {
 	name: string,
 	description: string?,
 	control: React.ReactNode?,
+	footer: React.ReactNode?,
 	LayoutOrder: number,
 }
 
@@ -87,8 +88,20 @@ local function SettingRow(props: SettingRowProps)
 			}),
 		}),
 
-		BottomDivider = e(Divider, {
+		Footer = props.footer and e("Frame", {
+			Size = UDim2.fromScale(1, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
 			LayoutOrder = 2,
+		}, {
+			Padding = e("UIPadding", {
+				PaddingBottom = UDim.new(0, 12),
+			}),
+			Child = props.footer,
+		}),
+
+		BottomDivider = e(Divider, {
+			LayoutOrder = 3,
 		}),
 	})
 end

@@ -12,6 +12,7 @@ local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 
 local Home = require(Discover.Src.Pages.Home)
 local Manage = require(Discover.Src.Pages.Manage)
+local Overrides = require(Discover.Src.Pages.Overrides)
 local Package = require(Discover.Src.Pages.Package)
 local Settings = require(Discover.Src.Pages.Settings)
 
@@ -19,9 +20,10 @@ local e = React.createElement
 
 local Pages = {
 	Home = Home,
+	Manage = Manage,
+	Overrides = Overrides,
 	Package = Package,
 	Settings = Settings,
-	Manage = Manage,
 }
 
 type RenderedScreen = {

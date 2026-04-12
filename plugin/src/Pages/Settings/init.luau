@@ -5,7 +5,6 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local OverrideEditor = require(script.OverrideEditor)
 local ReactHelpers = require(Discover.Src.Common.React)
 local SettingRow = require(script.SettingRow)
 local SettingsModule = require(Discover.Src.Settings)
@@ -25,8 +24,10 @@ local Visibility = Foundation.Enums.Visibility
 local e = React.createElement
 
 local CONVENTION_ITEMS = {
-	{ id = "Normal", text = "Normal (react-roblox)" },
-	{ id = "PascalCase", text = "PascalCase (ReactRoblox)" },
+	{ id = "Normal", text = "Normal" },
+	{ id = "PascalCase", text = "PascalCase" },
+	{ id = "camelCase", text = "camelCase" },
+	{ id = "snake_case", text = "snake_case" },
 }
 
 local PREVIEW_SAMPLE = "react-roblox"
@@ -104,8 +105,14 @@ local function Settings()
 
 				NamingConvention = e(SettingRow, {
 					name = "Naming Convention",
-					description = `How package names are formatted when installed. Example: {PREVIEW_SAMPLE} → {previewText}`,
+					description = "How package names are formatted when installed.",
 					LayoutOrder = nextContentOrder(),
+					footer = e(Text, {
+						Text = `Example: {PREVIEW_SAMPLE} → {previewText}`,
+						AutomaticSize = Enum.AutomaticSize.Y,
+						Size = UDim2.fromScale(1, 0),
+						tag = "text-caption-small content-muted text-align-x-left",
+					}),
 					control = e("Frame", {
 						Size = UDim2.fromOffset(200, 40),
 						BackgroundTransparency = 1,
@@ -136,8 +143,18 @@ local function Settings()
 					}),
 				}),
 
-				Overrides = e(OverrideEditor, {
+				Overrides = e(SettingRow, {
+					name = "Package Name Overrides",
+					description = "Force a custom install name for packages matching a given name.",
 					LayoutOrder = nextContentOrder(),
+					control = e(IconButton, {
+						icon = Foundation.Enums.IconName.ChevronLargeRight,
+						size = InputSize.Medium,
+						variant = ButtonVariant.Standard,
+						onActivated = function()
+							nav.push("Overrides")
+						end,
+					}),
 				}),
 			}),
 		}),
