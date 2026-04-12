@@ -7,15 +7,17 @@ local React = require(Packages.React)
 local DependencyGroup = require(script.DependencyGroup)
 local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
 local InstalledState = require(Discover.Src.Installer.InstalledStore)
-local Installer = require(Discover.Src.Installer.Installer)
 local LinkRow = require(Discover.Src.Common.LinkRow)
 local Navigation = require(Discover.Src.Navigation)
+local PackageActions = require(script.PackageActions)
+local PackageHeader = require(script.PackageHeader)
 local Pill = require(Discover.Src.Common.Pill)
 local ReactHelpers = require(Discover.Src.Common.React)
 local Section = require(Discover.Src.Common.Section)
 local SettingsModule = require(Discover.Src.Settings)
 local WallyAPI = require(Discover.Src.Wally.Api)
 local useAtom = require(Discover.Src.Common.useAtom)
+local useInstaller = require(script.useInstaller)
 local useWallyStatusMessage = require(Discover.Src.Wally.useWallyStatus)
 
 local View = Foundation.View
@@ -25,14 +27,11 @@ local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local ScrollView = Foundation.ScrollView
 local Loading = Foundation.Loading
-local SystemBanner = Foundation.SystemBanner
-local Dropdown = Foundation.Dropdown
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
 local IconSize = Foundation.Enums.IconSize
 local Visibility = Foundation.Enums.Visibility
-local AlertSeverity = Foundation.Enums.AlertSeverity
 
 local e = React.createElement
 
@@ -96,22 +95,21 @@ local function Package()
 		and allVersions[1] ~= nil
 		and allVersions[1].package.version == selectedVersion
 
-	local installStatus, setInstallStatus = React.useState("idle")
-	local installError: string?, setInstallError = React.useState(nil :: string?)
-	local installProgress: string?, setInstallProgress = React.useState(nil :: string?)
-
 	local installedMap = useAtom(InstalledState.map)
 	local installedEntry = installedMap[`{scope}/{rawName}`]
 
-	local dependents = React.useMemo(function()
-		return InstalledPackages.findDependents(scope, rawName)
-	end, { installedMap, scope, rawName } :: { any })
+	local pkg = metadata and metadata.package
+	local version = if pkg then pkg.version or "?" else "?"
+	local installRealm = if pkg then pkg.realm or "shared" else "shared"
+	local alreadyInstalled = installedEntry ~= nil and installedEntry.version == selectedVersion
 
-	React.useEffect(function()
-		setInstallStatus("idle")
-		setInstallError(nil)
-		return nil
-	end, { selectedVersion })
+	local installAlias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
+		hint = repoHint,
+		overrides = ctx.settings.nameOverrides,
+	})
+
+	local installer =
+		useInstaller(scope, rawName, version, installAlias, installRealm, ctx.settings.verboseLogging, selectedVersion)
 
 	local onBack = React.useCallback(function()
 		nav.pop()
@@ -143,14 +141,9 @@ local function Package()
 				else nil,
 		})
 	elseif metadata then
-		local pkg = metadata.package
-		local version = pkg.version or "?"
 		local description = pkg.description or ""
 		local license = pkg.license or "Unknown"
-		local installRealm = pkg.realm or "shared"
-		local alreadyInstalled = installedEntry ~= nil and installedEntry.version == selectedVersion
 		local authors = pkg.authors
-		local authorStr = if authors and #authors > 0 then table.concat(authors, ", ") else scope
 		local repository = pkg.repository
 		local homepage = pkg.homepage
 
@@ -179,170 +172,19 @@ local function Package()
 			nav.push("Package", { scope = depScope, name = depName })
 		end
 
-		local function buildDepGroup(category: string, label: string?, layoutOrder: number)
+		local function buildDepGroup(category: string, layoutOrder: number)
 			local list = depGroups[category]
 			if #list == 0 then
 				return nil
 			end
 			return e(DependencyGroup, {
-				label = label,
 				deps = list,
 				onSelect = onDepSelect,
 				LayoutOrder = layoutOrder,
 			})
 		end
 
-		local installAlias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
-			hint = repoHint,
-			overrides = ctx.settings.nameOverrides,
-		})
-
-		local function runInstall()
-			setInstallStatus("installing")
-			setInstallError(nil)
-			setInstallProgress("Starting install...")
-
-			task.spawn(function()
-				Installer.setVerbose(ctx.settings.verboseLogging)
-				local success, err, failures = Installer.install(
-					scope,
-					rawName,
-					version,
-					installAlias,
-					installRealm,
-					function(msg)
-						setInstallProgress(msg)
-					end
-				)
-				setInstallProgress(nil)
-
-				if success then
-					InstalledState.refresh()
-					if failures and #failures > 0 then
-						setInstallStatus("partial")
-						setInstallError(
-							`Installed, but {#failures} {if #failures == 1 then "dependency" else "dependencies"} failed:\n• `
-								.. table.concat(failures, "\n• ")
-						)
-					else
-						setInstallStatus("installed")
-						setInstallError(nil)
-					end
-				else
-					setInstallStatus("error")
-					setInstallError(err)
-					warn("[Discover] Install failed:", err)
-				end
-			end)
-		end
-
-		local isDevRealm = installRealm == "dev"
-		local installButtonText = if isDevRealm
-			then "Not Supported"
-			elseif installStatus == "installing" then "Installing..."
-			elseif installStatus == "installed" or alreadyInstalled then "Installed"
-			elseif installStatus == "partial" then "Installed (with warnings)"
-			elseif installStatus == "error" then "Retry"
-			else "Install"
-		local installButtonDisabled = isDevRealm
-			or installStatus == "installing"
-			or installStatus == "installed"
-			or installStatus == "partial"
-			or alreadyInstalled
-
-		local nextPageOrder = ReactHelpers.createNextOrder()
-
-		local authorChildren: { [string]: any } = {
-			Layout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UDim.new(0, 2),
-			}),
-		}
-		if authors and #authors > 1 then
-			authorChildren.Label = e(Text, {
-				Text = "Authors:",
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				tag = "text-caption-small content-muted text-align-x-left",
-				LayoutOrder = 0,
-			})
-			for i, author in authors do
-				authorChildren[`author_{i}`] = e(Text, {
-					Text = `  {author}`,
-					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UDim2.fromScale(1, 0),
-					tag = "text-caption-small content-muted text-align-x-left",
-					LayoutOrder = i,
-				})
-			end
-		else
-			authorChildren.Label = e(Text, {
-				Text = `by {authorStr}`,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				tag = "text-caption-small content-muted text-align-x-left",
-				LayoutOrder = 1,
-			})
-		end
-
-		local headerChildren: { [string]: any } = {
-			Padding = e("UIPadding", {
-				PaddingLeft = UDim.new(0, 16),
-				PaddingRight = UDim.new(0, 16),
-				PaddingTop = UDim.new(0, 16),
-				PaddingBottom = UDim.new(0, 16),
-			}),
-			Layout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UDim.new(0, 8),
-			}),
-			TitleRow = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				LayoutOrder = 1,
-			}, {
-				Layout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Horizontal,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					Padding = UDim.new(0, 8),
-				}),
-				Title = e(Text, {
-					Text = `{scope}/{rawName}`,
-					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UDim2.fromScale(1, 0),
-					TextWrapped = true,
-					tag = "text-title-medium content-emphasis text-align-x-left",
-					LayoutOrder = 1,
-				}, {
-					Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
-				}),
-				InstalledChip = if installedEntry
-					then e(Pill, {
-						text = `Installed v{installedEntry.version}`,
-						LayoutOrder = 2,
-						emphasis = true,
-					})
-					else nil,
-			}),
-			Authors = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				LayoutOrder = 2,
-			}, authorChildren),
-			Description = e(Text, {
-				Text = description,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				TextWrapped = true,
-				tag = "text-body-small content-default text-align-x-left text-wrap",
-				LayoutOrder = 3,
-			}),
-		}
+		local dependents = InstalledPackages.findDependents(scope, rawName)
 
 		local nextFactOrder = ReactHelpers.createNextOrder()
 		local factsChildren: { [string]: any } = {
@@ -422,6 +264,8 @@ local function Package()
 			})
 		end
 
+		local nextPageOrder = ReactHelpers.createNextOrder()
+
 		content = e(ScrollView, {
 			Size = UDim2.fromScale(1, 1),
 			scroll = {
@@ -443,92 +287,29 @@ local function Package()
 				PaddingBottom = UDim.new(0, 16),
 			}),
 
-			Header = e(View, {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
+			Header = e(PackageHeader, {
+				scope = scope,
+				name = rawName,
+				description = description,
+				authors = authors,
+				authorFallback = scope,
+				installedVersion = if installedEntry then installedEntry.version else nil,
 				LayoutOrder = nextPageOrder(),
-				tag = "bg-surface-100 radius-medium",
-			}, headerChildren),
-
-			ActionRow = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				LayoutOrder = nextPageOrder(),
-			}, {
-				Layout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Horizontal,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					Padding = UDim.new(0, 8),
-				}),
-				VersionWrap = e("Frame", {
-					Size = UDim2.new(1, 0, 0, 40),
-					BackgroundTransparency = 1,
-					LayoutOrder = 1,
-				}, {
-					Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
-					Dropdown = e(Dropdown.Root, {
-						label = "",
-						value = selectedVersion,
-						size = InputSize.Medium,
-						width = UDim.new(1, 0),
-						onItemChanged = function(id: string)
-							setSelectedVersion(id)
-						end,
-						items = versionItems,
-						maxHeight = 200,
-					}),
-				}),
-				Install = e(Button, {
-					text = installButtonText,
-					variant = if installStatus == "installed"
-							or installStatus == "partial"
-							or alreadyInstalled
-						then ButtonVariant.Standard
-						else ButtonVariant.Emphasis,
-					size = InputSize.Medium,
-					isDisabled = installButtonDisabled,
-					onActivated = runInstall,
-					LayoutOrder = 2,
-				}),
 			}),
 
-			OlderVersionBanner = if not isLatestSelected
-					and installStatus == "idle"
-					and not alreadyInstalled
-				then e(SystemBanner, {
-					severity = AlertSeverity.Warning,
-					title = "Installing an older version",
-					description = "The latest version is available in the dropdown above.",
-					LayoutOrder = nextPageOrder(),
-				})
-				else nil,
-
-			InstallProgress = if installProgress
-				then e(Text, {
-					Text = installProgress,
-					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UDim2.fromScale(1, 0),
-					TextWrapped = true,
-					tag = "text-caption-small content-muted text-align-x-left",
-					LayoutOrder = nextPageOrder(),
-				})
-				else nil,
-
-			DevRealmNotice = isDevRealm and e(SystemBanner, {
-				severity = AlertSeverity.Warning,
-				title = "Dev realm not supported",
-				description = "Discover can only install shared and server realm packages.",
+			Actions = e(PackageActions, {
+				selectedVersion = selectedVersion,
+				versionItems = versionItems,
+				onVersionChanged = setSelectedVersion,
+				installStatus = installer.status,
+				installError = installer.error,
+				installProgress = installer.progress,
+				isDevRealm = installRealm == "dev",
+				isLatestSelected = isLatestSelected,
+				alreadyInstalled = alreadyInstalled,
+				onInstall = installer.run,
 				LayoutOrder = nextPageOrder(),
-			}) or nil,
-
-			InstallMessage = installError and e(SystemBanner, {
-				severity = if installStatus == "partial" then AlertSeverity.Warning else AlertSeverity.Error,
-				title = if installStatus == "partial" then "Installed with warnings" else "Install failed",
-				description = installError,
-				LayoutOrder = nextPageOrder(),
-			}) or nil,
+			}),
 
 			Facts = e("Frame", {
 				Size = UDim2.fromScale(1, 0),
@@ -564,21 +345,21 @@ local function Package()
 				text = `Shared Dependencies ({#depGroups.dependency})`,
 				LayoutOrder = nextPageOrder(),
 			}, {
-				Group = buildDepGroup("dependency", nil, 1),
+				Group = buildDepGroup("dependency", 1),
 			}),
 
 			ServerDeps = #depGroups.server > 0 and e(Section, {
 				text = `Server Dependencies ({#depGroups.server})`,
 				LayoutOrder = nextPageOrder(),
 			}, {
-				Group = buildDepGroup("server", nil, 1),
+				Group = buildDepGroup("server", 1),
 			}),
 
 			DevDeps = #depGroups.dev > 0 and e(Section, {
 				text = `Dev Dependencies ({#depGroups.dev})`,
 				LayoutOrder = nextPageOrder(),
 			}, {
-				Group = buildDepGroup("dev", nil, 1),
+				Group = buildDepGroup("dev", 1),
 			}),
 
 			NoDeps = #allDeps == 0 and e(Section, {
