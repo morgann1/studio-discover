@@ -12,8 +12,7 @@ local LinkRow = require(Discover.Src.Common.LinkRow)
 local Navigation = require(Discover.Src.Navigation)
 local Pill = require(Discover.Src.Common.Pill)
 local ReactHelpers = require(Discover.Src.Common.React)
-local SectionHeader = require(Discover.Src.Common.SectionHeader)
-local SelectableText = require(Discover.Src.Common.SelectableText)
+local Section = require(Discover.Src.Common.Section)
 local SettingsModule = require(Discover.Src.Settings)
 local WallyAPI = require(Discover.Src.Wally.Api)
 local useAtom = require(Discover.Src.Common.useAtom)
@@ -204,6 +203,7 @@ local function Package()
 			setInstallProgress("Starting install...")
 
 			task.spawn(function()
+				Installer.setVerbose(ctx.settings.verboseLogging)
 				local success, err, failures = Installer.install(
 					scope,
 					rawName,
@@ -252,6 +252,40 @@ local function Package()
 
 		local nextPageOrder = ReactHelpers.createNextOrder()
 
+		local authorChildren: { [string]: any } = {
+			Layout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 2),
+			}),
+		}
+		if authors and #authors > 1 then
+			authorChildren.Label = e(Text, {
+				Text = "Authors:",
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-caption-small content-muted text-align-x-left",
+				LayoutOrder = 0,
+			})
+			for i, author in authors do
+				authorChildren[`author_{i}`] = e(Text, {
+					Text = `  {author}`,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.fromScale(1, 0),
+					tag = "text-caption-small content-muted text-align-x-left",
+					LayoutOrder = i,
+				})
+			end
+		else
+			authorChildren.Label = e(Text, {
+				Text = `by {authorStr}`,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-caption-small content-muted text-align-x-left",
+				LayoutOrder = 1,
+			})
+		end
+
 		local headerChildren: { [string]: any } = {
 			Padding = e("UIPadding", {
 				PaddingLeft = UDim.new(0, 16),
@@ -294,13 +328,12 @@ local function Package()
 					})
 					else nil,
 			}),
-			Author = e(Text, {
-				Text = `by {authorStr}`,
-				AutomaticSize = Enum.AutomaticSize.Y,
+			Authors = e("Frame", {
 				Size = UDim2.fromScale(1, 0),
-				tag = "text-caption-small content-muted text-align-x-left",
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
 				LayoutOrder = 2,
-			}),
+			}, authorChildren),
 			Description = e(Text, {
 				Text = description,
 				AutomaticSize = Enum.AutomaticSize.Y,
@@ -365,8 +398,6 @@ local function Package()
 		if homepage and homepage ~= "" then
 			linksChildren.Homepage = e(LinkRow, { label = "Homepage", value = homepage, LayoutOrder = nextLinkOrder() })
 		end
-
-		local snippetText = `{installAlias} = "{scope}/{rawName}@{version}"`
 
 		local dependentsChildren: { [string]: any } = {
 			Layout = e("UIListLayout", {
@@ -446,6 +477,7 @@ local function Package()
 							setSelectedVersion(id)
 						end,
 						items = versionItems,
+						maxHeight = 200,
 					}),
 				}),
 				Install = e(Button, {
@@ -460,14 +492,6 @@ local function Package()
 					onActivated = runInstall,
 					LayoutOrder = 2,
 				}),
-			}),
-
-			InstallHint = e(Text, {
-				Text = `Will install as {installAlias}`,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				tag = "text-caption-small content-muted text-align-x-left",
-				LayoutOrder = nextPageOrder(),
 			}),
 
 			OlderVersionBanner = if not isLatestSelected
@@ -513,106 +537,54 @@ local function Package()
 				LayoutOrder = nextPageOrder(),
 			}, factsChildren),
 
-			Snippet = e(View, {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
+			LinksSection = e(Section, {
+				text = "Links",
 				LayoutOrder = nextPageOrder(),
-				tag = "bg-surface-200 radius-small",
-			}, {
-				Padding = e("UIPadding", {
-					PaddingLeft = UDim.new(0, 16),
-					PaddingRight = UDim.new(0, 16),
-					PaddingTop = UDim.new(0, 16),
-					PaddingBottom = UDim.new(0, 16),
-				}),
-				Layout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 4),
-				}),
-				Label = e(Text, {
-					Text = "wally.toml",
-					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UDim2.fromScale(1, 0),
-					tag = "text-caption-small content-muted text-align-x-left",
-					LayoutOrder = 1,
-				}),
-				Code = e(SelectableText, {
-					text = snippetText,
-					emphasis = true,
-					LayoutOrder = 2,
-				}),
-			}),
+			}, linksChildren),
 
-			LinksSection = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
+			UsedBySection = e(Section, {
+				text = #dependents > 0 and `Used by ({#dependents})` or "Used by",
 				LayoutOrder = nextPageOrder(),
 			}, {
-				Layout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 8),
-				}),
-				Header = e(SectionHeader, { text = "Links", LayoutOrder = 1 }),
-				List = e("Frame", {
-					Size = UDim2.fromScale(1, 0),
-					AutomaticSize = Enum.AutomaticSize.Y,
-					BackgroundTransparency = 1,
-					LayoutOrder = 2,
-				}, linksChildren),
-			}),
-
-			UsedBySection = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				LayoutOrder = nextPageOrder(),
-			}, {
-				Layout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 8),
-				}),
-				Header = e(SectionHeader, {
-					text = #dependents > 0 and `Used by ({#dependents})` or "Used by",
-					LayoutOrder = 1,
-				}),
 				List = if #dependents > 0
 					then e("Frame", {
 						Size = UDim2.fromScale(1, 0),
 						AutomaticSize = Enum.AutomaticSize.Y,
 						BackgroundTransparency = 1,
-						LayoutOrder = 2,
 					}, dependentsChildren)
 					else e(Text, {
 						Text = "Nothing installed depends on this yet.",
 						AutomaticSize = Enum.AutomaticSize.Y,
 						Size = UDim2.fromScale(1, 0),
 						tag = "text-caption-small content-muted text-align-x-left",
-						LayoutOrder = 2,
 					}),
 			}),
 
-			DepsSection = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
+			SharedDeps = #depGroups.dependency > 0 and e(Section, {
+				text = `Shared Dependencies ({#depGroups.dependency})`,
 				LayoutOrder = nextPageOrder(),
 			}, {
-				Layout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UDim.new(0, 8),
-				}),
-				Header = e(SectionHeader, {
-					text = #allDeps > 0 and `Dependencies ({#allDeps})` or "No dependencies",
-					LayoutOrder = 1,
-				}),
-				Runtime = buildDepGroup("dependency", nil, 2),
-				Server = buildDepGroup("server", "Server", 3),
-				Dev = buildDepGroup("dev", "Dev", 4),
+				Group = buildDepGroup("dependency", nil, 1),
+			}),
+
+			ServerDeps = #depGroups.server > 0 and e(Section, {
+				text = `Server Dependencies ({#depGroups.server})`,
+				LayoutOrder = nextPageOrder(),
+			}, {
+				Group = buildDepGroup("server", nil, 1),
+			}),
+
+			DevDeps = #depGroups.dev > 0 and e(Section, {
+				text = `Dev Dependencies ({#depGroups.dev})`,
+				LayoutOrder = nextPageOrder(),
+			}, {
+				Group = buildDepGroup("dev", nil, 1),
+			}),
+
+			NoDeps = #allDeps == 0 and e(Section, {
+				text = "No dependencies",
+				collapsible = false,
+				LayoutOrder = nextPageOrder(),
 			}),
 		})
 	else
