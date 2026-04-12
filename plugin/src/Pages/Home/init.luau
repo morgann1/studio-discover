@@ -6,6 +6,7 @@ local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
 local PackageCard = require(Discover.Src.Common.PackageCard)
+local PopularPackages = require(script.PopularPackages)
 local ReactHelpers = require(Discover.Src.Common.React)
 local SearchState = require(Discover.Src.Wally.SearchStore)
 local SettingsModule = require(Discover.Src.Settings)
@@ -212,13 +213,74 @@ local function Home()
 			}),
 		})
 	else
-		content = e(View, {
+		local popularKey = ReactHelpers.createUniqueKey()
+		local popularOrder = ReactHelpers.createNextOrder()
+		local popularCards: { [string]: any } = {
+			Layout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+		}
+		for _, pkg in PopularPackages do
+			popularCards[popularKey(`{pkg.scope}/{pkg.name}`)] = e(PackageCard, {
+				name = pkg.name,
+				scope = pkg.scope,
+				description = pkg.description,
+				realm = pkg.realm,
+				LayoutOrder = popularOrder(),
+				onSelect = onCardSelect,
+			})
+			popularCards[popularKey(`divider_{pkg.scope}/{pkg.name}`)] = e(Divider, {
+				LayoutOrder = popularOrder(),
+			})
+		end
+
+		local sectionOrder = ReactHelpers.createNextOrder()
+		content = e("Frame", {
 			Size = UDim2.fromScale(1, 1),
-			tag = "align-x-center align-y-center",
+			BackgroundTransparency = 1,
 		}, {
-			Prompt = e(Text, {
-				Text = "Search for Wally packages",
-				tag = "text-label-medium",
+			SectionLayout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+			Header = e(View, {
+				Size = UDim2.new(1, 0, 0, 28),
+				LayoutOrder = sectionOrder(),
+				tag = "bg-surface-200",
+			}, {
+				Padding = e("UIPadding", {
+					PaddingLeft = UDim.new(0, 12),
+					PaddingRight = UDim.new(0, 12),
+				}),
+				HeaderLayout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+				Label = e(Text, {
+					Text = "Popular packages",
+					AutomaticSize = Enum.AutomaticSize.XY,
+					tag = "text-caption-small content-muted",
+				}),
+			}),
+			HeaderDivider = e(Divider, {
+				LayoutOrder = sectionOrder(),
+			}),
+			ListWrap = e("Frame", {
+				Size = UDim2.new(1, 0, 1, -29),
+				BackgroundTransparency = 1,
+				LayoutOrder = sectionOrder(),
+			}, {
+				List = e(ScrollView, {
+					Size = UDim2.fromScale(1, 1),
+					scroll = {
+						scrollBarVisibility = Visibility.Auto,
+						ScrollingDirection = Enum.ScrollingDirection.Y,
+						AutomaticCanvasSize = Enum.AutomaticSize.Y,
+						CanvasSize = UDim2.new(),
+					},
+				}, popularCards),
 			}),
 		})
 	end
