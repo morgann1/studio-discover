@@ -14,6 +14,14 @@ local LOCKFILE_NAME = "WallyLock"
 
 local Installer = {}
 
+local verbose = false
+
+local function log(...)
+	if verbose then
+		print("[Discover]", ...)
+	end
+end
+
 export type ProgressCallback = (message: string) -> ()
 
 type ResolvedPackage = {
@@ -505,14 +513,22 @@ end
 
 local function matchesAnyGlob(path: string, globs: { string }): boolean
 	for _, glob in globs do
-		local pattern = globToPattern(glob)
-		if
-			string.match(path, "^" .. pattern .. "$")
-			or string.match(path, "^" .. pattern .. "/")
-			or string.match(path, "/" .. pattern .. "/")
-			or string.match(path, "/" .. pattern .. "$")
-		then
-			return true
+		local anchored = string.sub(glob, 1, 1) == "/"
+		local cleanGlob = if anchored then string.sub(glob, 2) else glob
+		local pattern = globToPattern(cleanGlob)
+		if anchored then
+			if string.match(path, "^" .. pattern .. "$") or string.match(path, "^" .. pattern .. "/") then
+				return true
+			end
+		else
+			if
+				string.match(path, "^" .. pattern .. "$")
+				or string.match(path, "^" .. pattern .. "/")
+				or string.match(path, "/" .. pattern .. "/")
+				or string.match(path, "/" .. pattern .. "$")
+			then
+				return true
+			end
 		end
 	end
 	return false
@@ -668,7 +684,7 @@ local function findSourcePath(zipData: string, prefix: string): string?
 
 	local path = decoded.tree["$path"]
 	if type(path) == "string" and path ~= "" and path ~= "." then
-		return path
+		return (string.gsub(path, "^%./", ""))
 	end
 	return nil
 end
@@ -703,6 +719,8 @@ local function downloadAndExtract(scope: string, name: string, version: string):
 		end
 	end
 
+	log(`Zip prefix: "{prefix}"`)
+
 	local wallyToml: string? = nil
 	pcall(function()
 		wallyToml = zzlib.unzip(result, prefix .. "wally.toml")
@@ -710,6 +728,7 @@ local function downloadAndExtract(scope: string, name: string, version: string):
 
 	local shouldInclude = buildFileFilter(wallyToml)
 	local sourcePath = findSourcePath(result, prefix)
+	log(`Source path: {sourcePath or "(none)"}`)
 
 	local entries = {}
 	local filesOk, filesErr = pcall(function()
@@ -717,25 +736,31 @@ local function downloadAndExtract(scope: string, name: string, version: string):
 			if filename:sub(-1) == "/" then
 				continue
 			end
-			if not shouldInclude(string.sub(filename, #prefix + 1)) then
+			local relativePath = string.sub(filename, #prefix + 1)
+			if not shouldInclude(relativePath) then
+				log(`Filtered out: {relativePath}`)
 				continue
 			end
 
 			if sourcePath then
-				local relativePath = string.sub(filename, #prefix + 1)
 				local isUnderSource = string.sub(relativePath, 1, #sourcePath + 1) == sourcePath .. "/"
 				local isSourceFile = relativePath == sourcePath
-				if not isUnderSource and not isSourceFile then
+				local isSourceLuau = relativePath == sourcePath .. ".luau" or relativePath == sourcePath .. ".lua"
+				if not isUnderSource and not isSourceFile and not isSourceLuau then
+					log(`Outside source path: {relativePath}`)
 					continue
 				end
 			end
 
 			local content = zzlib.unzip(result, filename)
-			local path = string.sub(filename, #prefix + 1)
+			local path = relativePath
 			if sourcePath and string.sub(path, 1, #sourcePath + 1) == sourcePath .. "/" then
 				path = string.sub(path, #sourcePath + 2)
+			elseif sourcePath and (path == sourcePath .. ".luau" or path == sourcePath .. ".lua") then
+				path = "init.luau"
 			end
 			if path ~= "" then
+				log(`Extracted: {path}`)
 				table.insert(entries, { path = name .. "/" .. path, content = content })
 			end
 		end
@@ -744,6 +769,7 @@ local function downloadAndExtract(scope: string, name: string, version: string):
 		return nil, `Failed to extract ZIP: {filesErr}`
 	end
 
+	log(`Total entries: {#entries}`)
 	return buildTree(entries, name)
 end
 
@@ -1078,6 +1104,10 @@ function Installer.uninstall(scope: string, name: string): (boolean, string?)
 	saveLockfile(allResolved)
 
 	return true, nil
+end
+
+function Installer.setVerbose(enabled: boolean)
+	verbose = enabled
 end
 
 return Installer
