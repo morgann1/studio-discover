@@ -143,6 +143,19 @@ local function Settings()
 					}),
 				}),
 
+				VerboseLogging = e(SettingRow, {
+					name = "Verbose logging",
+					description = "Log detailed install information to the output window.",
+					LayoutOrder = nextContentOrder(),
+					control = e(Checkbox, {
+						isChecked = ctx.settings.verboseLogging,
+						onActivated = function()
+							ctx.setSetting("verboseLogging", not ctx.settings.verboseLogging)
+						end,
+						size = InputSize.Medium,
+					}),
+				}),
+
 				Overrides = e(SettingRow, {
 					name = "Package Name Overrides",
 					description = "Force a custom install name for packages matching a given name.",

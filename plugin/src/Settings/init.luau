@@ -13,6 +13,7 @@ export type SettingsData = {
 	checkForUpdates: boolean,
 	skipUninstallConfirm: boolean,
 	dismissedUpdateVersion: string?,
+	verboseLogging: boolean,
 }
 
 export type SettingsContext = {
@@ -25,6 +26,7 @@ local DEFAULT_SETTINGS: SettingsData = {
 	nameOverrides = {},
 	skipUninstallConfirm = false,
 	checkForUpdates = true,
+	verboseLogging = false,
 }
 
 local Context = React.createContext(nil :: SettingsContext?)
