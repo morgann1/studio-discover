@@ -5,7 +5,6 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local OverrideEditor = require(script.OverrideEditor)
 local ReactHelpers = require(Discover.Src.Common.React)
 local SettingRow = require(script.SettingRow)
 local SettingsModule = require(Discover.Src.Settings)
@@ -136,8 +135,18 @@ local function Settings()
 					}),
 				}),
 
-				Overrides = e(OverrideEditor, {
+				Overrides = e(SettingRow, {
+					name = "Package Name Overrides",
+					description = "Force a custom install name for packages matching a given name.",
 					LayoutOrder = nextContentOrder(),
+					control = e(IconButton, {
+						icon = Foundation.Enums.IconName.ChevronLargeRight,
+						size = InputSize.Medium,
+						variant = ButtonVariant.Standard,
+						onActivated = function()
+							nav.push("Overrides")
+						end,
+					}),
 				}),
 			}),
 		}),
