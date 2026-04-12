@@ -2,7 +2,9 @@ local HttpService = game:GetService("HttpService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Discover = script:FindFirstAncestor("Discover")
-local zzlib = require(Discover.Src.Installer.zzlib)
+local Packages = Discover.Packages
+
+local zzlib = require(Packages.zzlib)
 
 local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
 local PackageTypes = require(Discover.Src.Common.PackageTypes)
@@ -138,11 +140,11 @@ local function promoteRealm(existing: string, incoming: string): string
 	return "server"
 end
 
-local function isDependencyValid(requestRealm: string, depRealm: string): boolean
+local function isDependencyValid(requestRealm: string, dependencyRealm: string): boolean
 	if requestRealm == "server" then
 		return true
 	end
-	return depRealm == "shared"
+	return dependencyRealm == "shared"
 end
 
 local function loadLockfile(): { [string]: LockEntry }
@@ -180,14 +182,14 @@ local function saveLockfile(resolved: { [string]: ResolvedPackage })
 	table.sort(sortedIds)
 
 	for _, packageId in sortedIds do
-		local pkg = resolved[packageId]
+		local resolvedPackage = resolved[packageId]
 		table.insert(lines, "\t{")
-		table.insert(lines, `\t\tname = "{pkg.scope}/{pkg.name}",`)
-		table.insert(lines, `\t\tversion = "{pkg.version}",`)
-		table.insert(lines, `\t\trealm = "{pkg.realm}",`)
-		if #pkg.dependencies > 0 then
+		table.insert(lines, `\t\tname = "{resolvedPackage.scope}/{resolvedPackage.name}",`)
+		table.insert(lines, `\t\tversion = "{resolvedPackage.version}",`)
+		table.insert(lines, `\t\trealm = "{resolvedPackage.realm}",`)
+		if #resolvedPackage.dependencies > 0 then
 			table.insert(lines, "\t\tdependencies = {")
-			for _, dep in pkg.dependencies do
+			for _, dep in resolvedPackage.dependencies do
 				local depLine = '\t\t\t{ alias = "' .. dep.alias .. '", packageId = "' .. dep.packageId .. '" },'
 				table.insert(lines, depLine)
 			end
@@ -257,21 +259,27 @@ local function resolve(
 
 	local queue: { DependencyRequest } = {}
 
-	local function activate(depScope: string, depName: string, depVersion: string, depRealm: string, packageId: string)
-		local sv = parseSemver(depVersion)
+	local function activate(
+		dependencyScope: string,
+		dependencyName: string,
+		dependencyVersion: string,
+		dependencyRealm: string,
+		packageId: string
+	)
+		local sv = parseSemver(dependencyVersion)
 		if not sv then
 			return
 		end
 		local entry: ActivatedEntry = {
-			scope = depScope,
-			name = depName,
-			version = depVersion,
+			scope = dependencyScope,
+			name = dependencyName,
+			version = dependencyVersion,
 			semver = sv,
-			realm = depRealm,
+			realm = dependencyRealm,
 			packageId = packageId,
 		}
 		activated[packageId] = entry
-		local fullName = `{depScope}/{depName}`
+		local fullName = `{dependencyScope}/{dependencyName}`
 		if not activatedByName[fullName] then
 			activatedByName[fullName] = {}
 		end
@@ -408,8 +416,8 @@ local function resolve(
 
 		local chosen = nil
 		for _, candidate in candidates do
-			local depRealm = candidate.package.realm or "shared"
-			if not isDependencyValid(req.requestRealm, depRealm) then
+			local dependencyRealm = candidate.package.realm or "shared"
+			if not isDependencyValid(req.requestRealm, dependencyRealm) then
 				continue
 			end
 
@@ -480,14 +488,14 @@ local function resolve(
 					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
 					continue
 				end
-				local depScope, depName = depPath:match("^(.+)/(.+)$")
-				if not depScope or not depName then
+				local dependencyScope, dependencyName = depPath:match("^(.+)/(.+)$")
+				if not dependencyScope or not dependencyName then
 					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
 					continue
 				end
 				table.insert(queue, {
-					scope = depScope,
-					name = depName,
+					scope = dependencyScope,
+					name = dependencyName,
 					constraints = depConstraints,
 					requestRealm = source.requestRealm,
 					originRealm = promoteRealm(source.requestRealm, chosenRealm),
@@ -860,15 +868,15 @@ local function buildPackageLink(
 	packageId: string,
 	moduleName: string,
 	sourceRealm: string,
-	depRealm: string,
+	dependencyRealm: string,
 	isRoot: boolean
 ): ModuleScript
-	if sourceRealm == depRealm then
+	if sourceRealm == dependencyRealm then
 		if isRoot then
 			return linkRootSameIndex(linkName, packageId, moduleName)
 		end
 		return linkSameIndex(linkName, packageId, moduleName)
-	elseif depRealm == "shared" then
+	elseif dependencyRealm == "shared" then
 		return linkSharedIndex(linkName, packageId, moduleName)
 	else
 		return linkServerIndex(linkName, packageId, moduleName)
@@ -912,11 +920,11 @@ local function garbageCollectAll()
 		if not indexFolder then
 			return
 		end
-		local pkgFolder = indexFolder:FindFirstChild(packageId)
-		if not pkgFolder then
+		local packageFolder = indexFolder:FindFirstChild(packageId)
+		if not packageFolder then
 			return
 		end
-		for _, child in pkgFolder:GetChildren() do
+		for _, child in packageFolder:GetChildren() do
 			if child:IsA("ModuleScript") then
 				local depId = extractPackageId(child.Source)
 				if depId then
@@ -956,9 +964,9 @@ function Installer.install(
 	realm: string?,
 	onProgress: ProgressCallback?
 ): (boolean, string?, { string }?)
-	local function progress(msg: string)
+	local function progress(message: string)
 		if onProgress then
-			onProgress(msg)
+			onProgress(message)
 		end
 	end
 
@@ -990,38 +998,44 @@ function Installer.install(
 		end
 	end
 
-	for packageId, pkg in resolved do
-		local packagesFolder = Installer.getPackagesFolder(pkg.realm)
+	for packageId, resolvedPackage in resolved do
+		local packagesFolder = Installer.getPackagesFolder(resolvedPackage.realm)
 		local indexFolder = getOrCreateIndex(packagesFolder)
 
-		progress(`Downloading {pkg.scope}/{pkg.name}@{pkg.version}...`)
-		local tree, err = downloadAndExtract(pkg.scope, pkg.name, pkg.version)
+		progress(`Downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}...`)
+		local tree, errorMessage =
+			downloadAndExtract(resolvedPackage.scope, resolvedPackage.name, resolvedPackage.version)
 		if not tree then
-			table.insert(failures, `{pkg.scope}/{pkg.name}@{pkg.version}: {err}`)
-			warn(`[Discover] Failed to download {pkg.scope}/{pkg.name}@{pkg.version}: {err}`)
+			table.insert(
+				failures,
+				`{resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {errorMessage}`
+			)
+			warn(
+				`[Discover] Failed to download {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {errorMessage}`
+			)
 			continue
 		end
 
-		local moduleName = getModuleName(tree, pkg.name)
+		local moduleName = getModuleName(tree, resolvedPackage.name)
 		moduleNames[packageId] = moduleName
 
-		local pkgFolder = Instance.new("Folder")
-		pkgFolder.Name = packageId
-		pkgFolder:SetAttribute("ModuleName", moduleName)
-		placeTreeInFolder(tree, pkgFolder)
-		pkgFolder.Parent = indexFolder
+		local packageFolder = Instance.new("Folder")
+		packageFolder.Name = packageId
+		packageFolder:SetAttribute("ModuleName", moduleName)
+		placeTreeInFolder(tree, packageFolder)
+		packageFolder.Parent = indexFolder
 	end
 
-	for packageId, pkg in resolved do
-		local packagesFolder = Installer.getPackagesFolder(pkg.realm)
+	for packageId, resolvedPackage in resolved do
+		local packagesFolder = Installer.getPackagesFolder(resolvedPackage.realm)
 		local indexFolder = getOrCreateIndex(packagesFolder)
-		local pkgFolder = indexFolder:FindFirstChild(packageId)
-		if not pkgFolder then
+		local packageFolder = indexFolder:FindFirstChild(packageId)
+		if not packageFolder then
 			continue
 		end
 
-		for _, dep in pkg.dependencies do
-			if pkgFolder:FindFirstChild(dep.alias) then
+		for _, dep in resolvedPackage.dependencies do
+			if packageFolder:FindFirstChild(dep.alias) then
 				continue
 			end
 
@@ -1030,9 +1044,16 @@ function Installer.install(
 				continue
 			end
 
-			local depModuleName = moduleNames[dep.packageId] or depResolved.name
-			local link = buildPackageLink(dep.alias, dep.packageId, depModuleName, pkg.realm, depResolved.realm, false)
-			link.Parent = pkgFolder
+			local dependencyModuleName = moduleNames[dep.packageId] or depResolved.name
+			local link = buildPackageLink(
+				dep.alias,
+				dep.packageId,
+				dependencyModuleName,
+				resolvedPackage.realm,
+				depResolved.realm,
+				false
+			)
+			link.Parent = packageFolder
 			PackageTypes.processLink(link)
 		end
 	end
@@ -1053,20 +1074,20 @@ function Installer.install(
 	garbageCollectAll()
 
 	local allResolved: { [string]: ResolvedPackage } = {}
-	for _, pkg in InstalledPackages.list() do
-		if not resolved[pkg.packageId] then
-			allResolved[pkg.packageId] = {
-				scope = pkg.scope,
-				name = pkg.name,
-				version = pkg.version,
-				realm = pkg.realm,
-				packageId = pkg.packageId,
+	for _, installedPackage in InstalledPackages.list() do
+		if not resolved[installedPackage.packageId] then
+			allResolved[installedPackage.packageId] = {
+				scope = installedPackage.scope,
+				name = installedPackage.name,
+				version = installedPackage.version,
+				realm = installedPackage.realm,
+				packageId = installedPackage.packageId,
 				dependencies = {},
 			}
 		end
 	end
-	for packageId, pkg in resolved do
-		allResolved[packageId] = pkg
+	for packageId, resolvedPackage in resolved do
+		allResolved[packageId] = resolvedPackage
 	end
 	saveLockfile(allResolved)
 
@@ -1088,16 +1109,16 @@ function Installer.uninstall(scope: string, name: string): (boolean, string?)
 	garbageCollectAll()
 
 	local allResolved: { [string]: ResolvedPackage } = {}
-	for _, pkg in InstalledPackages.list() do
-		if pkg.scope == scope and pkg.name == name then
+	for _, installedPackage in InstalledPackages.list() do
+		if installedPackage.scope == scope and installedPackage.name == name then
 			continue
 		end
-		allResolved[pkg.packageId] = {
-			scope = pkg.scope,
-			name = pkg.name,
-			version = pkg.version,
-			realm = pkg.realm,
-			packageId = pkg.packageId,
+		allResolved[installedPackage.packageId] = {
+			scope = installedPackage.scope,
+			name = installedPackage.name,
+			version = installedPackage.version,
+			realm = installedPackage.realm,
+			packageId = installedPackage.packageId,
 			dependencies = {},
 		}
 	end

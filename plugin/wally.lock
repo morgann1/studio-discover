@@ -94,5 +94,10 @@ dependencies = []
 
 [[package]]
 name = "morgan/studio-discover"
+version = "2.4.2"
+dependencies = [["Charm", "littensy/charm@0.10.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["zzlib", "morgann1/zzlib@0.1.0"]]
+
+[[package]]
+name = "morgann1/zzlib"
 version = "0.1.0"
-dependencies = [["Charm", "littensy/charm@0.10.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"]]
+dependencies = []
