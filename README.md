@@ -2,7 +2,7 @@
 
 # 📦 Discover
 
-**A lightweight Roblox Studio plugin for browsing and installing Wally packages, right inside Studio.**
+**A Roblox Studio plugin for browsing and installing Wally packages.**
 
 </div>
 
@@ -14,7 +14,7 @@
 
 ## Why?
 
-[Wally](https://wally.run) is the go-to package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a developer who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package. Not everyone wants to make that switch.
+[Wally](https://wally.run) is the most popular package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a developer who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package. Not everyone wants to make that switch.
 
 [studio-wally](https://github.com/fewkz/studio-wally) exists, but it hasn't been updated in a few years, doesn't support the `server` realm, and depends on the experimental Rojo headless API.
 
@@ -45,15 +45,6 @@ lune run build
 Then follow the same steps as above: drag `Discover.rbxm` into Studio and save it as a local plugin.
 
 > `lune run install` handles the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
-
-## 🔐 Permissions
-
-The first time you use the plugin, Studio will ask for a couple of permissions:
-
-- 🌐 **HTTP requests**, so it can talk to the [Wally registry](https://wally.run) and fetch package contents.
-- 💉 **Script injection**, so it can create the Wally alias `ModuleScript`s and drop package code into `ReplicatedStorage.Packages` or `ServerStorage.ServerPackages`.
-
-Click **Allow** on both and you're set. ✅
 
 ## 🙏 Credits
 
