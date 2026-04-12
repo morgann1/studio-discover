@@ -1,3 +1,9 @@
+local RunService = game:GetService("RunService")
+
+if RunService:IsRunning() then
+	return
+end
+
 local Discover = script.Parent.Parent
 local Packages = Discover.Packages
 
