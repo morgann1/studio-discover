@@ -26,6 +26,8 @@ local e = React.createElement
 local CONVENTION_ITEMS = {
 	{ id = "Normal", text = "Normal" },
 	{ id = "PascalCase", text = "PascalCase" },
+	{ id = "camelCase", text = "camelCase" },
+	{ id = "snake_case", text = "snake_case" },
 }
 
 local PREVIEW_SAMPLE = "react-roblox"
