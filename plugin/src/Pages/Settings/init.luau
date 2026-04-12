@@ -36,13 +36,98 @@ local function Settings()
 	local nav = Navigation.useNavigation()
 	local ctx = SettingsModule.useSettings()
 	local current = ctx.settings.namingConvention
+	local previewText = SettingsModule.formatPackageName(PREVIEW_SAMPLE, current)
 
 	local onBack = React.useCallback(function()
 		nav.pop()
 	end, { nav })
 
-	local previewText = SettingsModule.formatPackageName(PREVIEW_SAMPLE, current)
+	local rows = {
+		{
+			key = "NamingConvention",
+			name = "Naming Convention",
+			description = "How package names are formatted when installed.",
+			footer = e(Text, {
+				Text = `Example: {PREVIEW_SAMPLE} → {previewText}`,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromScale(1, 0),
+				tag = "text-caption-small content-muted text-align-x-left",
+			}),
+			control = e("Frame", {
+				Size = UDim2.fromOffset(200, 40),
+				BackgroundTransparency = 1,
+			}, {
+				Dropdown = e(Dropdown.Root, {
+					label = "",
+					size = InputSize.Medium,
+					width = UDim.new(1, 0),
+					value = current,
+					items = CONVENTION_ITEMS,
+					onItemChanged = function(id: string)
+						ctx.setSetting("namingConvention", id)
+					end,
+				}),
+			}),
+		},
+		{
+			key = "CheckForUpdates",
+			name = "Check for updates",
+			description = "Show a banner when a new version of Discover is available on GitHub.",
+			control = e(Checkbox, {
+				isChecked = ctx.settings.checkForUpdates,
+				onActivated = function()
+					ctx.setSetting("checkForUpdates", not ctx.settings.checkForUpdates)
+				end,
+				size = InputSize.Medium,
+			}),
+		},
+		{
+			key = "VerboseLogging",
+			name = "Verbose logging",
+			description = "Log detailed install information to the output window.",
+			control = e(Checkbox, {
+				isChecked = ctx.settings.verboseLogging,
+				onActivated = function()
+					ctx.setSetting("verboseLogging", not ctx.settings.verboseLogging)
+				end,
+				size = InputSize.Medium,
+			}),
+		},
+		{
+			key = "Overrides",
+			name = "Package Name Overrides",
+			description = "Force a custom install name for packages matching a given name.",
+			control = e(IconButton, {
+				icon = Foundation.Enums.IconName.ChevronLargeRight,
+				size = InputSize.Medium,
+				variant = ButtonVariant.Standard,
+				onActivated = function()
+					nav.push("Overrides")
+				end,
+			}),
+		},
+	}
+
 	local nextContentOrder = ReactHelpers.createNextOrder()
+	local rowChildren: { [string]: any } = {
+		ScrollLayout = e("UIListLayout", {
+			FillDirection = Enum.FillDirection.Vertical,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+		ScrollPadding = e("UIPadding", {
+			PaddingLeft = UDim.new(0, 16),
+			PaddingRight = UDim.new(0, 16),
+		}),
+	}
+	for _, row in rows do
+		rowChildren[row.key] = e(SettingRow, {
+			name = row.name,
+			description = row.description,
+			footer = row.footer,
+			control = row.control,
+			LayoutOrder = nextContentOrder(),
+		})
+	end
 
 	return e(React.Fragment, nil, {
 		TopBar = e(View, {
@@ -93,83 +178,7 @@ local function Settings()
 					AutomaticCanvasSize = Enum.AutomaticSize.Y,
 					CanvasSize = UDim2.new(),
 				},
-			}, {
-				ScrollLayout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Vertical,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-				}),
-				ScrollPadding = e("UIPadding", {
-					PaddingLeft = UDim.new(0, 16),
-					PaddingRight = UDim.new(0, 16),
-				}),
-
-				NamingConvention = e(SettingRow, {
-					name = "Naming Convention",
-					description = "How package names are formatted when installed.",
-					LayoutOrder = nextContentOrder(),
-					footer = e(Text, {
-						Text = `Example: {PREVIEW_SAMPLE} → {previewText}`,
-						AutomaticSize = Enum.AutomaticSize.Y,
-						Size = UDim2.fromScale(1, 0),
-						tag = "text-caption-small content-muted text-align-x-left",
-					}),
-					control = e("Frame", {
-						Size = UDim2.fromOffset(200, 40),
-						BackgroundTransparency = 1,
-					}, {
-						Dropdown = e(Dropdown.Root, {
-							label = "",
-							size = InputSize.Medium,
-							width = UDim.new(1, 0),
-							value = current,
-							items = CONVENTION_ITEMS,
-							onItemChanged = function(id: string)
-								ctx.setSetting("namingConvention", id)
-							end,
-						}),
-					}),
-				}),
-
-				CheckForUpdates = e(SettingRow, {
-					name = "Check for updates",
-					description = "Show a banner when a new version of Discover is available on GitHub.",
-					LayoutOrder = nextContentOrder(),
-					control = e(Checkbox, {
-						isChecked = ctx.settings.checkForUpdates,
-						onActivated = function()
-							ctx.setSetting("checkForUpdates", not ctx.settings.checkForUpdates)
-						end,
-						size = InputSize.Medium,
-					}),
-				}),
-
-				VerboseLogging = e(SettingRow, {
-					name = "Verbose logging",
-					description = "Log detailed install information to the output window.",
-					LayoutOrder = nextContentOrder(),
-					control = e(Checkbox, {
-						isChecked = ctx.settings.verboseLogging,
-						onActivated = function()
-							ctx.setSetting("verboseLogging", not ctx.settings.verboseLogging)
-						end,
-						size = InputSize.Medium,
-					}),
-				}),
-
-				Overrides = e(SettingRow, {
-					name = "Package Name Overrides",
-					description = "Force a custom install name for packages matching a given name.",
-					LayoutOrder = nextContentOrder(),
-					control = e(IconButton, {
-						icon = Foundation.Enums.IconName.ChevronLargeRight,
-						size = InputSize.Medium,
-						variant = ButtonVariant.Standard,
-						onActivated = function()
-							nav.push("Overrides")
-						end,
-					}),
-				}),
-			}),
+			}, rowChildren),
 		}),
 	})
 end
