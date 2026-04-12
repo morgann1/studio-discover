@@ -23,7 +23,7 @@ type PackageHeaderProps = {
 
 local function PackageHeader(props: PackageHeaderProps)
 	local authors = props.authors
-	local authorStr = if authors and #authors > 0 then table.concat(authors, ", ") else props.authorFallback
+	local authorText = if authors and #authors > 0 then table.concat(authors, ", ") else props.authorFallback
 
 	local authorChildren: { [string]: any } = {
 		Layout = e("UIListLayout", {
@@ -51,7 +51,7 @@ local function PackageHeader(props: PackageHeaderProps)
 		end
 	else
 		authorChildren.Label = e(Text, {
-			Text = `by {authorStr}`,
+			Text = `by {authorText}`,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			Size = UDim2.fromScale(1, 0),
 			tag = "text-caption-small content-muted text-align-x-left",

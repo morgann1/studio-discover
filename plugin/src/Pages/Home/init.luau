@@ -121,22 +121,22 @@ local function Home()
 		})
 	elseif #results > 0 then
 		local items = {}
-		for _, pkg in results do
+		for _, result in results do
 			local displayName =
-				SettingsModule.formatPackageName(pkg.name or "", settingsCtx.settings.namingConvention, {
+				SettingsModule.formatPackageName(result.name or "", settingsCtx.settings.namingConvention, {
 					overrides = settingsCtx.settings.nameOverrides,
 				})
-			local desc = pkg.description
-			if not desc or desc == "" then
-				desc = `{displayName} has no provided description.`
+			local description = result.description
+			if not description or description == "" then
+				description = `{displayName} has no provided description.`
 			end
 			table.insert(items, {
-				scope = pkg.scope or "",
-				name = pkg.name or "",
-				description = desc,
-				version = pkg.latestVersion,
-				realm = pkg.realm,
-				depCount = pkg.depCount,
+				scope = result.scope or "",
+				name = result.name or "",
+				description = description,
+				version = result.latestVersion,
+				realm = result.realm,
+				dependencyCount = result.depCount,
 			})
 		end
 		content = e(PackageList, {

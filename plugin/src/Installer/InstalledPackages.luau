@@ -74,25 +74,25 @@ end
 
 function InstalledPackages.map(): { [string]: InstalledPackage }
 	local out = {}
-	for _, pkg in InstalledPackages.list() do
-		out[`{pkg.scope}/{pkg.name}`] = pkg
+	for _, installedPackage in InstalledPackages.list() do
+		out[`{installedPackage.scope}/{installedPackage.name}`] = installedPackage
 	end
 	return out
 end
 
 function InstalledPackages.collectDependencies(indexFolder: Folder, packageId: string): { [string]: true }
 	local deps: { [string]: true } = {}
-	local function walk(pkgId: string)
-		local pkgFolder = indexFolder:FindFirstChild(pkgId)
-		if not pkgFolder then
+	local function walk(walkPackageId: string)
+		local packageFolder = indexFolder:FindFirstChild(walkPackageId)
+		if not packageFolder then
 			return
 		end
-		for _, child in pkgFolder:GetChildren() do
+		for _, child in packageFolder:GetChildren() do
 			if not child:IsA("ModuleScript") then
 				continue
 			end
 			local depId = extractPackageId(child.Source)
-			if depId and depId ~= pkgId and not deps[depId] then
+			if depId and depId ~= walkPackageId and not deps[depId] then
 				deps[depId] = true
 				walk(depId)
 			end
@@ -105,15 +105,15 @@ end
 function InstalledPackages.findDependents(scope: string, name: string): { InstalledPackage }
 	local dependents = {}
 	local targetPrefix = `{scope}_{name}@`
-	for _, pkg in InstalledPackages.list() do
-		if pkg.scope == scope and pkg.name == name then
+	for _, installedPackage in InstalledPackages.list() do
+		if installedPackage.scope == scope and installedPackage.name == name then
 			continue
 		end
-		local root = pkg.indexFolder.Parent :: Folder
-		local deps = InstalledPackages.collectDependencies(root, pkg.packageId)
+		local root = installedPackage.indexFolder.Parent :: Folder
+		local deps = InstalledPackages.collectDependencies(root, installedPackage.packageId)
 		for depId in deps do
 			if string.sub(depId, 1, #targetPrefix) == targetPrefix then
-				table.insert(dependents, pkg)
+				table.insert(dependents, installedPackage)
 				break
 			end
 		end

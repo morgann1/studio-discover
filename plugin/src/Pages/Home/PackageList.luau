@@ -22,7 +22,7 @@ type PackageListItem = {
 	description: string?,
 	version: string?,
 	realm: string?,
-	depCount: number?,
+	dependencyCount: number?,
 }
 
 type PackageListProps = {
@@ -41,18 +41,18 @@ local function PackageList(props: PackageListProps)
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	}
-	for _, pkg in props.items do
-		scrollChildren[cardKey(`{pkg.scope}/{pkg.name}`)] = e(PackageCard, {
-			name = pkg.name,
-			scope = pkg.scope,
-			description = pkg.description,
-			version = pkg.version,
-			realm = pkg.realm,
-			depCount = pkg.depCount,
+	for _, item in props.items do
+		scrollChildren[cardKey(`{item.scope}/{item.name}`)] = e(PackageCard, {
+			name = item.name,
+			scope = item.scope,
+			description = item.description,
+			version = item.version,
+			realm = item.realm,
+			dependencyCount = item.dependencyCount,
 			LayoutOrder = nextCardOrder(),
 			onSelect = props.onSelect,
 		})
-		scrollChildren[cardKey(`divider_{pkg.scope}/{pkg.name}`)] = e(Divider, {
+		scrollChildren[cardKey(`divider_{item.scope}/{item.name}`)] = e(Divider, {
 			LayoutOrder = nextCardOrder(),
 		})
 	end

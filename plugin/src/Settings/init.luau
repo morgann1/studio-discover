@@ -89,9 +89,9 @@ local function SettingsProvider(props: { plugin: Plugin?, children: any })
 end
 
 local function useSettings(): SettingsContext
-	local ctx = React.useContext(Context)
-	assert(ctx, "useSettings must be used within a SettingsProvider")
-	return ctx
+	local settingsContext = React.useContext(Context)
+	assert(settingsContext, "useSettings must be used within a SettingsProvider")
+	return settingsContext
 end
 
 local PASCAL_OVERRIDES: { [string]: string } = {

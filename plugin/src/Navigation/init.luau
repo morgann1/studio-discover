@@ -102,9 +102,9 @@ local function NavigationProvider(props: { children: any })
 end
 
 local function useNavigation(): NavigationContext
-	local ctx = React.useContext(Context)
-	assert(ctx, "useNavigation must be used within a NavigationProvider")
-	return ctx
+	local navigationContext = React.useContext(Context)
+	assert(navigationContext, "useNavigation must be used within a NavigationProvider")
+	return navigationContext
 end
 
 return {

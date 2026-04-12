@@ -158,12 +158,12 @@ function PackageTypes.resolveLink(linkModule: ModuleScript): ModuleScript?
 		return nil
 	end
 
-	local pkgFolder = indexFolder:FindFirstChild(packageId)
-	if not pkgFolder then
+	local packageFolder = indexFolder:FindFirstChild(packageId)
+	if not packageFolder then
 		return nil
 	end
 
-	local target = pkgFolder:FindFirstChild(moduleName)
+	local target = packageFolder:FindFirstChild(moduleName)
 	if target and target:IsA("ModuleScript") then
 		return target
 	end

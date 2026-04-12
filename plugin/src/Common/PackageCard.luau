@@ -18,7 +18,7 @@ type PackageCardProps = {
 	description: string?,
 	version: string?,
 	realm: string?,
-	depCount: number?,
+	dependencyCount: number?,
 	onSelect: ((scope: string, name: string) -> ())?,
 	LayoutOrder: number?,
 }
@@ -54,9 +54,9 @@ local function PackageCard(props: PackageCardProps)
 		hasPills = true
 		pills.Realm = e(Pill, { text = props.realm, LayoutOrder = nextPill() })
 	end
-	if props.depCount and props.depCount > 0 then
+	if props.dependencyCount and props.dependencyCount > 0 then
 		hasPills = true
-		pills.Deps = e(Pill, { text = `{props.depCount} deps`, LayoutOrder = nextPill() })
+		pills.Deps = e(Pill, { text = `{props.dependencyCount} deps`, LayoutOrder = nextPill() })
 	end
 
 	return e(View, {

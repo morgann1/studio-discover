@@ -116,18 +116,18 @@ local function useWidgetEnabled(widget: Instance?): boolean
 end
 
 local function AppContent(props: { overlayGui: Instance? })
-	local ctx = SettingsModule.useSettings()
-	local isEnabled = ctx.settings.checkForUpdates
+	local settingsContext = SettingsModule.useSettings()
+	local isEnabled = settingsContext.settings.checkForUpdates
 	local widgetEnabled = useWidgetEnabled(props.overlayGui)
 	local update = UpdateChecker.useUpdateChecker(isEnabled, widgetEnabled)
 
-	local isDismissed = update ~= nil and ctx.settings.dismissedUpdateVersion == update.version
+	local isDismissed = update ~= nil and settingsContext.settings.dismissedUpdateVersion == update.version
 
 	local onDismiss = React.useCallback(function()
 		if update then
-			ctx.setSetting("dismissedUpdateVersion", update.version)
+			settingsContext.setSetting("dismissedUpdateVersion", update.version)
 		end
-	end, { update, ctx } :: { any })
+	end, { update, settingsContext } :: { any })
 
 	return e("Frame", {
 		Size = UDim2.fromScale(1, 1),

@@ -40,7 +40,7 @@ local function Package()
 	local screen = nav.screen
 	local scope = screen.options and screen.options.scope or ""
 	local rawName = screen.options and screen.options.name or ""
-	local ctx = SettingsModule.useSettings()
+	local settingsContext = SettingsModule.useSettings()
 
 	local allVersions: { any }?, setAllVersions = React.useState(nil :: { any }?)
 	local selectedVersion: string?, setSelectedVersion = React.useState(nil :: string?)
@@ -77,18 +77,18 @@ local function Package()
 		return allVersions[#allVersions]
 	end, { allVersions, selectedVersion })
 
-	local repoHint: string? = nil
+	local repositoryHint: string? = nil
 	if metadata and metadata.package and metadata.package.repository then
 		local repo = metadata.package.repository
 		local lastSegment = string.match(repo, "([^/]+)/?$")
 		if lastSegment then
 			lastSegment = (string.gsub(lastSegment, "%.git$", ""))
-			repoHint = lastSegment
+			repositoryHint = lastSegment
 		end
 	end
-	local name = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
-		hint = repoHint,
-		overrides = ctx.settings.nameOverrides,
+	local name = SettingsModule.formatPackageName(rawName, settingsContext.settings.namingConvention, {
+		hint = repositoryHint,
+		overrides = settingsContext.settings.nameOverrides,
 	})
 
 	local isLatestSelected = allVersions ~= nil
@@ -98,18 +98,25 @@ local function Package()
 	local installedMap = useAtom(InstalledState.map)
 	local installedEntry = installedMap[`{scope}/{rawName}`]
 
-	local pkg = metadata and metadata.package
-	local version = if pkg then pkg.version or "?" else "?"
-	local installRealm = if pkg then pkg.realm or "shared" else "shared"
+	local packageData = metadata and metadata.package
+	local version = if packageData then packageData.version or "?" else "?"
+	local installRealm = if packageData then packageData.realm or "shared" else "shared"
 	local alreadyInstalled = installedEntry ~= nil and installedEntry.version == selectedVersion
 
-	local installAlias = SettingsModule.formatPackageName(rawName, ctx.settings.namingConvention, {
-		hint = repoHint,
-		overrides = ctx.settings.nameOverrides,
+	local installAlias = SettingsModule.formatPackageName(rawName, settingsContext.settings.namingConvention, {
+		hint = repositoryHint,
+		overrides = settingsContext.settings.nameOverrides,
 	})
 
-	local installer =
-		useInstaller(scope, rawName, version, installAlias, installRealm, ctx.settings.verboseLogging, selectedVersion)
+	local installer = useInstaller(
+		scope,
+		rawName,
+		version,
+		installAlias,
+		installRealm,
+		settingsContext.settings.verboseLogging,
+		selectedVersion
+	)
 
 	local onBack = React.useCallback(function()
 		nav.pop()
@@ -141,21 +148,24 @@ local function Package()
 				else nil,
 		})
 	elseif metadata then
-		local description = pkg.description or ""
-		local license = pkg.license or "Unknown"
-		local authors = pkg.authors
-		local repository = pkg.repository
-		local homepage = pkg.homepage
+		local description = packageData.description or ""
+		local license = packageData.license or "Unknown"
+		local authors = packageData.authors
+		local repository = packageData.repository
+		local homepage = packageData.homepage
 
 		if description == "" then
 			description = `{name} has no provided description.`
 		end
 
-		local allDeps = {}
+		local allDependencies = {}
 		local function collectDeps(source, category)
 			if source then
-				for depName, depVersion in source do
-					table.insert(allDeps, { name = depName, version = depVersion, category = category })
+				for dependencyName, dependencyVersion in source do
+					table.insert(
+						allDependencies,
+						{ name = dependencyName, version = dependencyVersion, category = category }
+					)
 				end
 			end
 		end
@@ -163,23 +173,23 @@ local function Package()
 		collectDeps(metadata["server-dependencies"], "server")
 		collectDeps(metadata["dev-dependencies"], "dev")
 
-		local depGroups: { [string]: { any } } = { dependency = {}, server = {}, dev = {} }
-		for _, dep in allDeps do
-			table.insert(depGroups[dep.category], dep)
+		local dependencyGroups: { [string]: { any } } = { dependency = {}, server = {}, dev = {} }
+		for _, dep in allDependencies do
+			table.insert(dependencyGroups[dep.category], dep)
 		end
 
-		local function onDepSelect(depScope: string, depName: string)
-			nav.push("Package", { scope = depScope, name = depName })
+		local function onDependencySelect(dependencyScope: string, dependencyName: string)
+			nav.push("Package", { scope = dependencyScope, name = dependencyName })
 		end
 
 		local function buildDepGroup(category: string, layoutOrder: number)
-			local list = depGroups[category]
+			local list = dependencyGroups[category]
 			if #list == 0 then
 				return nil
 			end
 			return e(DependencyGroup, {
 				deps = list,
-				onSelect = onDepSelect,
+				onSelect = onDependencySelect,
 				LayoutOrder = layoutOrder,
 			})
 		end
@@ -251,15 +261,15 @@ local function Package()
 		local dependentKey = ReactHelpers.createUniqueKey()
 		local nextDependentOrder = ReactHelpers.createNextOrder()
 		for _, dep in dependents do
-			local depScope = dep.scope
-			local depName = dep.name
-			dependentsChildren[dependentKey(`{depScope}/{depName}`)] = e(Button, {
-				text = `{depScope}/{depName}`,
+			local dependencyScope = dep.scope
+			local dependencyName = dep.name
+			dependentsChildren[dependentKey(`{dependencyScope}/{dependencyName}`)] = e(Button, {
+				text = `{dependencyScope}/{dependencyName}`,
 				variant = ButtonVariant.Link,
 				size = InputSize.Small,
 				LayoutOrder = nextDependentOrder(),
 				onActivated = function()
-					nav.push("Package", { scope = depScope, name = depName })
+					nav.push("Package", { scope = dependencyScope, name = dependencyName })
 				end,
 			})
 		end
@@ -341,28 +351,28 @@ local function Package()
 					}),
 			}),
 
-			SharedDeps = #depGroups.dependency > 0 and e(Section, {
-				text = `Shared Dependencies ({#depGroups.dependency})`,
+			SharedDeps = #dependencyGroups.dependency > 0 and e(Section, {
+				text = `Shared Dependencies ({#dependencyGroups.dependency})`,
 				LayoutOrder = nextPageOrder(),
 			}, {
 				Group = buildDepGroup("dependency", 1),
 			}),
 
-			ServerDeps = #depGroups.server > 0 and e(Section, {
-				text = `Server Dependencies ({#depGroups.server})`,
+			ServerDeps = #dependencyGroups.server > 0 and e(Section, {
+				text = `Server Dependencies ({#dependencyGroups.server})`,
 				LayoutOrder = nextPageOrder(),
 			}, {
 				Group = buildDepGroup("server", 1),
 			}),
 
-			DevDeps = #depGroups.dev > 0 and e(Section, {
-				text = `Dev Dependencies ({#depGroups.dev})`,
+			DevDeps = #dependencyGroups.dev > 0 and e(Section, {
+				text = `Dev Dependencies ({#dependencyGroups.dev})`,
 				LayoutOrder = nextPageOrder(),
 			}, {
 				Group = buildDepGroup("dev", 1),
 			}),
 
-			NoDeps = #allDeps == 0 and e(Section, {
+			NoDeps = #allDependencies == 0 and e(Section, {
 				text = "No dependencies",
 				collapsible = false,
 				LayoutOrder = nextPageOrder(),

@@ -27,8 +27,8 @@ type DependencyGroupProps = {
 	LayoutOrder: number,
 }
 
-local function parseDepPath(depVersion: string): (string?, string?)
-	local path = string.match(depVersion, "^([^@]+)")
+local function parseDepPath(dependencyVersion: string): (string?, string?)
+	local path = string.match(dependencyVersion, "^([^@]+)")
 	if path then
 		local s, n = string.match(path, "^(.+)/(.+)$")
 		return s, n
@@ -59,15 +59,15 @@ local function DependencyGroup(props: DependencyGroupProps)
 	end
 
 	for _, dep in props.deps do
-		local depScope, depName = parseDepPath(tostring(dep.version))
-		local displayName = depScope and `{depScope}/{depName}` or dep.name
+		local dependencyScope, dependencyName = parseDepPath(tostring(dep.version))
+		local displayName = dependencyScope and `{dependencyScope}/{dependencyName}` or dep.name
 		children[depKey(displayName)] = e(Button, {
 			text = displayName,
 			variant = ButtonVariant.Link,
 			size = InputSize.Small,
 			LayoutOrder = nextOrder(),
-			onActivated = depScope and function()
-				props.onSelect(depScope, depName)
+			onActivated = dependencyScope and function()
+				props.onSelect(dependencyScope, dependencyName)
 			end or nil,
 		})
 	end

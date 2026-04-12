@@ -116,16 +116,16 @@ end
 
 local function wallyGet(url: string)
 	acquireSlot()
-	local body, err, statusCode, headers = requestOnce(url)
+	local body, errorMessage, statusCode, headers = requestOnce(url)
 
 	if statusCode == 429 then
 		local retry = parseRetryAfter(headers)
 		waitRateLimited(retry)
-		body, err, statusCode, headers = requestOnce(url)
+		body, errorMessage, statusCode, headers = requestOnce(url)
 	end
 
-	if err then
-		return nil, err
+	if errorMessage then
+		return nil, errorMessage
 	end
 	if statusCode and (statusCode < 200 or statusCode >= 300) then
 		return nil, `HTTP {statusCode}`
@@ -148,11 +148,11 @@ local function cachedGet(url: string)
 	if entry and (os.clock() - entry.time) < CACHE_TTL then
 		return entry.data, nil
 	end
-	local data, err = wallyGet(url)
+	local data, errorMessage = wallyGet(url)
 	if data then
 		cache[url] = { data = data, time = os.clock() }
 	end
-	return data, err
+	return data, errorMessage
 end
 
 local function formatQuery(query: string): string

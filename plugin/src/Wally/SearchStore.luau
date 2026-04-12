@@ -47,25 +47,25 @@ function Search.run(text: string)
 	end)
 
 	task.spawn(function()
-		local data, err = WallyAPI.search(text)
+		local data, errorMessage = WallyAPI.search(text)
 
 		if searchVersion ~= thisVersion then
 			return
 		end
 
 		if not data then
-			warn("[Discover] Search failed:", err)
+			warn("[Discover] Search failed:", errorMessage)
 			Charm.batch(function()
 				Search.isLoading(false)
 				Search.results({})
-				Search.error(tostring(err) or "Couldn't reach the Wally registry.")
+				Search.error(tostring(errorMessage) or "Couldn't reach the Wally registry.")
 			end)
 			return
 		end
 
-		for _, pkg in data do
-			if not pkg.latestVersion and pkg.versions and pkg.versions[1] then
-				pkg.latestVersion = pkg.versions[1]
+		for _, result in data do
+			if not result.latestVersion and result.versions and result.versions[1] then
+				result.latestVersion = result.versions[1]
 			end
 		end
 

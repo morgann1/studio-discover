@@ -34,8 +34,8 @@ local PREVIEW_SAMPLE = "react-roblox"
 
 local function Settings()
 	local nav = Navigation.useNavigation()
-	local ctx = SettingsModule.useSettings()
-	local current = ctx.settings.namingConvention
+	local settingsContext = SettingsModule.useSettings()
+	local current = settingsContext.settings.namingConvention
 	local previewText = SettingsModule.formatPackageName(PREVIEW_SAMPLE, current)
 
 	local onBack = React.useCallback(function()
@@ -64,7 +64,7 @@ local function Settings()
 					value = current,
 					items = CONVENTION_ITEMS,
 					onItemChanged = function(id: string)
-						ctx.setSetting("namingConvention", id)
+						settingsContext.setSetting("namingConvention", id)
 					end,
 				}),
 			}),
@@ -74,9 +74,9 @@ local function Settings()
 			name = "Check for updates",
 			description = "Show a banner when a new version of Discover is available on GitHub.",
 			control = e(Checkbox, {
-				isChecked = ctx.settings.checkForUpdates,
+				isChecked = settingsContext.settings.checkForUpdates,
 				onActivated = function()
-					ctx.setSetting("checkForUpdates", not ctx.settings.checkForUpdates)
+					settingsContext.setSetting("checkForUpdates", not settingsContext.settings.checkForUpdates)
 				end,
 				size = InputSize.Medium,
 			}),
@@ -86,9 +86,9 @@ local function Settings()
 			name = "Verbose logging",
 			description = "Log detailed install information to the output window.",
 			control = e(Checkbox, {
-				isChecked = ctx.settings.verboseLogging,
+				isChecked = settingsContext.settings.verboseLogging,
 				onActivated = function()
-					ctx.setSetting("verboseLogging", not ctx.settings.verboseLogging)
+					settingsContext.setSetting("verboseLogging", not settingsContext.settings.verboseLogging)
 				end,
 				size = InputSize.Medium,
 			}),

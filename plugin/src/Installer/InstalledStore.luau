@@ -15,8 +15,8 @@ Installed.map = Charm.atom({} :: { [string]: InstalledPackage })
 function Installed.refresh()
 	local list = InstalledPackages.list()
 	local map: { [string]: InstalledPackage } = {}
-	for _, pkg in list do
-		map[`{pkg.scope}/{pkg.name}`] = pkg
+	for _, installedPackage in list do
+		map[`{installedPackage.scope}/{installedPackage.name}`] = installedPackage
 	end
 	Charm.batch(function()
 		Installed.list(list)

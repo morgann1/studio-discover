@@ -25,8 +25,8 @@ local e = React.createElement
 
 local function Overrides()
 	local nav = Navigation.useNavigation()
-	local ctx = SettingsModule.useSettings()
-	local overrides = ctx.settings.nameOverrides
+	local settingsContext = SettingsModule.useSettings()
+	local overrides = settingsContext.settings.nameOverrides
 
 	local newKey, setNewKey = React.useState("")
 	local newValue, setNewValue = React.useState("")
@@ -43,16 +43,16 @@ local function Overrides()
 		end
 		local updated = table.clone(overrides)
 		updated[trimmedKey] = trimmedValue
-		ctx.setSetting("nameOverrides", updated)
+		settingsContext.setSetting("nameOverrides", updated)
 		setNewKey("")
 		setNewValue("")
-	end, { ctx, overrides, newKey, newValue } :: { any })
+	end, { settingsContext, overrides, newKey, newValue } :: { any })
 
 	local removeOverride = React.useCallback(function(key: string)
 		local updated = table.clone(overrides)
 		updated[key] = nil
-		ctx.setSetting("nameOverrides", updated)
-	end, { ctx, overrides } :: { any })
+		settingsContext.setSetting("nameOverrides", updated)
+	end, { settingsContext, overrides } :: { any })
 
 	local sortedKeys = {}
 	for k in overrides do

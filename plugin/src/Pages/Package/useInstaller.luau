@@ -39,9 +39,16 @@ local function useInstaller(
 
 		task.spawn(function()
 			Installer.setVerbose(verboseLogging)
-			local success, err, failures = Installer.install(scope, name, version, alias, realm, function(msg)
-				setProgress(msg)
-			end)
+			local success, errorMessage, failures = Installer.install(
+				scope,
+				name,
+				version,
+				alias,
+				realm,
+				function(message)
+					setProgress(message)
+				end
+			)
 			setProgress(nil)
 
 			if success then
@@ -58,8 +65,8 @@ local function useInstaller(
 				end
 			else
 				setStatus("error")
-				setError(err)
-				warn("[Discover] Install failed:", err)
+				setError(errorMessage)
+				warn("[Discover] Install failed:", errorMessage)
 			end
 		end)
 	end, { scope, name, version, alias, realm, verboseLogging } :: { any })

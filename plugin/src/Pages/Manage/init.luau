@@ -41,9 +41,9 @@ local function Manage()
 
 	React.useEffect(function()
 		local cancelled = false
-		for _, pkg in installed do
+		for _, installedPackage in installed do
 			task.spawn(function()
-				local meta = WallyAPI.metadata(pkg.scope, pkg.name)
+				local meta = WallyAPI.metadata(installedPackage.scope, installedPackage.name)
 				if cancelled then
 					return
 				end
@@ -51,7 +51,7 @@ local function Manage()
 					local latest = meta.versions[1].package.version
 					setLatestVersions(function(prev)
 						local new = table.clone(prev)
-						new[`{pkg.scope}/{pkg.name}`] = latest
+						new[`{installedPackage.scope}/{installedPackage.name}`] = latest
 						return new
 					end)
 				end
@@ -75,24 +75,24 @@ local function Manage()
 		if not target then
 			return
 		end
-		local pkg
+		local matchedPackage
 		for _, candidate in installed do
 			if candidate.scope == scope and candidate.name == name then
-				pkg = candidate
+				matchedPackage = candidate
 				break
 			end
 		end
-		if not pkg then
+		if not matchedPackage then
 			return
 		end
 		task.spawn(function()
-			local ctx = settingsRef.current
-			local alias = SettingsModule.formatPackageName(name, ctx.settings.namingConvention, {
-				overrides = ctx.settings.nameOverrides,
+			local settingsContext = settingsRef.current
+			local alias = SettingsModule.formatPackageName(name, settingsContext.settings.namingConvention, {
+				overrides = settingsContext.settings.nameOverrides,
 			})
-			local ok, err = Installer.install(scope, name, target, alias, pkg.realm)
+			local ok, errorMessage = Installer.install(scope, name, target, alias, matchedPackage.realm)
 			if not ok then
-				warn("[Discover] Update failed:", err)
+				warn("[Discover] Update failed:", errorMessage)
 			end
 			InstalledState.refresh()
 		end)
@@ -100,9 +100,9 @@ local function Manage()
 
 	local onRowUninstall = React.useCallback(function(scope: string, name: string)
 		if settingsCtx.settings.skipUninstallConfirm then
-			local ok, err = Installer.uninstall(scope, name)
+			local ok, errorMessage = Installer.uninstall(scope, name)
 			if not ok then
-				warn("[Discover] Uninstall failed:", err)
+				warn("[Discover] Uninstall failed:", errorMessage)
 			end
 			InstalledState.refresh()
 		else
@@ -118,14 +118,14 @@ local function Manage()
 	}
 	local rowKey = ReactHelpers.createUniqueKey()
 	local nextRowOrder = ReactHelpers.createNextOrder()
-	for _, pkg in installed do
-		local key = `{pkg.scope}/{pkg.name}`
+	for _, installedPackage in installed do
+		local key = `{installedPackage.scope}/{installedPackage.name}`
 		local latest = latestVersions[key]
 		rows[rowKey(key)] = e(InstalledRow, {
-			scope = pkg.scope,
-			name = pkg.name,
-			version = pkg.version,
-			realm = pkg.realm,
+			scope = installedPackage.scope,
+			name = installedPackage.name,
+			version = installedPackage.version,
+			realm = installedPackage.realm,
 			latestVersion = latest,
 			LayoutOrder = nextRowOrder(),
 			onSelect = onRowSelect,
@@ -240,9 +240,10 @@ local function Manage()
 							variant = ButtonVariant.Emphasis,
 							onActivated = function()
 								if pendingUninstall then
-									local ok, err = Installer.uninstall(pendingUninstall.scope, pendingUninstall.name)
+									local ok, errorMessage =
+										Installer.uninstall(pendingUninstall.scope, pendingUninstall.name)
 									if not ok then
-										warn("[Discover] Uninstall failed:", err)
+										warn("[Discover] Uninstall failed:", errorMessage)
 									end
 								end
 								setPendingUninstall(nil)
