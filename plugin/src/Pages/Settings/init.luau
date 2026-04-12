@@ -24,8 +24,8 @@ local Visibility = Foundation.Enums.Visibility
 local e = React.createElement
 
 local CONVENTION_ITEMS = {
-	{ id = "Normal", text = "Normal (react-roblox)" },
-	{ id = "PascalCase", text = "PascalCase (ReactRoblox)" },
+	{ id = "Normal", text = "Normal" },
+	{ id = "PascalCase", text = "PascalCase" },
 }
 
 local PREVIEW_SAMPLE = "react-roblox"
@@ -103,8 +103,14 @@ local function Settings()
 
 				NamingConvention = e(SettingRow, {
 					name = "Naming Convention",
-					description = `How package names are formatted when installed. Example: {PREVIEW_SAMPLE} → {previewText}`,
+					description = "How package names are formatted when installed.",
 					LayoutOrder = nextContentOrder(),
+					footer = e(Text, {
+						Text = `Example: {PREVIEW_SAMPLE} → {previewText}`,
+						AutomaticSize = Enum.AutomaticSize.Y,
+						Size = UDim2.fromScale(1, 0),
+						tag = "text-caption-small content-muted text-align-x-left",
+					}),
 					control = e("Frame", {
 						Size = UDim2.fromOffset(200, 40),
 						BackgroundTransparency = 1,
