@@ -936,6 +936,10 @@ function Installer.install(
 		end
 	end
 
+	if realm == "dev" then
+		return false, "Dev realm packages are not supported. Discover can only install shared and server packages."
+	end
+
 	progress("Resolving dependencies...")
 	local resolved, failures = resolve(scope, name, version, realm, onProgress)
 

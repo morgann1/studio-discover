@@ -236,13 +236,16 @@ local function Package()
 			end)
 		end
 
-		local installButtonText = if installStatus == "installing"
-			then "Installing..."
+		local isDevRealm = installRealm == "dev"
+		local installButtonText = if isDevRealm
+			then "Not Supported"
+			elseif installStatus == "installing" then "Installing..."
 			elseif installStatus == "installed" or alreadyInstalled then "Installed"
 			elseif installStatus == "partial" then "Installed (with warnings)"
 			elseif installStatus == "error" then "Retry"
 			else "Install"
-		local installButtonDisabled = installStatus == "installing"
+		local installButtonDisabled = isDevRealm
+			or installStatus == "installing"
 			or installStatus == "installed"
 			or installStatus == "partial"
 			or alreadyInstalled
@@ -488,6 +491,13 @@ local function Package()
 					LayoutOrder = nextPageOrder(),
 				})
 				else nil,
+
+			DevRealmNotice = isDevRealm and e(SystemBanner, {
+				severity = AlertSeverity.Warning,
+				title = "Dev realm not supported",
+				description = "Discover can only install shared and server realm packages.",
+				LayoutOrder = nextPageOrder(),
+			}) or nil,
 
 			InstallMessage = installError and e(SystemBanner, {
 				severity = if installStatus == "partial" then AlertSeverity.Warning else AlertSeverity.Error,
