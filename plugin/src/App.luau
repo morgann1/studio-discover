@@ -91,10 +91,35 @@ end
 local SystemBanner = Foundation.SystemBanner
 local AlertSeverity = Foundation.Enums.AlertSeverity
 
-local function AppContent()
+local function useWidgetEnabled(widget: Instance?): boolean
+	local enabled, setEnabled = React.useState(function()
+		if widget and (widget :: any).Enabled ~= nil then
+			return (widget :: any).Enabled
+		end
+		return true
+	end)
+
+	React.useEffect(function()
+		if not widget then
+			return nil
+		end
+		local gui = widget :: DockWidgetPluginGui
+		local connection = gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+			setEnabled(gui.Enabled)
+		end)
+		return function()
+			connection:Disconnect()
+		end
+	end, { widget })
+
+	return enabled
+end
+
+local function AppContent(props: { overlayGui: Instance? })
 	local ctx = SettingsModule.useSettings()
 	local isEnabled = ctx.settings.checkForUpdates
-	local update = UpdateChecker.useUpdateChecker(isEnabled)
+	local widgetEnabled = useWidgetEnabled(props.overlayGui)
+	local update = UpdateChecker.useUpdateChecker(isEnabled, widgetEnabled)
 
 	local isDismissed = update ~= nil and ctx.settings.dismissedUpdateVersion == update.version
 
@@ -154,7 +179,7 @@ local function App(props: { plugin: Plugin?, overlayGui: Instance? })
 		overlayGui = props.overlayGui,
 	}, {
 		Settings = e(SettingsModule.SettingsProvider, { plugin = props.plugin }, {
-			AppContent = e(AppContent),
+			AppContent = e(AppContent, { overlayGui = props.overlayGui }),
 		}),
 	})
 end

@@ -64,40 +64,39 @@ local function fetchLatestRelease(): UpdateInfo?
 	return nil
 end
 
-local function useUpdateChecker(isEnabled: boolean): UpdateInfo?
+local function useUpdateChecker(isEnabled: boolean, widgetEnabled: boolean): UpdateInfo?
 	local update: UpdateInfo?, setUpdate = React.useState(nil :: UpdateInfo?)
+	local lastCheckTime, setLastCheckTime = React.useState(0)
 
 	React.useEffect(function()
-		if not isEnabled then
-			setUpdate(nil)
+		if not isEnabled or not widgetEnabled then
+			return nil
+		end
+
+		if os.clock() - lastCheckTime < CHECK_INTERVAL then
 			return nil
 		end
 
 		local cancelled = false
 
-		local function check()
+		task.spawn(function()
 			local info = fetchLatestRelease()
 			if not cancelled then
 				setUpdate(info)
-			end
-		end
-
-		task.spawn(check)
-
-		local loopHandle: thread? = nil
-		loopHandle = task.delay(CHECK_INTERVAL, function()
-			while not cancelled do
-				check()
-				task.wait(CHECK_INTERVAL)
+				setLastCheckTime(os.clock())
 			end
 		end)
 
 		return function()
 			cancelled = true
-			if loopHandle then
-				task.cancel(loopHandle)
-			end
 		end
+	end, { isEnabled, widgetEnabled } :: { any })
+
+	React.useEffect(function()
+		if not isEnabled then
+			setUpdate(nil)
+		end
+		return nil
 	end, { isEnabled })
 
 	return update
