@@ -5,7 +5,7 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local PackageCard = require(Discover.Src.Common.PackageCard)
+local PackageList = require(script.PackageList)
 local PopularPackages = require(script.PopularPackages)
 local ReactHelpers = require(Discover.Src.Common.React)
 local SearchState = require(Discover.Src.Wally.SearchStore)
@@ -16,7 +16,6 @@ local useWallyStatusMessage = require(Discover.Src.Wally.useWallyStatus)
 local View = Foundation.View
 local Text = Foundation.Text
 local TextInput = Foundation.TextInput
-local ScrollView = Foundation.ScrollView
 local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local Empty = Foundation.Empty
@@ -25,7 +24,6 @@ local Skeleton = Foundation.Skeleton
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
-local Visibility = Foundation.Enums.Visibility
 local AlertSeverity = Foundation.Enums.AlertSeverity
 
 local e = React.createElement
@@ -63,36 +61,6 @@ local function Home()
 	local onCardSelect = React.useCallback(function(scope: string, rawName: string)
 		nav.push("Package", { scope = scope, name = rawName })
 	end, { nav })
-
-	local packageCards = {}
-	local cardKey = ReactHelpers.createUniqueKey()
-	local nextCardOrder = ReactHelpers.createNextOrder()
-	for _, pkg in results do
-		local scope = pkg.scope or ""
-		local rawName = pkg.name or ""
-		local displayName = SettingsModule.formatPackageName(rawName, settingsCtx.settings.namingConvention, {
-			overrides = settingsCtx.settings.nameOverrides,
-		})
-		local desc = pkg.description
-		if not desc or desc == "" then
-			desc = `{displayName} has no provided description.`
-		end
-
-		local pkgVersion = pkg.latestVersion
-		packageCards[cardKey(`{scope}/{rawName}`)] = e(PackageCard, {
-			name = rawName,
-			scope = scope,
-			description = desc,
-			version = pkgVersion,
-			realm = pkg.realm,
-			depCount = pkg.depCount,
-			LayoutOrder = nextCardOrder(),
-			onSelect = onCardSelect,
-		})
-		packageCards[cardKey(`divider_{scope}/{rawName}`)] = e(Divider, {
-			LayoutOrder = nextCardOrder(),
-		})
-	end
 
 	local content
 	if searchError then
@@ -152,136 +120,35 @@ local function Home()
 			}),
 		})
 	elseif #results > 0 then
-		local resultCount = #results .. " packages found"
-
-		local scrollChildren = {
-			Layout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			}),
-		}
-		for key, card in packageCards do
-			scrollChildren[key] = card
+		local items = {}
+		for _, pkg in results do
+			local displayName =
+				SettingsModule.formatPackageName(pkg.name or "", settingsCtx.settings.namingConvention, {
+					overrides = settingsCtx.settings.nameOverrides,
+				})
+			local desc = pkg.description
+			if not desc or desc == "" then
+				desc = `{displayName} has no provided description.`
+			end
+			table.insert(items, {
+				scope = pkg.scope or "",
+				name = pkg.name or "",
+				description = desc,
+				version = pkg.latestVersion,
+				realm = pkg.realm,
+				depCount = pkg.depCount,
+			})
 		end
-
-		local sectionOrder = ReactHelpers.createNextOrder()
-		content = e("Frame", {
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-		}, {
-			SectionLayout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			}),
-			Header = e(View, {
-				Size = UDim2.new(1, 0, 0, 28),
-				LayoutOrder = sectionOrder(),
-				tag = "bg-surface-200",
-			}, {
-				Padding = e("UIPadding", {
-					PaddingLeft = UDim.new(0, 12),
-					PaddingRight = UDim.new(0, 12),
-				}),
-				HeaderLayout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Horizontal,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-				}),
-				Label = e(Text, {
-					Text = resultCount,
-					AutomaticSize = Enum.AutomaticSize.XY,
-					tag = "text-caption-small content-muted",
-				}),
-			}),
-			HeaderDivider = e(Divider, {
-				LayoutOrder = sectionOrder(),
-			}),
-			ListWrap = e("Frame", {
-				Size = UDim2.new(1, 0, 1, -29),
-				BackgroundTransparency = 1,
-				LayoutOrder = sectionOrder(),
-			}, {
-				List = e(ScrollView, {
-					Size = UDim2.fromScale(1, 1),
-					scroll = {
-						scrollBarVisibility = Visibility.Auto,
-						ScrollingDirection = Enum.ScrollingDirection.Y,
-						AutomaticCanvasSize = Enum.AutomaticSize.Y,
-						CanvasSize = UDim2.new(),
-					},
-				}, scrollChildren),
-			}),
+		content = e(PackageList, {
+			header = `{#results} packages found`,
+			items = items,
+			onSelect = onCardSelect,
 		})
 	else
-		local popularKey = ReactHelpers.createUniqueKey()
-		local popularOrder = ReactHelpers.createNextOrder()
-		local popularCards: { [string]: any } = {
-			Layout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			}),
-		}
-		for _, pkg in PopularPackages do
-			popularCards[popularKey(`{pkg.scope}/{pkg.name}`)] = e(PackageCard, {
-				name = pkg.name,
-				scope = pkg.scope,
-				description = pkg.description,
-				realm = pkg.realm,
-				LayoutOrder = popularOrder(),
-				onSelect = onCardSelect,
-			})
-			popularCards[popularKey(`divider_{pkg.scope}/{pkg.name}`)] = e(Divider, {
-				LayoutOrder = popularOrder(),
-			})
-		end
-
-		local sectionOrder = ReactHelpers.createNextOrder()
-		content = e("Frame", {
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-		}, {
-			SectionLayout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			}),
-			Header = e(View, {
-				Size = UDim2.new(1, 0, 0, 28),
-				LayoutOrder = sectionOrder(),
-				tag = "bg-surface-200",
-			}, {
-				Padding = e("UIPadding", {
-					PaddingLeft = UDim.new(0, 12),
-					PaddingRight = UDim.new(0, 12),
-				}),
-				HeaderLayout = e("UIListLayout", {
-					FillDirection = Enum.FillDirection.Horizontal,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-				}),
-				Label = e(Text, {
-					Text = "Popular packages",
-					AutomaticSize = Enum.AutomaticSize.XY,
-					tag = "text-caption-small content-muted",
-				}),
-			}),
-			HeaderDivider = e(Divider, {
-				LayoutOrder = sectionOrder(),
-			}),
-			ListWrap = e("Frame", {
-				Size = UDim2.new(1, 0, 1, -29),
-				BackgroundTransparency = 1,
-				LayoutOrder = sectionOrder(),
-			}, {
-				List = e(ScrollView, {
-					Size = UDim2.fromScale(1, 1),
-					scroll = {
-						scrollBarVisibility = Visibility.Auto,
-						ScrollingDirection = Enum.ScrollingDirection.Y,
-						AutomaticCanvasSize = Enum.AutomaticSize.Y,
-						CanvasSize = UDim2.new(),
-					},
-				}, popularCards),
-			}),
+		content = e(PackageList, {
+			header = "Popular packages",
+			items = PopularPackages,
+			onSelect = onCardSelect,
 		})
 	end
 
