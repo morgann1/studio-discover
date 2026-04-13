@@ -13,11 +13,14 @@
     <td align="center"><img src="/media/manager.png" width="200" /><br /><b>Manager</b></td>
     <td align="center"><img src="/media/settings.png" width="200" /><br /><b>Settings</b></td>
   </tr>
-  <tr>
-    <td align="center" colspan="2"><a href="https://github.com/morgann1/studio-discover/actions/workflows/lint.yml"><img src="https://github.com/morgann1/studio-discover/actions/workflows/lint.yml/badge.svg" alt="Lint" /></a></td>
-    <td align="center" colspan="2"><a href="https://github.com/morgann1/studio-discover/actions/workflows/release.yml"><img src="https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg" alt="Release" /></a></td>
-  </tr>
 </table>
+
+<div align="center">
+
+<a href="https://github.com/morgann1/studio-discover/actions/workflows/lint.yml"><img src="https://github.com/morgann1/studio-discover/actions/workflows/lint.yml/badge.svg" alt="Lint" /></a>
+<a href="https://github.com/morgann1/studio-discover/actions/workflows/release.yml"><img src="https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
+
+</div>
 
 ## Motivation
 
