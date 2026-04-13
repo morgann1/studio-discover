@@ -51,21 +51,21 @@ local function PageRouter()
 				warn("[Discover] Unknown page:", nav.screen.name)
 				component = Home
 			end
-			local next = table.clone(prev)
-			table.insert(next, { screen = nav.screen, component = component })
+			local updated = table.clone(prev)
+			table.insert(updated, { screen = nav.screen, component = component })
 			return next
 		end)
 	end, { activeId, nav.screen } :: { any })
 
 	local removeScreen = React.useCallback(function(id: string)
 		setRendered(function(prev)
-			local next = {}
+			local filtered = {}
 			for _, entry in prev do
 				if entry.screen.id ~= id then
-					table.insert(next, entry)
+					table.insert(filtered, entry)
 				end
 			end
-			return next
+			return filtered
 		end)
 	end, {})
 
