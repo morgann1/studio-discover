@@ -22,7 +22,7 @@
 
 </div>
 
-## Motivation
+## 💡 Motivation
 
 [Wally](https://wally.run) is the most popular package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a developer who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package. Not everyone wants to make that switch.
 
@@ -30,7 +30,7 @@
 
 Discover is a pure-Luau alternative. It talks directly to the Wally registry over HTTP, handles both `shared` and `server` realms, re-exports package types through link modules, and writes everything into the DataModel. No external tools required. It aims to replicate what `wally install` and `wally-package-types` do, entirely from inside Studio.
 
-## Install
+## 🔌 Install
 
 ### 📥 From Release
 
