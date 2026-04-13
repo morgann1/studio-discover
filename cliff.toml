@@ -26,3 +26,4 @@ commit_parsers = [
     { message = "^build", group = "Build" },
 ]
 filter_commits = false
+include_paths = ["plugin/**/*.luau"]
