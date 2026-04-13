@@ -15,7 +15,7 @@
   </tr>
 </table>
 
-## Why?
+## Motivation
 
 [Wally](https://wally.run) is the most popular package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a developer who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package. Not everyone wants to make that switch.
 
