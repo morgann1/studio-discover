@@ -43,7 +43,7 @@ Discover is a pure-Luau alternative. It talks directly to the Wally registry ove
 
 You'll need [Rokit](https://github.com/rojo-rbx/rokit) and [Lune](https://github.com/lune-org/lune).
 
-```sh
+```bash
 git clone https://github.com/morgann1/studio-discover.git
 cd studio-discover
 rokit install
