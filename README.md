@@ -6,11 +6,14 @@
 
 </div>
 
-<div align="center">
-
-<img src="/media/home.png" width="200" /> <img src="/media/search.png" width="200" /> <img src="/media/manager.png" width="200" /> <img src="/media/settings.png" width="200" />
-
-</div>
+<table align="center">
+  <tr>
+    <td align="center"><img src="/media/home.png" width="200" /><br /><b>Home</b></td>
+    <td align="center"><img src="/media/search.png" width="200" /><br /><b>Search</b></td>
+    <td align="center"><img src="/media/manager.png" width="200" /><br /><b>Manager</b></td>
+    <td align="center"><img src="/media/settings.png" width="200" /><br /><b>Settings</b></td>
+  </tr>
+</table>
 
 ## Why?
 
