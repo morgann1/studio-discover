@@ -2,78 +2,57 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Rules
-- **Comments**: Never add comments to my code.
-- **Code Style**: Only write code that is self-explanatory.
-- **Improvements**: Do not add comments explaining your changes.
-
-## React-Lua conventions
-
-These are community-standard patterns for React-Lua (react-lua / roact). Follow them in all React component code.
-
-- **`e = React.createElement`** is the accepted community abbreviation. Use `e` everywhere, not `createElement` or the full path. This is the one exception to the "no abbreviations" rule.
-- **`createNextOrder()`** for `LayoutOrder` values. Never hand-number layout orders. Use the helper from `Common/React.luau` to get an auto-incrementing function.
-- **`createUniqueKey()`** for dynamic child keys. Every child in a React component needs a stable key. Use the helper from `Common/React.luau` when mapping over lists to avoid key collisions.
-- **Conditional rendering with `and`**. Use `condition and e(Component)` to conditionally show components. Use `if/then/else` expressions only when both branches produce a value.
-- **Strict mode typing for `useState`**. When the initial value is `nil` or a union, cast both sides: `local value: number?, setValue = React.useState(nil :: number?)`.
-- **Component return type**. Annotate components that can return nil as `: React.ReactNode?`.
-- **Stable callbacks**. Use `React.useCallback` for callbacks passed to child components, especially those wrapped in `React.memo`. Never create inline closures per list item.
-- **Event cleanup**. Always return a cleanup function from `useEffect` when connecting to events or spawning tasks.
-
-## Code style guide
-
-Follow these principles when writing or modifying Luau code in this project. Use `camelCase` for variables and functions, `PascalCase` for classes/types.
-
-1. **Use descriptive, obvious names.**
-    - No abbreviations; use full English words. `player` not `plr`. Exception: `e = React.createElement` is the community standard.
-    - Name things directly. `wasCalled` not `hasBeenCalled`. `notify` not `doNotification`.
-    - Booleans read as yes/no questions. `isFirstRun` not `firstRun`.
-    - Functions use verb forms. `increment` not `plusOne`. `unzip` not `filesFromZip`.
-    - Event handlers express when they run. `onClick` not `click`.
-    - Prefer positive form. `isFlying` not `isNotFlying`. `late` not `notOnTime`. Lead with positive conditionals; avoid `if not x then ... else ... end`. Use `missingValue` instead of `not hasValue`.
-
-2. **Function signatures should be obvious at the call site.**
-    - Avoid boolean arguments that change behavior.
-    - Avoid `nil` arguments. Use an options dictionary as the last parameter instead.
-
-3. **Write less code.**
-    - Be concise: fewer lines means fewer places for bugs to hide.
-    - Use well-supported open source libraries when possible.
-    - Omit needless variables. Don't name values you only use once.
-    - Write good abstractions. Don't repeat yourself.
-
-4. **Colocate code by feature, not by type.**
-    - Each feature manages its own state and explicitly defines methods to access and change it.
-
-5. **One job per function. Keep code reusable.**
-    - Don't combine loading and calculating in one function.
-    - Prefer functions with few or no side effects.
-
-6. **Avoid features and patterns that consistently lead to mistakes.**
-
-7. **Prefer stateful instances (classes) over excessive data structuring.**
-    - Avoid global state.
-    - Prefer composition over inheritance.
-    - Ensure anything created can also be cleaned up (event listeners, instance-bound state).
-    - Prefer getter/setter functions for public access to private state.
-
-8. **Prefer generic solutions over specific ones.** When a generic solution doesn't fit, write parallel code for parallel concepts.
-
-9. **Optimize for reading, not writing.**
-    - Be idiomatic. Follow convention.
-    - Code should not be surprising.
-
-10. **Exceptions should be exceptional.**
-    - Don't use errors as standard control flow.
-    - Return a success value or status. Reserve errors for unrecoverable states.
-
-11. **Code should be boring.**
-
-12. **Untestable code is bad code.**
-
 ## What this is
 
 Studio Discover is a Roblox Studio plugin (Luau + React) that lets users browse, install, and manage Wally packages without leaving Studio. The plugin talks directly to the Wally registry HTTP API and writes installed packages into `ReplicatedStorage.Packages` / `ServerStorage.ServerPackages` as alias `ModuleScript`s.
+
+## Best Practices for Clean Code 
+
+1. Use descriptive and obvious names.
+    - Don't use abbreviations, use full English words. `player` is better than `plr`.
+    - Name things as directly as possible. `wasCalled` is better than `hasBeenCalled`. `notify` is better than `doNotification`.
+    - Name booleans as if they are yes or no questions. `isFirstRun` is better than `firstRun`.
+    - Name functions using verb forms: `increment` is better than `plusOne`. `unzip` is better than `filesFromZip`.
+    - Name event handlers to express when they run. `onClick` is better than `click`.
+    - Put statements and expressions in positive form.
+        - `isFlying` instead of `isNotFlying`. `late` intead of `notOnTime`.
+        - Lead with positive conditionals. Avoid `if not something then ... else ... end`.
+        - If we only care about the inverse of a variable, turn it into a positive name. `missingValue` instead of `not hasValue`.
+2. Function signatures should be obvious and straightforward at the call site.
+    - Avoid boolean arguments that change behavior. Boolean parameters are a [code smell](https://medium.com/@amlcurran/clean-code-the-curse-of-a-boolean-parameter-c237a830b7a3).
+    - Avoid `nil` arguments in function calls. Use an optional dictionary with options as the last (or only) parameter instead.
+3. Write less code.
+    - Be concise: less code means fewer places for bugs to hide which means fewer bugs.
+    - Make use of well-supported open source libraries when possible. Try to only spend your time on problems that don't already have solutions.
+    - Omit needless variables. Don't assign names to values you only use once.
+    - Write good abstractions. Don't repeat yourself.
+4. Colocate code related by feature rather than type. Keep related code together.
+    - This reduces tight coupling of distinct features.
+    - Each feature should manage its own state, and explicitly define methods to access and change that state.
+5. Keep code reusable and only tackle one job per function.
+    - Don't make one function that both loads and calculates data; allow already loaded data to be calculated, etc.
+    - Prefer functions with few or no side effects. This increases testability and re-usability and deters unexpected or unplanned behavior. Side effects are inevitable, but keep them explicitly defined and obvious.
+6. "If a feature is sometimes dangerous, and there is a better option, then always use the better option." –Douglas Crockford
+    - Avoid using features and patterns that consistently lead to mistakes. Humans are fallible, and you *will* make mistakes.
+7. Prefer stateful instances (e.g. classes) rather than excessive data structuring. In other words, if something can exist more than once, then it should be a "class".
+    - Avoid global state
+    - Prefer composition over inheritance: All class hierarchies are eventually wrong for new use cases. Ask "has a", "uses a", or "can do" instead of "is a".
+    - Ensure that anything that is created can also be cleaned up, especially event listeners and state that is associated with objects (instances/classes) that may not exist forever. Be tidy.
+    - Prefer getter and setter functions when providing public read and write access to privately managed state. You can't tell the future, and someday you might need to do some processing rather than setting a simple property.
+8. Prefer generic solutions which can be applied to many problems rather than specific solutions that can only be applied to one.
+    - When a generic solution is not ideal, then write parallel code for parallel concepts. When we repeat similar patterns for similar problems, anybody familiar with the pattern can quickly understand what the code does.
+9. Optimize code for reading, not for writing.
+    - Comments should answer "why", not "what".
+    - Be idiomatic. Follow convention. Use a style guide. When we write code consistently, it makes it easier for others and future you to parse and understand quickly.
+    - Code shouldn't be surprising. Overzealous use of meta-programming can lead to future mistakes because of wrong assumptions.
+10. Exceptions should be exceptional.
+    - Don't indoctrinate exceptions or errors as standard control flow. Not only does this make your code potentially surprising, but it also introduces complexity. Our standard control flow can handle those cases too.
+    - Return a success value or state monad. This forces the user to consider the failure case (no accidental uncaught errors!) and makes room for soft-fail situations.
+    - Reserve errors for when your program reaches an unrecoverable state. (e.g., unexpected situations or improper function usage)
+11. Code should be boring.
+13. Untestable code is bad code.
+
+<!-- Variable casing.. camelCase for vars, PascalCase for classes -->
 
 ## Toolchain & commands
 
