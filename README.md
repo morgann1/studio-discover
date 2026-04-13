@@ -32,14 +32,14 @@ Discover is a pure-Luau alternative. It talks directly to the Wally registry ove
 
 ## 🔌 Install
 
-### 📥 From Release
+### From Release
 
 1. Grab `Discover.rbxm` from the [latest release](https://github.com/morgann1/studio-discover/releases/latest).
 2. Drag the file into Roblox Studio. It'll usually land in Workspace.
 3. Right-click the **Discover** folder and pick **Save / Export > Save as Local Plugin**.
 4. A **Discover** button should show up in your toolbar.
 
-### 🔧 From Source
+### From Source
 
 You'll need [Rokit](https://github.com/rojo-rbx/rokit) and [Lune](https://github.com/lune-org/lune).
 
