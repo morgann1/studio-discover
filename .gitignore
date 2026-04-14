@@ -7,10 +7,12 @@
 /*.rbxl.lock
 
 plugin/generated/
+plugin.old/generated/
 sourcemap.json
 
 # Wally
 plugin/Packages
+plugin.old/Packages
 
 # Other
 ref/
