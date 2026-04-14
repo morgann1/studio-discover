@@ -58,7 +58,7 @@ Studio Discover is a Roblox Studio plugin (Luau + React) that lets users browse,
 
 Toolchain is pinned via `rokit.toml` (run `rokit install` once after cloning). Build / dev workflows are Lune scripts under `.lune/commands/`, invoked from the repo root:
 
-- `lune run setup` — first-time setup: codegen + install Wally packages and package types, then apply anything in `plugin/patches/`.
+- `lune run setup` — first-time setup: codegen + install Wally packages and package types.
 - `lune run install` — same as setup minus the codegen step. Use after editing `wally.toml` or patches.
 - `lune run dev` — codegen + build + `rojo serve` for live sync into Studio.
 - `lune run build` — production build. Produces `Discover.rbxm` at the repo root via `rojo build plugin/default.project.json`.
@@ -72,38 +72,28 @@ Lint config: `selene.toml` (excludes `plugin/Packages/**` and `plugin/generated/
 
 ### Source layout
 
-`plugin/src/` is organized into **feature folders**, not by file type. Top-level folders own their components, hooks, and stores together:
+`plugin/src/` groups code by **what job it does**, not by file type:
 
-- `App.luau` — root component, composes providers.
-- `Wally/` — everything that talks to the Wally registry: `Api.luau` (HTTP client), `SearchStore.luau` (Charm atoms + actions), `useWallyStatus.luau` (hook for the rate-limit wait message).
-- `Installer/` — `Installer.luau` (downloads + writes to the DataModel), `InstalledPackages.luau` (discovers what's installed by walking the DataModel), `InstalledStore.luau` (Charm atoms mirroring it), and the `zzlib/` unzip dependency.
-- `Settings/` — settings React context (`init.luau`) and the package-name formatting helpers it owns.
-- `Navigation/` — stack-based router context (`init.luau`).
-- `Common/` — truly cross-cutting bits used by multiple features: shared UI components (`PackageCard`, `Pill`, `SectionHeader`, `LinkRow`), the `useAtom` Charm/React bridge, layout helpers (`React.luau` — `createUniqueKey`, `createNextOrder`), and `PackageTypes`.
-- `Pages/<Name>/init.luau` — one folder per page. Page-local components sit alongside `init.luau` (e.g. `Pages/Manage/InstalledRow.luau`, `Pages/Package/DependencyGroup.luau`, `Pages/Settings/OverrideRow.luau`). The convention is: **if more than one page uses it, it goes in `Common/`; otherwise it stays inside the page folder.**
-
-`App.luau` composes providers in this order:
-
-```
-SettingsProvider          (React context, persisted via plugin:GetSetting)
-  └── NavigationProvider  (React context, simple stack-based router)
-        └── PageRouter    (renders the current Pages/<Name> based on nav.screen.name)
-```
-
-Note: there is both a top-level `Settings/` (the context) and a `Pages/Settings/` (the page). They live in different parents so the require paths (`Discover.Src.Settings` vs `Discover.Src.Pages.Settings`) are unambiguous — don't try to consolidate them.
+- `Wally/` — HTTP client for the Wally registry plus the search state and status hook it exposes. Shared by the UI and the installer. *(currently stubs)*
+- `Install/` — `wally install` equivalent. Downloads a package zip, unpacks, and writes the alias `ModuleScript` + `_Index/` tree into `ReplicatedStorage.Packages` (shared) or `ServerStorage.ServerPackages` (server). Also owns the `InstalledPackages` walker and the `InstalledStore` Charm atoms that mirror it. *(currently stubs)*
+- `PackageTypes/` — `wally-package-types` equivalent. Rewrites alias `ModuleScript.Source` to re-export the underlying package's types so they surface through the alias. *(currently a stub)*
+- `UI/` — everything React:
+  - `App.luau` — root component. Subscribes to `Navigation.activeScreen`, resolves the named page, renders it inside a `StudioComponents.Background`, and keeps outgoing screens mounted until their exit animation completes.
+  - `Navigation.luau` — Charm-backed stack router. Exposes `stack`, `activeScreen`, and `push`/`pop`/`replace`/`reset`. No provider — the module is the source of truth.
+  - `Settings.luau` — settings store (persistence via `plugin:SetSetting` / `GetSetting`). *(currently a stub)*
+  - `Common/` — cross-cutting components and hooks: `Page` (transition wrapper around react-otter), `StubPage`, `useAtom` (Charm→React bridge). Only things multiple pages share live here.
+  - `Pages/<Name>.luau` — one file per screen. If a page grows enough to need private sub-components, promote it to a folder (`Pages/<Name>/init.luau` + siblings); keep cross-page shared pieces in `Common/`.
+  - `Util/` — small, side-effect-free helpers: `createNextOrder`, `createUniqueKey`.
 
 ### State management — Charm atoms, not Redux/context
 
-Global state lives in feature-folder stores as Charm atoms (`littensy/charm`):
+Global state is held in Charm atoms (`littensy/charm`) inside the module that owns it — e.g. the search store lives in `Wally/`, the installed-packages store in `Install/`, navigation in `UI/Navigation.luau`. There is no root provider; atoms are module-scoped and imported where needed.
 
-- `Wally/SearchStore.luau` — atoms for search text, results, isLoading, hasSearched, error, plus `Search.run(text)` / `Search.clear()` actions. Updates are wrapped in `Charm.batch` so subscribers see one notification per logical change. A module-local `searchVersion` cancels stale in-flight requests.
-- `Installer/InstalledStore.luau` — `list` and `map` atoms mirroring installed packages (scanned from the DataModel via `Installer/InstalledPackages`). Call `InstalledState.refresh()` after any install/uninstall — there is no automatic invalidation. Seeded on first require.
+Components subscribe via `UI/Common/useAtom.luau`, a small `useState + useEffect + Charm.subscribe` bridge. **Rules:**
 
-Components subscribe via `Common/useAtom.luau`, a small `useState + useEffect + Charm.subscribe` bridge. **Important rules:**
-
-- Each `useAtom(atom)` call only re-renders the calling component when *that* atom changes — this is the whole point of using Charm here. Don't batch unrelated state into one atom.
+- Each `useAtom(atom)` call only re-renders the calling component when *that* atom changes — this is the whole point of Charm here. Don't batch unrelated state into one atom.
 - Never mutate atom values in place (especially tables). Always pass a new value, otherwise the `~=` change check skips the notification.
-- Settings is still a React context (`plugin/src/Settings.luau`) — it's intentionally not on Charm because it isn't a perf bottleneck and the persistence layer is tied to React lifecycle. Don't migrate it speculatively.
+- Wrap multi-write updates in `Charm.batch` so subscribers see one notification per logical change.
 
 ### React conventions
 
@@ -120,31 +110,13 @@ local useCallback = React.useCallback
 
 Only hoist the hooks the file actually uses — don't pull in every hook "just in case".
 
-### Why this matters: rendering perf
+### Rendering perf: don't let typing in search storm re-renders
 
-The plugin window stays open for long periods while the user types into the search box. Two patterns guard against re-render storms — preserve them when editing:
+The plugin window stays open for long periods while the user types. When the search UI is wired in, preserve these two patterns:
 
-1. **`PackageCard` is wrapped in `React.memo`** and takes only primitives + stable callback refs (`onSelect(scope, name)`, `onInstall(scope, name, version)`). The parent provides a single `useCallback` per handler — never inline closures per card, or memo bails.
-2. **The search input value lives in local `useState` inside `Home`**, not in `SearchState.text`. The atom is only written on commit (Enter / focus lost). Typing therefore doesn't notify any other subscribers.
+1. **Memoize list rows.** Wrap per-result cards in `React.memo` and pass only primitives + stable callback refs. The parent provides one `useCallback` per handler — never inline closures per card, or memo bails.
+2. **Keep the search input value in local `useState`**, not in a global atom. Commit to the atom only on Enter / focus loss. Typing should not notify other subscribers.
 
-### Foundation gotcha: children don't pass through
+### UI library: StudioComponents
 
-Foundation components (`TextInput`, `Dropdown.Root`, etc.) **do not forward children**. If you need to attach a `UIFlexItem` or similar to one of them inside a flex row, wrap it in a plain `Frame` and put the `UIFlexItem` on the wrapper. This bug has bitten the search bar and the version dropdown row both — there are wrapper Frames in `Pages/Home` and `Pages/Package` for exactly this reason. Don't "simplify" them away.
-
-### Wally API & rate limiting
-
-`Wally/Api.luau` is the only place that talks to `api.wally.run`. It enforces a shared 1.05s minimum interval between requests (per Wally's policy), serializes via a `nextSlotClock` timestamp, honors `Retry-After` on 429, and exposes a subscribe-able `Status` for the "Waiting Ns…" UI message (consumed by `Wally/useWallyStatus.luau`). Cache TTL is 300s.
-
-`WallyApi.search` returns `description` and `versions[]` per package, so the search results page reads those directly — **do not** fan out to `WallyApi.metadata` for every result (that was the original implementation and made 80-result searches take >80 seconds at 1/sec). The Package detail page is the only place that should call `metadata`.
-
-Roblox `HttpService:RequestAsync` does not allow setting `User-Agent` headers, so requests are identifiable to Wally only as "Roblox Studio". Don't try to add a UA — it'll error.
-
-### Installer & install layout
-
-`Installer/Installer.luau` downloads a Wally package zip, unpacks (via `Installer/zzlib`), creates the alias `ModuleScript` in the appropriate Packages folder (`shared` → `ReplicatedStorage.Packages`, `server` → `ServerStorage.ServerPackages`), and writes deps under `_Index/scope_name@version/`. `Installer/InstalledPackages.luau` discovers what's installed by parsing `require(...)` paths in the alias `ModuleScript.Source` strings — there is no metadata file, the DataModel itself is the source of truth.
-
-After any install/uninstall the caller must `InstalledState.refresh()` so the Charm atom updates.
-
-### Patches
-
-`plugin/patches/` contains git-format patches applied during `lune run install`. If a Wally package needs source-level fixes, use `lune run patch` to author them rather than editing files in `plugin/Packages/` directly (those are gitignored).
+The UI is built on `sircfenner/studiocomponents`, which gives components Studio's native chrome (button shapes, input fields, dropdowns, theme colors) via `StudioTheme`. Use SC components at face value — don't try to re-skin them to look like Foundation or anything else. Plain `Frame`s and `UIListLayout` are fine for containers; reach for SC's `Background` for the root and `Label` for any theme-aware text.
