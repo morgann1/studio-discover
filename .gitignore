@@ -11,8 +11,8 @@ plugin.old/generated/
 sourcemap.json
 
 # Wally
-plugin/Packages
-plugin.old/Packages
+plugin/Packages/
+plugin.old/Packages/
 
 # Other
 ref/
