@@ -12,6 +12,7 @@ local Constants = StudioComponents.Constants
 local useTheme = StudioComponents.useTheme
 
 local e = React.createElement
+local useCallback = React.useCallback
 local useState = React.useState
 
 -- Mirrors KDE Discover's drawer (DiscoverDrawer.qml: Kirigami.Units.gridUnit * 14).
@@ -108,19 +109,27 @@ local function Sidebar()
 	local theme = useTheme()
 	local activeSection = useAtom(Navigation.activeSection)
 
-	local items: { [string]: any } = {
+	-- Search text stays in local state so keystrokes don't notify anything
+	-- else. When the Wally search store lands, focus-loss / enter commits
+	-- the text to the store — for now it just routes you to Home.
+	local searchText, setSearchText = useState("")
+
+	local onSearchCommit = useCallback(function(text: string, enterPressed: boolean)
+		if enterPressed and text ~= "" and activeSection ~= "Home" then
+			Navigation.resetTo("Home")
+		end
+	end, { activeSection } :: { any })
+
+	local sectionChildren: { [string]: any } = {
+		Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
 		Layout = e("UIListLayout", {
 			FillDirection = Enum.FillDirection.Vertical,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Padding = UDim.new(0, 2),
 		}),
-		Padding = e("UIPadding", {
-			PaddingTop = UDim.new(0, 8),
-			PaddingBottom = UDim.new(0, 8),
-		}),
 	}
 	for index, section in SECTIONS do
-		items[section.name] = e(SidebarItem, {
+		sectionChildren[section.name] = e(SidebarItem, {
 			name = section.name,
 			icon = section.icon,
 			active = activeSection == section.name,
@@ -136,7 +145,45 @@ local function Sidebar()
 		BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.ViewPortBackground),
 		BorderSizePixel = 0,
 		LayoutOrder = 1,
-	}, items)
+	}, {
+		Layout = e("UIListLayout", {
+			FillDirection = Enum.FillDirection.Vertical,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 8),
+		}),
+
+		SearchRow = e("Frame", {
+			Size = UDim2.fromScale(1, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			LayoutOrder = 1,
+		}, {
+			Padding = e("UIPadding", {
+				PaddingLeft = UDim.new(0, 8),
+				PaddingRight = UDim.new(0, 8),
+				PaddingTop = UDim.new(0, 8),
+			}),
+			Input = e(StudioComponents.TextInput, {
+				Text = searchText,
+				PlaceholderText = "Search packages",
+				OnChanged = setSearchText,
+				OnFocusLost = onSearchCommit,
+			}),
+		}),
+
+		Divider = e("Frame", {
+			Size = UDim2.new(1, 0, 0, 1),
+			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Titlebar),
+			BorderSizePixel = 0,
+			LayoutOrder = 2,
+		}),
+
+		SectionList = e("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			LayoutOrder = 3,
+		}, sectionChildren),
+	})
 end
 
 return Sidebar
