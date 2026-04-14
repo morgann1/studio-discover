@@ -1,7 +1,7 @@
 --[[
 	Install Command
 
-	Installs all packages: Wally packages, package types, and Foundation.
+	Installs all packages: Wally packages and package types.
 ]]
 
 local fs = require("@lune/fs")
@@ -10,15 +10,13 @@ local stdio = require("@lune/stdio")
 
 local applyPatches = require("./install/patches")
 local color = require("../utils/color")
-local exec = require("../lib/process/exec")
-local installFoundation = require("./install/foundation")
 local rojo = require("../lib/project/rojo")
 
 local install = {}
 
 -- Metadata for help command
 install.name = "install"
-install.description = "Installs all packages (Wally, package types, Foundation)"
+install.description = "Installs all packages (Wally, package types)"
 install.usage = "lune run install [--quiet]"
 
 -- Argument definitions for CLI parsing
@@ -35,19 +33,9 @@ install.arguments = {
 
 local PROJECT_FILE = "plugin/default.project.json"
 local SOURCEMAP_PATH = "plugin/generated/sourcemap.json"
-local VERSION_PIN = "0.712.0.7120913"
 local PACKAGE_DIRS = {
 	"Packages",
 	-- "DevPackages",
-}
-local ROBLOX_PACKAGES = {
-	"Foundation",
-	"FoundationImages",
-	"BuilderIcons",
-	"Otter",
-	"ReactOtter",
-	"Promise",
-	"Dash",
 }
 
 local function runWallyInstall(): (boolean, string)
@@ -132,36 +120,6 @@ function install.run(options_: Options?): boolean
 
 	if not quiet then
 		print(color.bold(color.white("Successfully installed Wally packages!")))
-	end
-
-	-- Install Roblox packages to a temp directory and then extract Foundation.
-	-- Use platform temp dir (TEMP on Windows, TMPDIR on Unix), falling back to /tmp.
-	local tempBase = process.env.TEMP or process.env.TMPDIR or "/tmp"
-	local robloxPackagesPath = `{tempBase}/roblox-packages`
-	local robloxPackagesArgs = {
-		"install",
-		robloxPackagesPath,
-		"--version",
-		VERSION_PIN,
-	}
-	for _, pkg in ROBLOX_PACKAGES do
-		table.insert(robloxPackagesArgs, "-d")
-		table.insert(robloxPackagesArgs, pkg)
-	end
-	exec.run("roblox-packages", robloxPackagesArgs)
-
-	if not quiet then
-		print(color.dim("Installing Foundation packages..."))
-	end
-
-	installFoundation(`{robloxPackagesPath}/Packages`, "plugin/Packages", quiet)
-
-	if not quiet then
-		print(color.bold(color.white("Successfully installed Foundation packages!")))
-	end
-
-	-- Apply patches after all packages (Wally + Foundation) are installed
-	if not quiet then
 		print(color.dim("Applying package patches..."))
 	end
 
