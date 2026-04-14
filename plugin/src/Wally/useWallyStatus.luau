@@ -1,0 +1,1 @@
+-- React hook that surfaces the Wally client's rate-limit wait message.

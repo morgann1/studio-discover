@@ -1,0 +1,2 @@
+-- Settings React context. Persists values via plugin:SetSetting and exposes
+-- the package-name formatting helpers (naming conventions, overrides).

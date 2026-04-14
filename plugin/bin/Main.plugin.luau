@@ -1,0 +1,2 @@
+-- Plugin entry point: creates the toolbar button and dock widget, mounts
+-- the React tree into the widget, and handles cleanup on unload.

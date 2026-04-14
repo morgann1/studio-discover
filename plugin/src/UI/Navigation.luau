@@ -1,0 +1,1 @@
+-- Stack-based router context: push/pop screens with per-screen options.

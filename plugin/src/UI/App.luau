@@ -1,0 +1,2 @@
+-- Root React component. Composes the Settings provider, navigation router,
+-- and the StudioComponents-based page shell.

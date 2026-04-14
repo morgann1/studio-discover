@@ -1,0 +1,1 @@
+-- Manage page: list of installed packages with update / uninstall actions.

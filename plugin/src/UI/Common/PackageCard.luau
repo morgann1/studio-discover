@@ -1,0 +1,2 @@
+-- Search-result card: name, description, realm, dependency count. Memoized
+-- to keep re-renders stable while the user types.

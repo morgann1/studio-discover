@@ -1,0 +1,2 @@
+-- Home page: search bar, top-bar icon buttons, and the package list / empty
+-- state / loading skeleton.

@@ -1,0 +1,2 @@
+-- HTTP client for the Wally registry (api.wally.run).
+-- Handles rate limiting, caching, and exposes search + metadata endpoints.

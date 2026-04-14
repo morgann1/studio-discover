@@ -1,0 +1,3 @@
+-- `wally-package-types` equivalent: parses each alias ModuleScript's require
+-- target for exported types and rewrites the alias Source so those types
+-- surface through the alias for luau-lsp / Studio autocomplete.

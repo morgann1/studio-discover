@@ -1,0 +1,2 @@
+-- Package detail page: metadata, authors, version dropdown, install button,
+-- dependencies, links, and used-by list.
