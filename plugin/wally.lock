@@ -93,11 +93,16 @@ version = "0.10.0"
 dependencies = []
 
 [[package]]
-name = "morgan/studio-discover"
-version = "2.4.2"
-dependencies = [["Charm", "littensy/charm@0.10.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["zzlib", "morgann1/zzlib@0.1.0"]]
+name = "morgann1/studio-discover"
+version = "2.5.0"
+dependencies = [["Charm", "littensy/charm@0.10.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["StudioComponents", "sircfenner/studiocomponents@1.2.0"], ["zzlib", "morgann1/zzlib@0.1.0"]]
 
 [[package]]
 name = "morgann1/zzlib"
 version = "0.1.0"
 dependencies = []
+
+[[package]]
+name = "sircfenner/studiocomponents"
+version = "1.2.0"
+dependencies = [["react", "jsdotlua/react@17.2.1"], ["react-roblox", "jsdotlua/react-roblox@17.2.1"]]
