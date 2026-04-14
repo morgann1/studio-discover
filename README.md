@@ -54,7 +54,7 @@ lune run build
 
 Then follow the same steps as above: drag `Discover.rbxm` into Studio and save it as a local plugin.
 
-> `lune run install` handles the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
+> `lune run install` handles the Wally packages and applies anything under `plugin/patches/`.
 
 ## 🙏 Credits
 

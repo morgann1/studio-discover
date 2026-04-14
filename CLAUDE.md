@@ -58,7 +58,7 @@ Studio Discover is a Roblox Studio plugin (Luau + React) that lets users browse,
 
 Toolchain is pinned via `rokit.toml` (run `rokit install` once after cloning). Build / dev workflows are Lune scripts under `.lune/commands/`, invoked from the repo root:
 
-- `lune run setup` — first-time setup: codegen + install Wally packages, package types, and Foundation (downloaded from a pinned Roblox version), then apply anything in `plugin/patches/`.
+- `lune run setup` — first-time setup: codegen + install Wally packages and package types, then apply anything in `plugin/patches/`.
 - `lune run install` — same as setup minus the codegen step. Use after editing `wally.toml` or patches.
 - `lune run dev` — codegen + build + `rojo serve` for live sync into Studio.
 - `lune run build` — production build. Produces `Discover.rbxm` at the repo root via `rojo build plugin/default.project.json`.
