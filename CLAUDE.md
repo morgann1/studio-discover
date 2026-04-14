@@ -105,6 +105,21 @@ Components subscribe via `Common/useAtom.luau`, a small `useState + useEffect + 
 - Never mutate atom values in place (especially tables). Always pass a new value, otherwise the `~=` change check skips the notification.
 - Settings is still a React context (`plugin/src/Settings.luau`) — it's intentionally not on Charm because it isn't a perf bottleneck and the persistence layer is tied to React lifecycle. Don't migrate it speculatively.
 
+### React conventions
+
+Hoist React hooks and `createElement` to local variables at the top of the file, right after the requires, and use the locals at call sites. This keeps call sites scannable and matches the `local e = React.createElement` pattern that's already everywhere.
+
+```lua
+local React = require(Packages.React)
+
+local e = React.createElement
+local useState = React.useState
+local useEffect = React.useEffect
+local useCallback = React.useCallback
+```
+
+Only hoist the hooks the file actually uses — don't pull in every hook "just in case".
+
 ### Why this matters: rendering perf
 
 The plugin window stays open for long periods while the user types into the search box. Two patterns guard against re-render storms — preserve them when editing:
