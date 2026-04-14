@@ -8,28 +8,11 @@ local Navigation = require(Discover.Src.UI.Navigation)
 
 local e = React.createElement
 
-local DESTINATIONS = { "Package", "Manage", "Settings", "Overrides" }
+type StubPageProps = {
+	title: string,
+}
 
-local function Home()
-	local buttons: { [string]: any } = {
-		Layout = e("UIListLayout", {
-			FillDirection = Enum.FillDirection.Vertical,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Padding = UDim.new(0, 6),
-		}),
-	}
-	for index, name in DESTINATIONS do
-		buttons[name] = e(StudioComponents.Button, {
-			Text = name,
-			Size = UDim2.fromOffset(160, 24),
-			LayoutOrder = index,
-			OnActivated = function()
-				Navigation.push(name)
-			end,
-		})
-	end
-
+local function StubPage(props: StubPageProps)
 	return e("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -42,18 +25,18 @@ local function Home()
 			Padding = UDim.new(0, 12),
 		}),
 		Title = e(StudioComponents.Label, {
-			Text = "Home Page",
+			Text = props.title,
 			Size = UDim2.fromOffset(160, 20),
 			TextXAlignment = Enum.TextXAlignment.Center,
 			LayoutOrder = 1,
 		}),
-		Buttons = e("Frame", {
-			Size = UDim2.fromOffset(160, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
+		Back = e(StudioComponents.Button, {
+			Text = "Back",
+			Size = UDim2.fromOffset(160, 24),
 			LayoutOrder = 2,
-		}, buttons),
+			OnActivated = Navigation.pop,
+		}),
 	})
 end
 
-return Home
+return StubPage
