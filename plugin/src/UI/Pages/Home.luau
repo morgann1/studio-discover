@@ -8,28 +8,7 @@ local Navigation = require(Discover.Src.UI.Navigation)
 
 local e = React.createElement
 
-local DESTINATIONS = { "Package", "Manage", "Settings", "Overrides" }
-
 local function Home()
-	local buttons: { [string]: any } = {
-		Layout = e("UIListLayout", {
-			FillDirection = Enum.FillDirection.Vertical,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Padding = UDim.new(0, 6),
-		}),
-	}
-	for index, name in DESTINATIONS do
-		buttons[name] = e(StudioComponents.Button, {
-			Text = name,
-			Size = UDim2.fromOffset(160, 24),
-			LayoutOrder = index,
-			OnActivated = function()
-				Navigation.push(name)
-			end,
-		})
-	end
-
 	return e("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -39,20 +18,16 @@ local function Home()
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			VerticalAlignment = Enum.VerticalAlignment.Center,
-			Padding = UDim.new(0, 12),
+			Padding = UDim.new(0, 8),
 		}),
-		Title = e(StudioComponents.Label, {
-			Text = "Home Page",
-			Size = UDim2.fromOffset(160, 20),
-			TextXAlignment = Enum.TextXAlignment.Center,
+		OpenPackage = e(StudioComponents.Button, {
+			Text = "Open a package (test drill-down)",
+			Size = UDim2.fromOffset(240, 24),
 			LayoutOrder = 1,
+			OnActivated = function()
+				Navigation.push("Package")
+			end,
 		}),
-		Buttons = e("Frame", {
-			Size = UDim2.fromOffset(160, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			LayoutOrder = 2,
-		}, buttons),
 	})
 end
 

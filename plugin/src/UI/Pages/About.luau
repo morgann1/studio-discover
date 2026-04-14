@@ -7,8 +7,8 @@ local StubPage = require(Discover.Src.UI.Common.StubPage)
 
 local e = React.createElement
 
-local function Manage()
-	return e(StubPage, { title = "Manage Page" })
+local function About()
+	return e(StubPage, { title = "About Discover" })
 end
 
-return Manage
+return About
