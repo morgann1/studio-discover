@@ -130,7 +130,8 @@ local function App(_props: AppProps)
 
 			Header = e("Frame", {
 				Size = UDim2.new(1, 0, 0, HEADER_HEIGHT),
-				BackgroundTransparency = 1,
+				BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Titlebar),
+				BorderSizePixel = 0,
 				LayoutOrder = 1,
 			}, {
 				Padding = e("UIPadding", {
@@ -176,6 +177,7 @@ local function App(_props: AppProps)
 			PageArea = e("Frame", {
 				Size = UDim2.new(1, 0, 1, -HEADER_HEIGHT - HEADER_DIVIDER_HEIGHT),
 				BackgroundTransparency = 1,
+				ClipsDescendants = true,
 				LayoutOrder = 3,
 			}, children),
 		}),
