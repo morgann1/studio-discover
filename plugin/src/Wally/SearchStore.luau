@@ -1,1 +1,0 @@
--- Charm atoms and actions for the search UI: text, results, loading, errors.

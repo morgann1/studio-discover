@@ -25,9 +25,6 @@ local function makeScreen(name: string, options: { [string]: any }?): Screen
 	}
 end
 
--- Stack is a two-level navigation model: entry 1 is always the current
--- section (picked by the sidebar); entries 2+ are drill-down screens
--- within that section (e.g. Home → Package, Settings → Overrides).
 local stack = Charm.atom({ makeScreen("Home") } :: { Screen })
 
 local activeScreen = Charm.computed(function(): Screen
@@ -66,9 +63,6 @@ local function replace(name: string, options: { [string]: any }?)
 	end)
 end
 
--- Replace the whole stack with a fresh section root. Used by the sidebar
--- so switching sections always lands you at the section's root, not a
--- drill-down left over from last time.
 local function resetTo(sectionName: string)
 	stack({ makeScreen(sectionName) })
 end

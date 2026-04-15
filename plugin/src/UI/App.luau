@@ -25,8 +25,6 @@ local useCallback = React.useCallback
 local useEffect = React.useEffect
 local useState = React.useState
 
--- Keep HEADER_HEIGHT aligned with the sidebar search row's height so the
--- header divider and the sidebar search separator render on the same Y.
 local HEADER_HEIGHT = 38
 local HEADER_DIVIDER_HEIGHT = 1
 local HEADER_TITLE_TEXT_SIZE = 18

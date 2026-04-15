@@ -15,11 +15,9 @@ local e = React.createElement
 local useCallback = React.useCallback
 local useState = React.useState
 
--- Mirrors KDE Discover's drawer (DiscoverDrawer.qml: Kirigami.Units.gridUnit * 14).
 local SIDEBAR_WIDTH = 252
 local ITEM_HEIGHT = 28
--- Must match App.luau HEADER_HEIGHT so the sidebar search band and the
--- page-title header share the same Titlebar strip and divider line.
+
 local SEARCH_ROW_HEIGHT = 38
 local SEARCH_FIELD_HEIGHT = 22
 local SEARCH_ICON_SIZE = 14

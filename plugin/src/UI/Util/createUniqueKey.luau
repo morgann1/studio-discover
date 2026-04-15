@@ -1,9 +1,3 @@
---[[
-	Returns a closure that yields a unique string key each call, so React
-	children built from a user-supplied name stay stable even when two
-	items would otherwise collide. The first time a name is seen it's
-	returned unchanged; subsequent collisions get a `_2`, `_3`, ... suffix.
-]]
 local function createUniqueKey(): (string) -> string
 	local names: { [string]: number } = {}
 	return function(name: string): string

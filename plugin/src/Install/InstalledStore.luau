@@ -1,2 +1,0 @@
--- Charm atoms mirroring InstalledPackages output. Must be refreshed
--- explicitly after any install/uninstall; there is no auto-invalidation.

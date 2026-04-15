@@ -1,3 +1,0 @@
--- `wally install` equivalent: download a package zip, unpack it, and create
--- the alias ModuleScript + _Index entries under ReplicatedStorage.Packages
--- (shared) or ServerStorage.ServerPackages (server).

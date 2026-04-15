@@ -1,3 +1,0 @@
--- Walks the DataModel to discover what's installed by parsing require() paths
--- in each alias ModuleScript's Source. The DataModel is the source of truth;
--- there is no separate metadata file.

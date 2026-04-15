@@ -18,8 +18,6 @@ local toolbar = plugin:CreateToolbar("Discover")
 local button =
 	toolbar:CreateButton("Discover", "Browse and install packages", if isDarkTheme() then DARK_ICON else LIGHT_ICON)
 
--- Sizing mirrors KDE Discover's main window (DiscoverWindow.qml):
--- default 52x39 grid units, minimum 17x17, with Kirigami gridUnit ≈ 18px.
 local WIDGET_INFO = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 936, 702, 306, 306)
 
 local widget = plugin:CreateDockWidgetPluginGuiAsync("DiscoverWidget", WIDGET_INFO)

@@ -14,9 +14,6 @@ local useTheme = StudioComponents.useTheme
 
 local e = React.createElement
 
--- useAtom must be called unconditionally. For navigation rows that have
--- no associated setting, we feed useAtom this placeholder so the hook
--- call site stays the same shape.
 local NULL_ATOM: Charm.Atom<any> = Charm.atom(nil)
 
 type SettingProps = {

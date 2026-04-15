@@ -1,13 +1,3 @@
---[[
-	Persistent plugin settings backed by Charm atoms.
-
-	Each setting has its own atom so components that subscribe via useAtom
-	only re-render when the value they care about changes. Writes go through
-	set(name, value) — the atom is updated immediately and the value is
-	persisted to the plugin store on a separate thread so callers never
-	block on disk I/O.
-]]
-
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
@@ -66,7 +56,6 @@ local function set(name: string, value: any)
 	end
 	atom(value)
 	if pluginRef then
-		-- plugin:SetSetting hits disk; spawn so the caller never blocks.
 		task.spawn(pluginRef.SetSetting, pluginRef, storageKey(name), value)
 	end
 end

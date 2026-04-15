@@ -26,8 +26,6 @@ local AUTHORS = {
 	"morgann1",
 }
 
--- Mirror plugin/wally.toml [dependencies]. Description is pulled from each
--- package's wally.toml when present; leave empty otherwise.
 local COMPONENTS = {
 	{ scopeName = "jsdotlua/react", version = "17.2.1", description = "" },
 	{ scopeName = "jsdotlua/react-roblox", version = "17.2.1", description = "" },
