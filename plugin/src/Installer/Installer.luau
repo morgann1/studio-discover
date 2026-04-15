@@ -220,32 +220,25 @@ type ActivatedEntry = {
 	packageId: string,
 }
 
-local function resolve(
+type RootRequest = {
 	scope: string,
 	name: string,
 	version: string,
-	realm: string?,
+	requestRealm: string,
+	alias: string,
+}
+
+local function resolveRoots(
+	roots: { RootRequest },
+	lockfile: { [string]: LockEntry },
 	onProgress: ProgressCallback?
-): ({ [string]: ResolvedPackage }, { string })
+): ({ [string]: ResolvedPackage }, { [string]: string }, { string })
 	local resolved: { [string]: ResolvedPackage } = {}
+	local rootAliases: { [string]: string } = {}
 	local failures: { string } = {}
 
 	local activated: { [string]: ActivatedEntry } = {}
 	local activatedByName: { [string]: { ActivatedEntry } } = {}
-	local lockfile = loadLockfile()
-
-	if not realm then
-		local meta = WallyAPI.metadata(scope, name)
-		if meta and meta.versions then
-			for _, vd in meta.versions do
-				if vd.package.version == version then
-					realm = vd.package.realm
-					break
-				end
-			end
-		end
-	end
-	realm = realm or "shared"
 
 	type DependencyRequest = {
 		scope: string,
@@ -286,62 +279,74 @@ local function resolve(
 		table.insert(activatedByName[fullName], entry)
 	end
 
-	local rootRealm = realm :: string
-	local rootPackageId = formatPackageId(scope, name, version)
-	activate(scope, name, version, rootRealm, rootPackageId)
+	-- Activate every root and queue its direct dependencies.
+	for _, root in roots do
+		local rootRealm = root.requestRealm
+		local rootPackageId = formatPackageId(root.scope, root.name, root.version)
 
-	if onProgress then
-		onProgress(`Resolving {scope}/{name}@{version}...`)
-	end
-	local rootMeta = WallyAPI.metadata(scope, name)
-	if not rootMeta or not rootMeta.versions then
-		return resolved, { `{scope}/{name}: metadata unavailable` }
-	end
-
-	local rootVersionData = nil
-	for _, vd in rootMeta.versions do
-		if vd.package.version == version then
-			rootVersionData = vd
-			break
+		if onProgress then
+			onProgress(`Resolving {root.scope}/{root.name}@{root.version}...`)
 		end
-	end
-	if not rootVersionData then
-		return resolved, { `{scope}/{name}@{version}: version not found` }
-	end
 
-	local rootDeps: { { alias: string, packageId: string, realm: "shared" | "server" } } = {}
-	resolved[rootPackageId] = {
-		scope = scope,
-		name = name,
-		version = version,
-		realm = rootRealm :: "shared" | "server",
-		packageId = rootPackageId,
-		dependencies = rootDeps,
-	}
+		local rootMeta = WallyAPI.metadata(root.scope, root.name)
+		if not rootMeta or not rootMeta.versions then
+			table.insert(failures, `{root.scope}/{root.name}: metadata unavailable`)
+			continue
+		end
 
-	local depSources = {}
-	if rootVersionData.dependencies then
-		table.insert(depSources, { deps = rootVersionData.dependencies, requestRealm = "shared" })
-	end
-	if rootVersionData["server-dependencies"] then
-		table.insert(depSources, { deps = rootVersionData["server-dependencies"], requestRealm = "server" })
-	end
-
-	for _, source in depSources do
-		for depAlias, depValue in source.deps do
-			local _, _, constraints = depValue:match("^([^@]+)@(.+)$")
-			if not constraints then
-				constraints = ""
+		local rootVersionData = nil
+		for _, vd in rootMeta.versions do
+			if vd.package.version == root.version then
+				rootVersionData = vd
+				break
 			end
-			table.insert(queue, {
-				scope = depValue:match("^(.+)/") or "",
-				name = depValue:match("/([^@]+)") or "",
-				constraints = constraints,
-				requestRealm = source.requestRealm,
-				originRealm = source.requestRealm,
-				requestedBy = rootPackageId,
-				alias = depAlias,
-			})
+		end
+		if not rootVersionData then
+			table.insert(failures, `{root.scope}/{root.name}@{root.version}: version not found`)
+			continue
+		end
+
+		if rootVersionData.package.realm and rootVersionData.package.realm ~= "dev" then
+			rootRealm = promoteRealm(rootRealm, rootVersionData.package.realm)
+		end
+
+		activate(root.scope, root.name, root.version, rootRealm, rootPackageId)
+		rootAliases[rootPackageId] = root.alias
+
+		local rootDeps: { { alias: string, packageId: string, realm: "shared" | "server" } } = {}
+		resolved[rootPackageId] = {
+			scope = root.scope,
+			name = root.name,
+			version = root.version,
+			realm = rootRealm :: "shared" | "server",
+			packageId = rootPackageId,
+			dependencies = rootDeps,
+		}
+
+		local depSources = {}
+		if rootVersionData.dependencies then
+			table.insert(depSources, { deps = rootVersionData.dependencies, requestRealm = "shared" })
+		end
+		if rootVersionData["server-dependencies"] then
+			table.insert(depSources, { deps = rootVersionData["server-dependencies"], requestRealm = "server" })
+		end
+
+		for _, source in depSources do
+			for depAlias, depValue in source.deps do
+				local _, _, constraints = depValue:match("^([^@]+)@(.+)$")
+				if not constraints then
+					constraints = ""
+				end
+				table.insert(queue, {
+					scope = depValue:match("^(.+)/") or "",
+					name = depValue:match("/([^@]+)") or "",
+					constraints = constraints,
+					requestRealm = source.requestRealm,
+					originRealm = source.requestRealm,
+					requestedBy = rootPackageId,
+					alias = depAlias,
+				})
+			end
 		end
 	end
 
@@ -506,7 +511,7 @@ local function resolve(
 		end
 	end
 
-	return resolved, failures
+	return resolved, rootAliases, failures
 end
 
 local function globToPattern(glob: string): string
@@ -883,126 +888,99 @@ local function buildPackageLink(
 	end
 end
 
-local function extractPackageId(source: string): string?
-	return source:match('%["([^"]+@[^"]+)"%]')
+local function snapshotRoots(): { RootRequest }
+	local roots: { RootRequest } = {}
+	for _, installedPackage in InstalledPackages.list() do
+		table.insert(roots, {
+			scope = installedPackage.scope,
+			name = installedPackage.name,
+			version = installedPackage.version,
+			requestRealm = installedPackage.realm,
+			alias = installedPackage.aliasLink.Name,
+		})
+	end
+	return roots
 end
 
-local function detectDepRealm(source: string, currentRealm: string): string
-	if string.find(source, "ReplicatedStorage") then
-		return "shared"
-	elseif string.find(source, "ServerStorage") then
-		return "server"
+local function findRootIndex(roots: { RootRequest }, scope: string, name: string): number?
+	for index, root in roots do
+		if root.scope == scope and root.name == name then
+			return index
+		end
 	end
-	return currentRealm
+	return nil
 end
 
-local function garbageCollectAll()
-	local folders = {
-		shared = Installer.getPackagesFolder("shared"),
-		server = Installer.getPackagesFolder("server"),
-	}
-	local indexes: { [string]: Folder? } = {
-		shared = folders.shared:FindFirstChild("_Index") :: Folder?,
-		server = folders.server:FindFirstChild("_Index") :: Folder?,
-	}
-
-	local reachable: { [string]: { [string]: true } } = {
-		shared = {},
-		server = {},
-	}
-
-	local function visit(packageId: string, realm: string)
-		if reachable[realm][packageId] then
-			return
-		end
-		reachable[realm][packageId] = true
-		local indexFolder = indexes[realm]
-		if not indexFolder then
-			return
-		end
-		local packageFolder = indexFolder:FindFirstChild(packageId)
-		if not packageFolder then
-			return
-		end
-		for _, child in packageFolder:GetChildren() do
-			if child:IsA("ModuleScript") then
-				local depId = extractPackageId(child.Source)
-				if depId then
-					visit(depId, detectDepRealm(child.Source, realm))
-				end
-			end
-		end
-	end
-
-	for realmName, folder in folders do
-		for _, child in folder:GetChildren() do
-			if child:IsA("ModuleScript") then
-				local id = extractPackageId(child.Source)
-				if id then
-					visit(id, realmName)
-				end
-			end
-		end
-	end
-
-	for realmName, indexFolder in indexes do
-		if indexFolder then
-			for _, child in indexFolder:GetChildren() do
-				if not reachable[realmName][child.Name] then
-					child:Destroy()
-				end
-			end
-		end
-	end
-end
-
-function Installer.install(
-	scope: string,
-	name: string,
-	version: string,
-	alias: string,
-	realm: string?,
+local function applyResolved(
+	resolved: { [string]: ResolvedPackage },
+	rootAliases: { [string]: string },
 	onProgress: ProgressCallback?
-): (boolean, string?, { string }?)
-	local function progress(message: string)
-		if onProgress then
-			onProgress(message)
-		end
-	end
-
-	if realm == "dev" then
-		return false, "Dev realm packages are not supported. Discover can only install shared and server packages."
-	end
-
-	progress("Resolving dependencies...")
-	local resolved, failures = resolve(scope, name, version, realm, onProgress)
-
-	local rootPackageId = formatPackageId(scope, name, version)
-	local rootResolved = resolved[rootPackageId]
-	if not rootResolved then
-		return false, "Failed to resolve root package"
-	end
-
+): { string }
+	local failures: { string } = {}
 	local moduleNames: { [string]: string } = {}
 
-	for packageId in resolved do
-		for _, realmName in { "shared", "server" } do
-			local packagesFolder = Installer.getPackagesFolder(realmName)
-			local indexFolder = packagesFolder:FindFirstChild("_Index")
-			if indexFolder then
-				local existing = indexFolder:FindFirstChild(packageId)
-				if existing then
-					existing:Destroy()
+	-- Wipe all top-level alias links (we'll rebuild them from the resolved
+	-- root set below). Anything that's no longer a root will not come back.
+	for _, realmName in { "shared", "server" } do
+		local packagesFolder = Installer.getPackagesFolder(realmName)
+		for _, child in packagesFolder:GetChildren() do
+			if child:IsA("ModuleScript") then
+				child:Destroy()
+			end
+		end
+	end
+
+	-- Index existing on-disk packages so we can reuse them and avoid
+	-- redownloading anything that's already present.
+	local existingByPackageId: { [string]: { folder: Folder, realm: "shared" | "server" } } = {}
+	for _, realmName in { "shared", "server" } do
+		local packagesFolder = Installer.getPackagesFolder(realmName)
+		local indexFolder = packagesFolder:FindFirstChild("_Index")
+		if indexFolder then
+			for _, child in indexFolder:GetChildren() do
+				if child:IsA("Folder") then
+					existingByPackageId[child.Name] = {
+						folder = child,
+						realm = realmName :: "shared" | "server",
+					}
 				end
 			end
 		end
 	end
 
+	-- Destroy any _Index entries that aren't in the resolved set, and any
+	-- that need to move to a different realm.
+	for packageId, existing in existingByPackageId do
+		local resolvedPackage = resolved[packageId]
+		if not resolvedPackage or resolvedPackage.realm ~= existing.realm then
+			existing.folder:Destroy()
+			existingByPackageId[packageId] = nil
+		end
+	end
+
+	-- Place every resolved package, downloading what isn't already on disk.
 	for packageId, resolvedPackage in resolved do
 		local packagesFolder = Installer.getPackagesFolder(resolvedPackage.realm)
 		local indexFolder = getOrCreateIndex(packagesFolder)
 
-		progress(`Downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}...`)
+		local existing = existingByPackageId[packageId]
+		if existing then
+			local moduleName = existing.folder:GetAttribute("ModuleName")
+			moduleNames[packageId] = if typeof(moduleName) == "string" then moduleName else resolvedPackage.name
+
+			-- Keep the package code, but wipe and rebuild the dep link
+			-- ModuleScripts so they retarget to the resolved versions.
+			for _, child in existing.folder:GetChildren() do
+				if child:IsA("ModuleScript") then
+					child:Destroy()
+				end
+			end
+			continue
+		end
+
+		if onProgress then
+			onProgress(`Downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}...`)
+		end
 		local tree, errorMessage =
 			downloadAndExtract(resolvedPackage.scope, resolvedPackage.name, resolvedPackage.version)
 		if not tree then
@@ -1026,24 +1004,20 @@ function Installer.install(
 		packageFolder.Parent = indexFolder
 	end
 
+	-- Rebuild internal dep links for every resolved package.
 	for packageId, resolvedPackage in resolved do
 		local packagesFolder = Installer.getPackagesFolder(resolvedPackage.realm)
 		local indexFolder = getOrCreateIndex(packagesFolder)
-		local packageFolder = indexFolder:FindFirstChild(packageId)
+		local packageFolder = indexFolder:FindFirstChild(packageId) :: Folder?
 		if not packageFolder then
 			continue
 		end
 
 		for _, dep in resolvedPackage.dependencies do
-			if packageFolder:FindFirstChild(dep.alias) then
-				continue
-			end
-
 			local depResolved = resolved[dep.packageId]
 			if not depResolved then
 				continue
 			end
-
 			local dependencyModuleName = moduleNames[dep.packageId] or depResolved.name
 			local link = buildPackageLink(
 				dep.alias,
@@ -1058,38 +1032,87 @@ function Installer.install(
 		end
 	end
 
-	local rootModuleName = moduleNames[rootPackageId] or name
-	local packagesFolder = Installer.getPackagesFolder(rootResolved.realm)
-
-	local existingAlias = packagesFolder:FindFirstChild(alias)
-	if existingAlias then
-		existingAlias:Destroy()
+	-- Recreate top-level alias links from the resolved root set.
+	for packageId, alias in rootAliases do
+		local resolvedPackage = resolved[packageId]
+		if not resolvedPackage then
+			continue
+		end
+		local packagesFolder = Installer.getPackagesFolder(resolvedPackage.realm)
+		local moduleName = moduleNames[packageId] or resolvedPackage.name
+		local rootLink =
+			buildPackageLink(alias, packageId, moduleName, resolvedPackage.realm, resolvedPackage.realm, true)
+		rootLink.Parent = packagesFolder
+		PackageTypes.processLink(rootLink)
 	end
 
-	local rootLink =
-		buildPackageLink(alias, rootPackageId, rootModuleName, rootResolved.realm, rootResolved.realm, true)
-	rootLink.Parent = packagesFolder
-	PackageTypes.processLink(rootLink)
+	return failures
+end
 
-	garbageCollectAll()
-
-	local allResolved: { [string]: ResolvedPackage } = {}
-	for _, installedPackage in InstalledPackages.list() do
-		if not resolved[installedPackage.packageId] then
-			allResolved[installedPackage.packageId] = {
-				scope = installedPackage.scope,
-				name = installedPackage.name,
-				version = installedPackage.version,
-				realm = installedPackage.realm,
-				packageId = installedPackage.packageId,
-				dependencies = {},
-			}
+function Installer.install(
+	scope: string,
+	name: string,
+	version: string,
+	alias: string,
+	realm: string?,
+	onProgress: ProgressCallback?
+): (boolean, string?, { string }?)
+	local function progress(message: string)
+		if onProgress then
+			onProgress(message)
 		end
 	end
-	for packageId, resolvedPackage in resolved do
-		allResolved[packageId] = resolvedPackage
+
+	if realm == "dev" then
+		return false, "Dev realm packages are not supported. Discover can only install shared and server packages."
 	end
-	saveLockfile(allResolved)
+
+	local roots = snapshotRoots()
+	local existingIndex = findRootIndex(roots, scope, name)
+	local newRoot: RootRequest = {
+		scope = scope,
+		name = name,
+		version = version,
+		requestRealm = realm or "shared",
+		alias = alias,
+	}
+	if existingIndex then
+		roots[existingIndex] = newRoot
+	else
+		table.insert(roots, newRoot)
+	end
+
+	progress("Resolving dependencies...")
+	local resolved, rootAliases, resolutionFailures = resolveRoots(roots, loadLockfile(), onProgress)
+
+	local missingRoots: { string } = {}
+	for _, root in roots do
+		local rootPackageId = formatPackageId(root.scope, root.name, root.version)
+		if not resolved[rootPackageId] then
+			table.insert(missingRoots, `{root.scope}/{root.name}@{root.version}`)
+		end
+	end
+	if #missingRoots > 0 then
+		-- Bail out before destroying anything. If a previously-installed
+		-- root can't be re-resolved (e.g. transient metadata fetch
+		-- failure), applyResolved would treat it as an orphan and wipe it.
+		local message = `Cannot resolve already-installed packages: {table.concat(missingRoots, ", ")}`
+		if #resolutionFailures > 0 then
+			message = `{message} ({table.concat(resolutionFailures, "; ")})`
+		end
+		return false, message
+	end
+
+	local applyFailures = applyResolved(resolved, rootAliases, onProgress)
+	saveLockfile(resolved)
+
+	local failures = {}
+	for _, failure in resolutionFailures do
+		table.insert(failures, failure)
+	end
+	for _, failure in applyFailures do
+		table.insert(failures, failure)
+	end
 
 	if #failures > 0 then
 		return true, nil, failures
@@ -1098,31 +1121,33 @@ function Installer.install(
 end
 
 function Installer.uninstall(scope: string, name: string): (boolean, string?)
-	local installed = InstalledPackages.map()
-	local entry = installed[`{scope}/{name}`]
-	if not entry then
+	local roots = snapshotRoots()
+	local existingIndex = findRootIndex(roots, scope, name)
+	if not existingIndex then
 		return false, "Package not found"
 	end
 
-	entry.aliasLink:Destroy()
+	table.remove(roots, existingIndex)
 
-	garbageCollectAll()
+	local resolved, rootAliases, resolutionFailures = resolveRoots(roots, loadLockfile(), nil)
 
-	local allResolved: { [string]: ResolvedPackage } = {}
-	for _, installedPackage in InstalledPackages.list() do
-		if installedPackage.scope == scope and installedPackage.name == name then
-			continue
+	local missingRoots: { string } = {}
+	for _, root in roots do
+		local rootPackageId = formatPackageId(root.scope, root.name, root.version)
+		if not resolved[rootPackageId] then
+			table.insert(missingRoots, `{root.scope}/{root.name}@{root.version}`)
 		end
-		allResolved[installedPackage.packageId] = {
-			scope = installedPackage.scope,
-			name = installedPackage.name,
-			version = installedPackage.version,
-			realm = installedPackage.realm,
-			packageId = installedPackage.packageId,
-			dependencies = {},
-		}
 	end
-	saveLockfile(allResolved)
+	if #missingRoots > 0 then
+		local message = `Cannot resolve remaining packages: {table.concat(missingRoots, ", ")}`
+		if #resolutionFailures > 0 then
+			message = `{message} ({table.concat(resolutionFailures, "; ")})`
+		end
+		return false, message
+	end
+
+	applyResolved(resolved, rootAliases, nil)
+	saveLockfile(resolved)
 
 	return true, nil
 end
