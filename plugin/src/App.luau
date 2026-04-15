@@ -53,7 +53,7 @@ local function PageRouter()
 			end
 			local updated = table.clone(prev)
 			table.insert(updated, { screen = nav.screen, component = component })
-			return next
+			return updated
 		end)
 	end, { activeId, nav.screen } :: { any })
 
