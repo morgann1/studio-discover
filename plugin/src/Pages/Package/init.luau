@@ -40,6 +40,7 @@ local function Package()
 	local screen = nav.screen
 	local scope = screen.options and screen.options.scope or ""
 	local rawName = screen.options and screen.options.name or ""
+	local requestedVersion: string? = screen.options and screen.options.version
 	local settingsContext = SettingsModule.useSettings()
 
 	local allVersions: { any }?, setAllVersions = React.useState(nil :: { any }?)
@@ -56,14 +57,23 @@ local function Package()
 			end
 			if data and data.versions and #data.versions > 0 then
 				setAllVersions(data.versions)
-				setSelectedVersion(data.versions[1].package.version)
+				local initialVersion = data.versions[1].package.version
+				if requestedVersion then
+					for _, version in data.versions do
+						if version.package.version == requestedVersion then
+							initialVersion = requestedVersion
+							break
+						end
+					end
+				end
+				setSelectedVersion(initialVersion)
 			end
 			setIsLoading(false)
 		end)
 		return function()
 			cancelled = true
 		end
-	end, { scope, rawName })
+	end, { scope, rawName, requestedVersion } :: { any })
 
 	local metadata = React.useMemo(function()
 		if not allVersions or not selectedVersion then
@@ -178,8 +188,12 @@ local function Package()
 			table.insert(dependencyGroups[dep.category], dep)
 		end
 
-		local function onDependencySelect(dependencyScope: string, dependencyName: string)
-			nav.push("Package", { scope = dependencyScope, name = dependencyName })
+		local function onDependencySelect(dependencyScope: string, dependencyName: string, dependencyVersion: string?)
+			nav.push("Package", {
+				scope = dependencyScope,
+				name = dependencyName,
+				version = dependencyVersion,
+			})
 		end
 
 		local function buildDepGroup(category: string, layoutOrder: number)

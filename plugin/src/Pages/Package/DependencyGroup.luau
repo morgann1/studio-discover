@@ -23,17 +23,23 @@ export type Dependency = {
 type DependencyGroupProps = {
 	label: string?,
 	deps: { Dependency },
-	onSelect: (scope: string, name: string) -> (),
+	onSelect: (scope: string, name: string, version: string?) -> (),
 	LayoutOrder: number,
 }
 
-local function parseDepPath(dependencyVersion: string): (string?, string?)
-	local path = string.match(dependencyVersion, "^([^@]+)")
-	if path then
-		local s, n = string.match(path, "^(.+)/(.+)$")
-		return s, n
+local function parseDepSpec(dependencyVersion: string): (string?, string?, string?)
+	-- Mirror wally registry frontend (page.tsx:179):
+	-- /(.+\/.+)@[^\d]+([\d.]+)/ — operator(s) then first numeric token.
+	local scopeName, version = string.match(dependencyVersion, "(.+/.+)@[^%d]+([%d%.]+)")
+	if not scopeName then
+		-- Wally's regex requires an operator, so handle bare specs too.
+		scopeName, version = string.match(dependencyVersion, "(.+/.+)@([%d%.]+)")
 	end
-	return nil, nil
+	if not scopeName then
+		return nil, nil, nil
+	end
+	local scope, name = string.match(scopeName, "^(.+)/(.+)$")
+	return scope, name, version
 end
 
 local function DependencyGroup(props: DependencyGroupProps)
@@ -59,15 +65,22 @@ local function DependencyGroup(props: DependencyGroupProps)
 	end
 
 	for _, dep in props.deps do
-		local dependencyScope, dependencyName = parseDepPath(tostring(dep.version))
-		local displayName = dependencyScope and `{dependencyScope}/{dependencyName}` or dep.name
+		local dependencyScope, dependencyName, dependencyVersion = parseDepSpec(tostring(dep.version))
+		local displayName
+		if dependencyScope and dependencyVersion then
+			displayName = `{dependencyScope}/{dependencyName}@{dependencyVersion}`
+		elseif dependencyScope then
+			displayName = `{dependencyScope}/{dependencyName}`
+		else
+			displayName = dep.name
+		end
 		children[depKey(displayName)] = e(Button, {
 			text = displayName,
 			variant = ButtonVariant.Link,
 			size = InputSize.Small,
 			LayoutOrder = nextOrder(),
 			onActivated = dependencyScope and function()
-				props.onSelect(dependencyScope, dependencyName)
+				props.onSelect(dependencyScope, dependencyName, dependencyVersion)
 			end or nil,
 		})
 	end
