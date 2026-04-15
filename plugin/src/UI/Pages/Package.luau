@@ -6,6 +6,9 @@ local StudioComponents = require(Packages.StudioComponents)
 
 local Api = require(Discover.Src.Wally.Api)
 local Navigation = require(Discover.Src.UI.Navigation)
+local Settings = require(Discover.Src.UI.Settings)
+local formatPackageName = require(Discover.Src.UI.Util.formatPackageName)
+local useAtom = require(Discover.Src.UI.Common.useAtom)
 
 local Constants = StudioComponents.Constants
 local useTheme = StudioComponents.useTheme
@@ -340,6 +343,12 @@ local function PackageContent(props: { metadata: Api.PackageMetadata, requestedV
 
 	local meta = selected.package
 	local authors = meta.authors or {}
+	local convention = useAtom(Settings.atoms.namingConvention)
+	local bareName = string.match(meta.name, "[^/]+$") or meta.name
+	local descriptionText = meta.description
+	if not descriptionText or descriptionText == "" then
+		descriptionText = `{formatPackageName(bareName, convention)} has no provided description.`
+	end
 
 	return e(StudioComponents.ScrollFrame, {
 		Size = UDim2.fromScale(1, 1),
@@ -364,28 +373,45 @@ local function PackageContent(props: { metadata: Api.PackageMetadata, requestedV
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				Padding = UDim.new(0, 4),
 			}),
-			Title = e("TextLabel", {
-				Text = meta.name,
-				Font = Enum.Font.SourceSansBold,
-				TextSize = TITLE_TEXT_SIZE,
-				TextColor3 = theme:GetColor(Enum.StudioStyleGuideColor.MainText),
-				TextXAlignment = Enum.TextXAlignment.Left,
-				BackgroundTransparency = 1,
+			TitleRow = e("Frame", {
 				Size = UDim2.new(1, 0, 0, TITLE_TEXT_SIZE + 4),
-				LayoutOrder = 1,
-			}),
-			Version = e("TextLabel", {
-				Text = `v{meta.version}`,
-				Font = Constants.DefaultFont,
-				TextSize = Constants.DefaultTextSize,
-				TextColor3 = theme:GetColor(Enum.StudioStyleGuideColor.DimmedText),
-				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 0, 18),
-				LayoutOrder = 2,
+				LayoutOrder = 1,
+			}, {
+				Layout = e("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					VerticalAlignment = Enum.VerticalAlignment.Bottom,
+					Padding = UDim.new(0, 8),
+				}),
+				Title = e("TextLabel", {
+					Text = meta.name,
+					Font = Enum.Font.SourceSansBold,
+					TextSize = TITLE_TEXT_SIZE,
+					TextColor3 = theme:GetColor(Enum.StudioStyleGuideColor.MainText),
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Bottom,
+					TextTruncate = Enum.TextTruncate.AtEnd,
+					BackgroundTransparency = 1,
+					AutomaticSize = Enum.AutomaticSize.X,
+					Size = UDim2.fromScale(0, 1),
+					LayoutOrder = 1,
+				}),
+				Version = e("TextLabel", {
+					Text = `v{meta.version}`,
+					Font = Constants.DefaultFont,
+					TextSize = Constants.DefaultTextSize,
+					TextColor3 = theme:GetColor(Enum.StudioStyleGuideColor.DimmedText),
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Bottom,
+					BackgroundTransparency = 1,
+					AutomaticSize = Enum.AutomaticSize.X,
+					Size = UDim2.fromScale(0, 1),
+					LayoutOrder = 2,
+				}),
 			}),
 			Description = e("TextLabel", {
-				Text = meta.description or "(no description)",
+				Text = descriptionText,
 				Font = Constants.DefaultFont,
 				TextSize = Constants.DefaultTextSize,
 				TextColor3 = theme:GetColor(Enum.StudioStyleGuideColor.MainText),
