@@ -45,7 +45,7 @@ local function Page(props: PageProps)
 			setRendered(true)
 		end
 		if reduceMotion then
-			setGoal(if active then 1 else 0)
+			setGoal(ReactOtter.instant(if active then 1 else 0))
 			if not active then
 				setRendered(false)
 				if onExited then
