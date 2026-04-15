@@ -37,6 +37,12 @@ local function SettingsPage()
 			options = NAMING_CONVENTIONS,
 			layoutOrder = nextOrder(),
 		}),
+		ReduceMotion = e(Setting, {
+			id = "reduceMotion",
+			name = "Reduce Motion",
+			description = "Skip page transition animations.",
+			layoutOrder = nextOrder(),
+		}),
 		VerboseLogging = e(Setting, {
 			id = "verboseLogging",
 			name = "Verbose Logging",

@@ -4,6 +4,9 @@ local Packages = Discover.Packages
 local React = require(Packages.React)
 local ReactOtter = require(Packages.ReactOtter)
 
+local Settings = require(Discover.Src.UI.Settings)
+local useAtom = require(Discover.Src.UI.Common.useAtom)
+
 local e = React.createElement
 local useCallback = React.useCallback
 local useEffect = React.useEffect
@@ -22,6 +25,7 @@ type PageProps = {
 local function Page(props: PageProps)
 	local active = props.active
 	local onExited = props.onExited
+	local reduceMotion = useAtom(Settings.atoms.reduceMotion)
 
 	local rendered, setRendered = useState(active)
 
@@ -40,11 +44,30 @@ local function Page(props: PageProps)
 		if active then
 			setRendered(true)
 		end
-		setGoal(ReactOtter.spring(if active then 1 else 0, SPRING_OPTIONS))
-	end, { active } :: { any })
+		if reduceMotion then
+			setGoal(if active then 1 else 0)
+			if not active then
+				setRendered(false)
+				if onExited then
+					onExited()
+				end
+			end
+		else
+			setGoal(ReactOtter.spring(if active then 1 else 0, SPRING_OPTIONS))
+		end
+	end, { active, reduceMotion } :: { any })
 
 	if not rendered then
 		return nil
+	end
+
+	if reduceMotion then
+		return e("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+		}, {
+			Inner = e(props.component, props.pageProps),
+		})
 	end
 
 	local transparency = value:map(function(v: number): number

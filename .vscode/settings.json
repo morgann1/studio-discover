@@ -2,5 +2,6 @@
     "editor.defaultFormatter": "JohnnyMorganz.stylua",
     "editor.formatOnSave": true,
     "luau-lsp.sourcemap.rojoProjectFile": "plugin/default.project.json",
-	"luau-lsp.sourcemap.sourcemapFile": "plugin/generated/sourcemap.json"
+    "luau-lsp.sourcemap.sourcemapFile": "plugin/generated/sourcemap.json",
+    "luau-lsp.studioPlugin.enabled": true
 }

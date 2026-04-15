@@ -80,6 +80,7 @@ plugin.Unloading:Connect(function()
 	for _, connection in connections do
 		connection:Disconnect()
 	end
+	table.clear(connections)
 	if reactRoot then
 		reactRoot:unmount()
 	end

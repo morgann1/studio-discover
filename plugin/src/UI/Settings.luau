@@ -19,6 +19,7 @@ local DEFAULTS: { [string]: any } = {
 	checkForUpdates = true,
 	dismissedUpdateVersion = "",
 	namingConvention = "As-Is" :: NamingConvention,
+	reduceMotion = false,
 	verboseLogging = false,
 	nameOverrides = {} :: { [string]: string },
 }
