@@ -1,7 +1,7 @@
 [package]
 name = "morgann1/studio-discover"
 description = "A Roblox Studio plugin for browsing and installing Wally packages."
-version = "2.5.0"
+version = "2.6.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 private = true
