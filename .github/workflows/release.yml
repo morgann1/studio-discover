@@ -34,16 +34,25 @@ jobs:
       - name: 🏗️ Build Discover.rbxm
         run: rojo build plugin/default.project.json -o Discover.rbxm
 
-      - name: 📝 Generate changelog
-        id: changelog
-        uses: orhun/git-cliff-action@v4
-        with:
-          config: cliff.toml
-          args: --latest --strip header
+      - name: 🔗 Build commits link
+        id: commits
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+          if [ -n "$PREV" ]; then
+            URL="${{ github.server_url }}/${{ github.repository }}/compare/$PREV...$TAG"
+          else
+            URL="${{ github.server_url }}/${{ github.repository }}/commits/$TAG"
+          fi
+          {
+            echo "body<<EOF"
+            echo "See full commits here: $URL"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: Discover.rbxm
-          body: ${{ steps.changelog.outputs.content }}
+          body: ${{ steps.commits.outputs.body }}
