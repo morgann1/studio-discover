@@ -38,7 +38,10 @@ local function Page(props: PageProps)
 		end
 	end, { onExited } :: { any })
 
-	local value, setGoal = ReactOtter.useAnimatedBinding(if active then 1 else 0, handleComplete)
+	-- Always start the binding at 0 so a freshly-mounted active page has
+	-- distance to spring across; otherwise pushing onto a non-Home page
+	-- (e.g. searching from Settings) appears to snap with no transition.
+	local value, setGoal = ReactOtter.useAnimatedBinding(0, handleComplete)
 
 	useEffect(function()
 		if active then
@@ -70,21 +73,28 @@ local function Page(props: PageProps)
 		})
 	end
 
-	local transparency = value:map(function(v: number): number
-		return 1 - v
-	end)
 	local position = value:map(function(v: number): UDim2
 		local slide = if active then (1 - v) else -(1 - v)
 		return UDim2.fromOffset(slide * SLIDE_OFFSET, 0)
 	end)
+	local transparency = value:map(function(v: number): number
+		return 1 - v
+	end)
 
-	return e("CanvasGroup", {
+	-- Plain Frame instead of CanvasGroup: rojo's Page does the same.
+	-- CanvasGroup would re-rasterize the whole subtree every frame of the
+	-- spring, which is the main cost on heavy pages like Package. The
+	-- transparency binding is threaded through pageProps so individual
+	-- leaves can opt into fading without paying the compositing tax.
+	local innerProps: { [string]: any } = if props.pageProps then table.clone(props.pageProps) else {}
+	innerProps.transparency = transparency
+
+	return e("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		Position = position,
 		BackgroundTransparency = 1,
-		GroupTransparency = transparency,
 	}, {
-		Inner = e(props.component, props.pageProps),
+		Inner = e(props.component, innerProps),
 	})
 end
 
