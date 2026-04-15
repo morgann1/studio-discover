@@ -114,17 +114,10 @@ local function App(_props: AppProps)
 
 		SidebarPanel = e(Sidebar),
 
-		Divider = e("Frame", {
-			Size = UDim2.new(0, 1, 1, 0),
-			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Border),
-			BorderSizePixel = 0,
-			LayoutOrder = 2,
-		}),
-
 		ContentWrap = e("Frame", {
 			Size = UDim2.fromScale(1, 1),
 			BackgroundTransparency = 1,
-			LayoutOrder = 3,
+			LayoutOrder = 2,
 		}, {
 			Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
 			Layout = e("UIListLayout", {

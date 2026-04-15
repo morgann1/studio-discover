@@ -39,14 +39,14 @@ local function SidebarItem(props: SidebarItemProps)
 	local theme = useTheme()
 	local hovered, setHovered = useState(false)
 
-	local backgroundStyle = Enum.StudioStyleGuideColor.Item
 	local modifier = Enum.StudioStyleGuideModifier.Default
 	if props.active then
 		modifier = Enum.StudioStyleGuideModifier.Selected
 	elseif hovered then
 		modifier = Enum.StudioStyleGuideModifier.Hover
 	end
-	local backgroundColor = theme:GetColor(backgroundStyle, modifier)
+
+	local backgroundColor = theme:GetColor(Enum.StudioStyleGuideColor.Item, modifier)
 	local textColor = theme:GetColor(Enum.StudioStyleGuideColor.MainText, modifier)
 	local iconAsset = lucideIconProps(props.icon)
 
@@ -65,6 +65,9 @@ local function SidebarItem(props: SidebarItemProps)
 			setHovered(false)
 		end,
 	}, {
+		Corner = e("UICorner", {
+			CornerRadius = UDim.new(0, 4),
+		}),
 		Padding = e("UIPadding", {
 			PaddingLeft = UDim.new(0, 10),
 			PaddingRight = UDim.new(0, 10),
@@ -122,6 +125,10 @@ local function Sidebar()
 
 	local sectionChildren: { [string]: any } = {
 		Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
+		Padding = e("UIPadding", {
+			PaddingLeft = UDim.new(0, 4),
+			PaddingRight = UDim.new(0, 4),
+		}),
 		Layout = e("UIListLayout", {
 			FillDirection = Enum.FillDirection.Vertical,
 			SortOrder = Enum.SortOrder.LayoutOrder,
@@ -142,47 +149,60 @@ local function Sidebar()
 
 	return e("Frame", {
 		Size = UDim2.new(0, SIDEBAR_WIDTH, 1, 0),
-		BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.ViewPortBackground),
+		BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.MainBackground),
 		BorderSizePixel = 0,
 		LayoutOrder = 1,
 	}, {
-		Layout = e("UIListLayout", {
-			FillDirection = Enum.FillDirection.Vertical,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 8),
-		}),
-
-		SearchRow = e("Frame", {
-			Size = UDim2.fromScale(1, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
+		Content = e("Frame", {
+			Size = UDim2.new(1, -1, 1, 0),
 			BackgroundTransparency = 1,
-			LayoutOrder = 1,
 		}, {
-			Padding = e("UIPadding", {
-				PaddingLeft = UDim.new(0, 8),
-				PaddingRight = UDim.new(0, 8),
-				PaddingTop = UDim.new(0, 8),
+			Layout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 8),
 			}),
-			Input = e(StudioComponents.TextInput, {
-				Text = searchText,
-				PlaceholderText = "Search packages",
-				OnChanged = setSearchText,
-				OnFocusLost = onSearchCommit,
+
+			SearchRow = e("Frame", {
+				Size = UDim2.fromScale(1, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+				LayoutOrder = 1,
+			}, {
+				Padding = e("UIPadding", {
+					PaddingLeft = UDim.new(0, 8),
+					PaddingRight = UDim.new(0, 8),
+					PaddingTop = UDim.new(0, 8),
+				}),
+				Input = e(StudioComponents.TextInput, {
+					Text = searchText,
+					PlaceholderText = "Search packages",
+					OnChanged = setSearchText,
+					OnFocusLost = onSearchCommit,
+				}),
 			}),
+
+			Separator = e("Frame", {
+				Size = UDim2.new(1, 0, 0, 1),
+				BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Border),
+				BorderSizePixel = 0,
+				LayoutOrder = 2,
+			}),
+
+			SectionList = e("Frame", {
+				Size = UDim2.fromScale(1, 1),
+				BackgroundTransparency = 1,
+				LayoutOrder = 3,
+			}, sectionChildren),
 		}),
 
-		Divider = e("Frame", {
-			Size = UDim2.new(1, 0, 0, 1),
-			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Titlebar),
+		RightBorder = e("Frame", {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.fromScale(1, 0),
+			Size = UDim2.new(0, 1, 1, 0),
+			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Border),
 			BorderSizePixel = 0,
-			LayoutOrder = 2,
 		}),
-
-		SectionList = e("Frame", {
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			LayoutOrder = 3,
-		}, sectionChildren),
 	})
 end
 
