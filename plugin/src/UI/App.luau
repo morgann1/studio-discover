@@ -18,7 +18,6 @@ local Package = require(Discover.Src.UI.Pages.Package)
 local Settings = require(Discover.Src.UI.Pages.Settings)
 local Updates = require(Discover.Src.UI.Pages.Updates)
 
-local Constants = StudioComponents.Constants
 local useTheme = StudioComponents.useTheme
 
 local e = React.createElement
@@ -26,7 +25,11 @@ local useCallback = React.useCallback
 local useEffect = React.useEffect
 local useState = React.useState
 
-local HEADER_HEIGHT = 32
+-- Keep HEADER_HEIGHT aligned with the sidebar search row's height so the
+-- header divider and the sidebar search separator render on the same Y.
+local HEADER_HEIGHT = 38
+local HEADER_DIVIDER_HEIGHT = 1
+local HEADER_TITLE_TEXT_SIZE = 18
 
 local Pages: { [string]: (any) -> any } = {
 	About = About,
@@ -153,8 +156,8 @@ local function App(_props: AppProps)
 				Title = e("TextLabel", {
 					Size = UDim2.fromScale(1, 1),
 					BackgroundTransparency = 1,
-					Font = Constants.DefaultFont,
-					TextSize = Constants.DefaultTextSize,
+					Font = Enum.Font.SourceSansSemibold,
+					TextSize = HEADER_TITLE_TEXT_SIZE,
 					TextColor3 = theme:GetColor(Enum.StudioStyleGuideColor.MainText),
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Center,
@@ -163,10 +166,17 @@ local function App(_props: AppProps)
 				}),
 			}),
 
-			PageArea = e("Frame", {
-				Size = UDim2.new(1, 0, 1, -HEADER_HEIGHT),
-				BackgroundTransparency = 1,
+			HeaderDivider = e("Frame", {
+				Size = UDim2.new(1, 0, 0, HEADER_DIVIDER_HEIGHT),
+				BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Border),
+				BorderSizePixel = 0,
 				LayoutOrder = 2,
+			}),
+
+			PageArea = e("Frame", {
+				Size = UDim2.new(1, 0, 1, -HEADER_HEIGHT - HEADER_DIVIDER_HEIGHT),
+				BackgroundTransparency = 1,
+				LayoutOrder = 3,
 			}, children),
 		}),
 	})
