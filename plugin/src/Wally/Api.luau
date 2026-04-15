@@ -26,6 +26,13 @@ export type PackageMetadata = {
 	versions: { PackageVersion },
 }
 
+export type SearchResult = {
+	scope: string,
+	name: string,
+	description: string?,
+	versions: { string },
+}
+
 export type ApiResult<T> =
 	{
 		ok: true,
@@ -104,11 +111,30 @@ local function getPackageMetadata(scope: string, name: string): ApiResult<Packag
 	return get(`{API_BASE}/package-metadata/{scope}/{name}`)
 end
 
+-- application/x-www-form-urlencoded encoding to match wally.run's
+-- frontend (URLSearchParams) — spaces become "+", everything outside
+-- the unreserved set becomes %XX.
+local function encodeFormParam(value: string): string
+	return (
+		string.gsub(value, "([^%w%-%.%_%~])", function(char)
+			if char == " " then
+				return "+"
+			end
+			return string.format("%%%02X", string.byte(char))
+		end)
+	)
+end
+
+local function searchPackages(query: string): ApiResult<{ SearchResult }>
+	return get(`{API_BASE}/package-search?query={encodeFormParam(query)}`)
+end
+
 local function clearCache()
 	table.clear(responseCache)
 end
 
 return {
 	getPackageMetadata = getPackageMetadata,
+	searchPackages = searchPackages,
 	clearCache = clearCache,
 }

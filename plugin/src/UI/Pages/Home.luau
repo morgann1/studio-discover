@@ -14,7 +14,7 @@ local e = React.createElement
 local SECTION_HEADER_TEXT_SIZE = 16
 local GRID_COLUMNS = 2
 local GRID_PADDING = 8
-local CARD_HEIGHT = 96
+local CARD_HEIGHT = 64
 
 local MOST_POPULAR = {
 	{ scopeName = "evaera/cmdr", description = "Extensible command console for Roblox developers" },

@@ -15,6 +15,7 @@ local Home = require(Discover.Src.UI.Pages.Home)
 local Installed = require(Discover.Src.UI.Pages.Installed)
 local Overrides = require(Discover.Src.UI.Pages.Overrides)
 local Package = require(Discover.Src.UI.Pages.Package)
+local Search = require(Discover.Src.UI.Pages.Search)
 local Settings = require(Discover.Src.UI.Pages.Settings)
 local Updates = require(Discover.Src.UI.Pages.Updates)
 
@@ -35,6 +36,7 @@ local Pages: { [string]: (any) -> any } = {
 	Installed = Installed,
 	Overrides = Overrides,
 	Package = Package,
+	Search = Search,
 	Settings = Settings,
 	Updates = Updates,
 }

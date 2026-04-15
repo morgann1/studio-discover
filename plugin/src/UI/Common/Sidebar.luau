@@ -222,10 +222,17 @@ local function Sidebar()
 	local searchText, setSearchText = useState("")
 
 	local onSearchCommit = useCallback(function(text: string, enterPressed: boolean)
-		if enterPressed and text ~= "" and activeSection ~= "Home" then
-			Navigation.resetTo("Home")
+		if not enterPressed then
+			return
 		end
-	end, { activeSection } :: { any })
+		local trimmed = string.match(text, "^%s*(.-)%s*$") or ""
+		if trimmed == "" then
+			return
+		end
+		-- Park Home underneath so the sidebar highlights Home while the
+		-- search results page is on top, no matter where the user was.
+		Navigation.resetThenPush("Home", "Search", { query = trimmed })
+	end, {})
 
 	local sectionChildren: { [string]: any } = {
 		Padding = e("UIPadding", {

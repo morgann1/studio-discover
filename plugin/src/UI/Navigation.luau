@@ -67,6 +67,13 @@ local function resetTo(sectionName: string)
 	stack({ makeScreen(sectionName) })
 end
 
+-- Replace the stack with [rootSection, child] in one update so the
+-- transition animates straight from whatever was active to `child`,
+-- with `rootSection` parked underneath as the active sidebar section.
+local function resetThenPush(rootSection: string, name: string, options: { [string]: any }?)
+	stack({ makeScreen(rootSection), makeScreen(name, options) })
+end
+
 return {
 	SECTIONS = SECTIONS,
 	stack = stack,
@@ -76,4 +83,5 @@ return {
 	pop = pop,
 	replace = replace,
 	resetTo = resetTo,
+	resetThenPush = resetThenPush,
 }
