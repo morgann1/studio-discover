@@ -82,6 +82,18 @@ local function Settings()
 			}),
 		},
 		{
+			key = "ReduceMotion",
+			name = "Reduce motion",
+			description = "Skip page transition animations.",
+			control = e(Checkbox, {
+				isChecked = settingsContext.settings.reduceMotion,
+				onActivated = function()
+					settingsContext.setSetting("reduceMotion", not settingsContext.settings.reduceMotion)
+				end,
+				size = InputSize.Medium,
+			}),
+		},
+		{
 			key = "VerboseLogging",
 			name = "Verbose logging",
 			description = "Log detailed install information to the output window.",

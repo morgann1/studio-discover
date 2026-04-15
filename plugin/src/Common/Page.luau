@@ -4,6 +4,8 @@ local Packages = Discover.Packages
 local React = require(Packages.React)
 local ReactOtter = require(Packages.ReactOtter)
 
+local Settings = require(Discover.Src.Settings)
+
 local e = React.createElement
 
 local SLIDE_OFFSET = 30
@@ -19,6 +21,7 @@ type PageProps = {
 local function Page(props: PageProps)
 	local active = props.active
 	local onExited = props.onExited
+	local reduceMotion = Settings.useSettings().settings.reduceMotion
 
 	local rendered, setRendered = React.useState(active)
 
@@ -37,11 +40,34 @@ local function Page(props: PageProps)
 		if active then
 			setRendered(true)
 		end
-		setGoal(ReactOtter.spring(if active then 1 else 0, SPRING_OPTIONS))
-	end, { active } :: { any })
+		if reduceMotion then
+			setGoal(ReactOtter.instant(if active then 1 else 0))
+			if not active then
+				setRendered(false)
+				if onExited then
+					onExited()
+				end
+			end
+		else
+			setGoal(ReactOtter.spring(if active then 1 else 0, SPRING_OPTIONS))
+		end
+	end, { active, reduceMotion } :: { any })
 
 	if not rendered then
 		return nil
+	end
+
+	if reduceMotion then
+		return e("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+		}, {
+			Layout = e("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+			Inner = e(props.component, props.pageProps),
+		})
 	end
 
 	local transparency = value:map(function(v: number)

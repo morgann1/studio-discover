@@ -13,6 +13,7 @@ export type SettingsData = {
 	checkForUpdates: boolean,
 	skipUninstallConfirm: boolean,
 	dismissedUpdateVersion: string?,
+	reduceMotion: boolean,
 	verboseLogging: boolean,
 }
 
@@ -26,6 +27,7 @@ local DEFAULT_SETTINGS: SettingsData = {
 	nameOverrides = {},
 	skipUninstallConfirm = false,
 	checkForUpdates = true,
+	reduceMotion = false,
 	verboseLogging = false,
 }
 
