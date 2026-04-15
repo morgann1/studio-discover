@@ -159,12 +159,7 @@ local function About()
 			Text = link.label,
 			Size = UDim2.fromOffset(110, Constants.DefaultButtonHeight),
 			LayoutOrder = index,
-			OnActivated = function()
-				-- Plugins can't open URLs directly; copy to the user's clipboard.
-				if setclipboard then
-					setclipboard(link.url)
-				end
-			end,
+			Disabled = true,
 		})
 	end
 
