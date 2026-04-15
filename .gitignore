@@ -1,6 +1,7 @@
 # Project place file
 /studio-discover.rbxlx
 *.rbxm
+/examples
 
 # Roblox Studio lock files
 /*.rbxlx.lock
