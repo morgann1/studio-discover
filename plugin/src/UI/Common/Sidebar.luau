@@ -221,9 +221,6 @@ local function Sidebar()
 	local theme = useTheme()
 	local activeSection = useAtom(Navigation.activeSection)
 
-	-- Search text stays in local state so keystrokes don't notify anything
-	-- else. When the Wally search store lands, focus-loss / enter commits
-	-- the text to the store — for now it just routes you to Home.
 	local searchText, setSearchText = useState("")
 
 	local onSearchCommit = useCallback(function(text: string, enterPressed: boolean)
@@ -263,7 +260,7 @@ local function Sidebar()
 	}, {
 		SearchRow = e("Frame", {
 			Size = UDim2.new(1, 0, 0, SEARCH_ROW_HEIGHT),
-			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Titlebar),
+			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.MainBackground),
 			BorderSizePixel = 0,
 		}, {
 			Padding = e("UIPadding", {
@@ -300,6 +297,14 @@ local function Sidebar()
 			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Border),
 			BorderSizePixel = 0,
 			ZIndex = 2,
+		}),
+		RightBorderBand = e("Frame", {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.fromScale(1, 0),
+			Size = UDim2.fromOffset(1, SEARCH_ROW_HEIGHT),
+			BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Border),
+			BorderSizePixel = 0,
+			ZIndex = 3,
 		}),
 	})
 end

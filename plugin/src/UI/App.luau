@@ -130,7 +130,7 @@ local function App(_props: AppProps)
 
 			Header = e("Frame", {
 				Size = UDim2.new(1, 0, 0, HEADER_HEIGHT),
-				BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.Titlebar),
+				BackgroundColor3 = theme:GetColor(Enum.StudioStyleGuideColor.MainBackground),
 				BorderSizePixel = 0,
 				LayoutOrder = 1,
 			}, {

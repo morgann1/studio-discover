@@ -136,7 +136,7 @@ local function ComponentRow(props: {
 			TextYAlignment = Enum.TextYAlignment.Top,
 			BackgroundTransparency = 1,
 			AutomaticSize = Enum.AutomaticSize.X,
-			Size = UDim2.new(0, 0, 0, 18),
+			Size = UDim2.fromOffset(0, 18),
 			LayoutOrder = 2,
 		}),
 	})
