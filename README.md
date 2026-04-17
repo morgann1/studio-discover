@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📦 Discover
+# 📦 Studio Discover
 
 **A Roblox Studio plugin for browsing and installing Wally packages.**
 
