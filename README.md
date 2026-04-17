@@ -17,7 +17,7 @@
 
 <div align="center">
 
-<a href="https://github.com/morgann1/studio-discover/actions/workflows/lint.yml"><img src="https://github.com/morgann1/studio-discover/actions/workflows/lint.yml/badge.svg" alt="Lint" /></a>
+<a href="https://github.com/morgann1/studio-discover/actions/workflows/ci.yml"><img src="https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg" alt="Lint" /></a>
 <a href="https://github.com/morgann1/studio-discover/actions/workflows/release.yml"><img src="https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
 
 </div>
