@@ -11,8 +11,8 @@ local OverridesPage = require(Discover.Src.Pages.OverridesPage)
 local PackagePage = require(Discover.Src.Pages.PackagePage)
 local Page = require(Discover.Src.Common.Page)
 local React = require(Packages.React)
-local SettingsModule = require(Discover.Src.Settings.SettingsStore)
-local SettingsView = require(Discover.Src.Settings.SettingsView)
+local SettingsModule = require(Discover.Src.SettingsStore)
+local SettingsPage = require(Discover.Src.Pages.SettingsPage)
 local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 local useUpdateChecker = require(Discover.Src.UpdateChecker)
 
@@ -23,7 +23,7 @@ local Pages: { [string]: any? } = {
 	Manage = ManagePage,
 	Overrides = OverridesPage,
 	Package = PackagePage,
-	Settings = SettingsView,
+	Settings = SettingsPage,
 }
 
 type RenderedScreen = {
