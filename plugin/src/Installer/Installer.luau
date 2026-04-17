@@ -10,7 +10,6 @@ local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
 local PackageTypes = require(Discover.Src.Common.PackageTypes)
 local WallyAPI = require(Discover.Src.Wally.Api)
 
-local CONTENTS_API = "https://api.wally.run/v1/package-contents/"
 local DEFAULT_EXCLUDE = { ".*", "wally.lock", "Packages", "ServerPackages", "DevPackages", "node_modules", "*.toml" }
 local LOCKFILE_NAME = "WallyLock"
 
@@ -703,24 +702,9 @@ local function findSourcePath(zipData: string, prefix: string): string?
 end
 
 local function downloadAndExtract(scope: string, name: string, version: string): (Folder?, string?)
-	local url = `{CONTENTS_API}{scope}/{name}/{version}`
-
-	local ok, result = pcall(function()
-		return HttpService:RequestAsync({
-			Url = url,
-			Method = "GET",
-			Headers = {
-				["wally-version"] = "0.3.2",
-			},
-		})
-	end)
-	if ok and result.Success then
-		result = result.Body
-	elseif ok then
-		return nil, `HTTP {result.StatusCode}: {result.StatusMessage}`
-	end
-	if not ok then
-		return nil, `Failed to download: {result}`
+	local result, errorMessage = WallyAPI.download(scope, name, version)
+	if not result then
+		return nil, `Failed to download: {errorMessage}`
 	end
 
 	local prefix = ""

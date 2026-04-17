@@ -129,7 +129,7 @@ local function requestOnce(url: string): (any?, string?, number?, { [string]: st
 	return response.Body, nil, response.StatusCode, response.Headers
 end
 
-local function wallyGet(url: string)
+local function wallyFetch(url: string): (string?, string?)
 	acquireSlot()
 	local body, errorMessage, statusCode, headers = requestOnce(url)
 
@@ -147,6 +147,15 @@ local function wallyGet(url: string)
 	end
 	if not body then
 		return nil, "Empty response"
+	end
+
+	return body, nil
+end
+
+local function wallyGet(url: string)
+	local body, errorMessage = wallyFetch(url)
+	if not body then
+		return nil, errorMessage
 	end
 
 	local decodeOk, data = pcall(function()
@@ -178,6 +187,10 @@ end
 
 function WallyAPI.metadata(scope: string, name: string)
 	return cachedGet(`{backendUrl}/v1/package-metadata/{scope}/{name}`)
+end
+
+function WallyAPI.download(scope: string, name: string, version: string): (string?, string?)
+	return wallyFetch(`{backendUrl}/v1/package-contents/{scope}/{name}/{version}`)
 end
 
 return WallyAPI
