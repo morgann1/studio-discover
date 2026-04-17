@@ -1,4 +1,5 @@
 local RunService = game:GetService("RunService")
+local StudioService = game:GetService("StudioService")
 
 if RunService:IsRunning() then
 	return
@@ -30,6 +31,14 @@ local reactRoot: any = nil
 
 local function mount()
 	if reactRoot then
+		return
+	end
+
+	-- We stamp the Studio userId into every Wally request via
+	-- X-Real-User-Agent, so refuse to mount when it's unavailable rather
+	-- than send unattributed traffic.
+	if StudioService:GetUserId() == 0 then
+		warn("[Discover] Sign in to Roblox Studio to use Discover.")
 		return
 	end
 
