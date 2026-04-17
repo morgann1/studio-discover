@@ -1,3 +1,5 @@
+--!strict
+
 local RunService = game:GetService("RunService")
 local StudioService = game:GetService("StudioService")
 
@@ -44,8 +46,13 @@ local function mount()
 		return
 	end
 
+	local appProps: { plugin: Plugin?, overlayGui: Instance? } = {
+		plugin = plugin,
+		overlayGui = widget,
+	}
+
 	local newRoot = ReactRoblox.createRoot(widget)
-	newRoot:render(React.createElement(App, { plugin = plugin, overlayGui = widget }))
+	newRoot:render(React.createElement(App, appProps))
 	reactRoot = newRoot
 end
 
