@@ -5,7 +5,7 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local SettingsModule = require(Discover.Src.Settings.SettingsStore)
+local SettingsModule = require(Discover.Src.SettingsStore)
 local TopBar = require(Discover.Src.Common.TopBar)
 local createNextOrder = require(Discover.Src.Util.createNextOrder)
 local createUniqueKey = require(Discover.Src.Util.createUniqueKey)

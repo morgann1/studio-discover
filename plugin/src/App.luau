@@ -4,26 +4,26 @@ local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local Foundation = require(Packages.Foundation)
-local Home = require(Discover.Src.Home)
-local Manage = require(Discover.Src.Manage)
+local HomePage = require(Discover.Src.Pages.HomePage)
+local ManagePage = require(Discover.Src.Pages.ManagePage)
 local Navigation = require(Discover.Src.Navigation)
-local Overrides = require(Discover.Src.Overrides)
-local Package = require(Discover.Src.Package)
+local OverridesPage = require(Discover.Src.Pages.OverridesPage)
+local PackagePage = require(Discover.Src.Pages.PackagePage)
 local Page = require(Discover.Src.Common.Page)
 local React = require(Packages.React)
-local Settings = require(Discover.Src.Settings.SettingsView)
 local SettingsModule = require(Discover.Src.Settings.SettingsStore)
+local SettingsView = require(Discover.Src.Settings.SettingsView)
 local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 local useUpdateChecker = require(Discover.Src.UpdateChecker)
 
 local e = React.createElement
 
 local Pages: { [string]: any? } = {
-	Home = Home,
-	Manage = Manage,
-	Overrides = Overrides,
-	Package = Package,
-	Settings = Settings,
+	Home = HomePage,
+	Manage = ManagePage,
+	Overrides = OverridesPage,
+	Package = PackagePage,
+	Settings = SettingsView,
 }
 
 type RenderedScreen = {
@@ -36,7 +36,7 @@ local function PageRouter()
 	local activeId = nav.screen.id
 
 	local rendered, setRendered = React.useState(function(): { RenderedScreen }
-		return { { screen = nav.screen, component = Pages[nav.screen.name] or Home } }
+		return { { screen = nav.screen, component = Pages[nav.screen.name] or HomePage } }
 	end)
 
 	React.useEffect(function()
@@ -49,7 +49,7 @@ local function PageRouter()
 			local component = Pages[nav.screen.name]
 			if component == nil then
 				warn("[Discover] Unknown page:", nav.screen.name)
-				component = Home
+				component = HomePage
 			end
 			local updated = table.clone(prev)
 			table.insert(updated, { screen = nav.screen, component = component })
