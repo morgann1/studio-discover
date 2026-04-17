@@ -171,7 +171,7 @@ function PackageTypes.resolveLink(linkModule: ModuleScript): ModuleScript?
 	return nil
 end
 
-function PackageTypes.processLink(linkModule: ModuleScript): boolean
+local function processLinkUnsafe(linkModule: ModuleScript): boolean
 	local prefix, packageId, moduleName = PackageTypes.parseLinkRequire(linkModule.Source)
 	if not prefix or not packageId or not moduleName then
 		return false
@@ -221,6 +221,15 @@ function PackageTypes.processLink(linkModule: ModuleScript): boolean
 	table.insert(lines, "return REQUIRED_MODULE")
 	linkModule.Source = table.concat(lines, "\n")
 	return true
+end
+
+function PackageTypes.processLink(linkModule: ModuleScript): boolean
+	local ok, result = pcall(processLinkUnsafe, linkModule)
+	if not ok then
+		warn(`PackageTypes: skipped {linkModule:GetFullName()} — {result}`)
+		return false
+	end
+	return result
 end
 
 function PackageTypes.processFolder(packagesFolder: Folder): number
