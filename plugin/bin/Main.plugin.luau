@@ -51,8 +51,8 @@ local function mount()
 		overlayGui = widget,
 	})
 
-	local newRoot = ReactRoblox.createRoot(widget)
-	newRoot:render(React.createElement(App, appProps))
+	local newRoot = ReactRoblox.createRoot(Instance.new("Folder"))
+	newRoot:render(ReactRoblox.createPortal(React.createElement(App, appProps), widget))
 	reactRoot = newRoot
 end
 
