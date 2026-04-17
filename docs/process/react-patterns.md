@@ -2,7 +2,7 @@
 
 Adapted from [Kampfkarren — Things I learned using React on Roblox](https://blog.boyned.com/articles/things-i-learned-using-react/). Full source is the canonical reference — this is a working summary.
 
-For general Luau/Roblox style see [coding-style.md](coding-style.md).
+For general Luau/Roblox style see [luau-style.md](luau-style.md).
 
 ## `e = React.createElement`
 

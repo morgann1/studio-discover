@@ -1,12 +1,10 @@
-# Coding Style
-
-## Luau Guidelines and Patterns
+# Luau Style
 
 Adapted from [Kampfkarren's Luau Guidelines](https://github.com/Kampfkarren/kampfkarren-luau-guidelines/blob/main/README.md). Full source is the canonical reference — this is a working summary.
 
 For React-specific patterns and idioms, see [react-patterns.md](react-patterns.md).
 
-### Philosophy
+## Philosophy
 
 - **Strict typing everywhere.** Use `--!strict` (or `languageMode: "strict"` in `.luaurc`) for new code. Never add `--!nonstrict` or `--!nocheck` to new scripts.
 - **Catch bugs statically.** Prefer typed parameters over runtime `assert(typeof(x) == "...")` guards. A runtime check that a static type would prevent is a worse API.
@@ -15,7 +13,7 @@ For React-specific patterns and idioms, see [react-patterns.md](react-patterns.m
 - **Build for tools.** Lean on StyLua, selene, and Luau LSP — structure code so they can help.
 - **DX over perf.** Only pick uglier code when you can *measure* a real performance hit; keep the ugly blast radius small.
 
-### General code
+## General code
 
 - **Early return/continue** when the function logically cannot proceed. Don't early return when later code is logically independent.
 - **Implementations can be messy if consumers stay clean** (e.g. wrapping `table.move` behind a readable `slice`).
@@ -25,7 +23,7 @@ For React-specific patterns and idioms, see [react-patterns.md](react-patterns.m
 - **Suffix yielding functions with `Async`.** Surprise yields break React and confuse callers.
 - **Shallow copy, never deep copy.** With immutability you only need to clone the path you're changing.
 
-### Luau specifics
+## Luau specifics
 
 - **Avoid dynamic requires.** `require` must see a static value for types to flow.
 - **No truthiness/falsiness** — write `x.Parent ~= nil`, not `if x.Parent`. Exceptions: `if`-expressions and `and`/`or` defaults.
@@ -46,7 +44,7 @@ For React-specific patterns and idioms, see [react-patterns.md](react-patterns.m
 - **Avoid metatables.** Prefer C-style free functions over `__index` classes. Skip `__call`, `__add`, etc. entirely. Weak tables (`__mode`) are the rare exception.
 - **Sort requires alphabetically, one block, no sections.** Let StyLua's `sort_requires` and Luau LSP auto-require own this.
 
-### Roblox
+## Roblox
 
 - **`GetService` everything** at the top in alphabetical order. No `game.ServiceName`, no `workspace` global, no mid-file `GetService`.
 - **Prefer `UDim2.fromOffset` / `UDim2.fromScale`** over `UDim2.new` when one axis is zero.

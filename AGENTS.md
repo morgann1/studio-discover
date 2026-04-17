@@ -20,7 +20,12 @@ If a tradeoff is required, choose correctness and robustness over short-term con
 
 Long term maintainability is a core priority. If you add new functionality, first check if there is shared logic that can be extracted to a separate module. Duplicate logic across multiple files is a code smell and should be avoided. Don't be afraid to change existing code. Don't take shortcuts by just adding local logic to solve a problem.
 
-## Coding Style
+## Style guides
 
-- [docs/process/coding-style.md](docs/process/coding-style.md) — Luau guidelines and patterns.
-- [docs/process/react-patterns.md](docs/process/react-patterns.md) — React-specific patterns and idioms.
+- [docs/process/luau-style.md](docs/process/luau-style.md) — Luau (Roblox plugin).
+- [docs/process/react-patterns.md](docs/process/react-patterns.md) — React (Roblox plugin).
+- [docs/process/typescript-style.md](docs/process/typescript-style.md) — TypeScript (Cloudflare Worker proxy).
+
+## Subdirectory guidance
+
+- Working in `backend/`? See [`backend/AGENTS.md`](backend/AGENTS.md) for Wrangler commands and Worker-scoped notes.

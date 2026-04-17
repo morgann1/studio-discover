@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# TypeScript
+*.tsbuildinfo
+
+# Wrangler
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+
+# Logs
+*.log
