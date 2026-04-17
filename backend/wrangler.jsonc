@@ -5,5 +5,7 @@
 	"compatibility_date": "2026-04-16",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": { "enabled": true },
-	"upload_source_maps": true
+	"upload_source_maps": true,
+	"workers_dev": false,
+	"routes": [{ "pattern": "wally.morgann1.com", "custom_domain": true }]
 }
