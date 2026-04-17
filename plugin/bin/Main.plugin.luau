@@ -46,10 +46,10 @@ local function mount()
 		return
 	end
 
-	local appProps: { plugin: Plugin?, overlayGui: Instance? } = {
+	local appProps: { plugin: Plugin?, overlayGui: Instance? } = table.freeze({
 		plugin = plugin,
 		overlayGui = widget,
-	}
+	})
 
 	local newRoot = ReactRoblox.createRoot(widget)
 	newRoot:render(React.createElement(App, appProps))
