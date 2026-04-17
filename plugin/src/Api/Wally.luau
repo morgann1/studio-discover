@@ -1,115 +1,38 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 
 local HttpService = game:GetService("HttpService")
 local StudioService = game:GetService("StudioService")
 
+local RateLimiter = require(Discover.Src.Api.RateLimiter)
+local StatusPublisher = require(Discover.Src.Api.StatusPublisher)
 local Version = require(Discover.Src.Version)
 
 local WALLY_API = "https://api.wally.run"
-
 local CACHE_TTL = 300
-local MIN_INTERVAL = 1.05
 
-export type Status = {
-	state: "idle" | "waiting",
-	reason: "queue" | "rate-limited" | nil,
-	untilClock: number,
-}
+export type Status = StatusPublisher.Status
 
-local WallyAPI = {}
+local cache: { [string]: { data: any, time: number }? } = {}
 
-local cache: { [string]: { data: any, time: number } } = {}
-
-local nextSlotClock = 0
-
-local status: Status = { state = "idle", reason = nil, untilClock = 0 }
-local subscribers: { (Status) -> () } = {}
-
-local function notify()
-	for _, cb in subscribers do
-		task.spawn(cb, status)
-	end
+local function userAgent(): string
+	return `StudioDiscover/{Version} (+https://github.com/morgann1/studio-discover; StudioUserId={StudioService:GetUserId()})`
 end
 
-local function setStatus(state: "idle" | "waiting", reason: "queue" | "rate-limited" | nil, untilClock: number)
-	status = { state = state, reason = reason, untilClock = untilClock }
-	notify()
-end
-
-function WallyAPI.subscribe(callback: (Status) -> ()): () -> ()
-	table.insert(subscribers, callback)
-	task.spawn(callback, status)
-	return function()
-		for i, cb in subscribers do
-			if cb == callback then
-				table.remove(subscribers, i)
-				break
-			end
-		end
-	end
-end
-
-function WallyAPI.getStatus(): Status
-	return status
-end
-
-function WallyAPI.formatWaitMessage(s: Status): string?
-	if s.state ~= "waiting" then
+local function parseRetryAfter(headers: { [string]: string }?): number?
+	if headers == nil then
 		return nil
-	end
-	local remaining = math.max(0, math.ceil(s.untilClock - os.clock()))
-	if s.reason == "rate-limited" then
-		return `Rate limited by Wally, retrying in {remaining}s...`
-	end
-	return `Waiting {remaining}s to respect Wally's rate limit...`
-end
-
-local function acquireSlot()
-	local now = os.clock()
-	local mySlot = if nextSlotClock > now then nextSlotClock else now
-	nextSlotClock = mySlot + MIN_INTERVAL
-	local wait = mySlot - now
-	if wait > 0 then
-		setStatus("waiting", "queue", mySlot)
-		task.wait(wait)
-		if status.untilClock <= os.clock() then
-			setStatus("idle", nil, 0)
-		end
-	end
-end
-
-local function parseRetryAfter(headers: { [string]: string }?): number
-	if not headers then
-		return MIN_INTERVAL
 	end
 	for k, v in headers do
 		if string.lower(k) == "retry-after" then
-			local seconds = tonumber(v)
-			if seconds then
-				return seconds
-			end
+			return tonumber(v)
 		end
 	end
-	return MIN_INTERVAL
+	return nil
 end
 
-local function waitRateLimited(seconds: number)
-	local untilClock = os.clock() + seconds
-	if untilClock > nextSlotClock then
-		nextSlotClock = untilClock
-	end
-	setStatus("waiting", "rate-limited", untilClock)
-	task.wait(seconds)
-	if status.untilClock <= os.clock() then
-		setStatus("idle", nil, 0)
-	end
-end
-
-local function userAgent(): string
-	return `Discover/{Version} (+https://github.com/morgann1/studio-discover; StudioUserId={StudioService:GetUserId()})`
-end
-
-local function requestOnce(url: string): (any?, string?, number?, { [string]: string }?)
+local function requestOnceAsync(url: string): (any?, string?, number?, { [string]: string }?)
 	local ok, response = pcall(function()
 		return HttpService:RequestAsync({
 			Url = url,
@@ -126,70 +49,77 @@ local function requestOnce(url: string): (any?, string?, number?, { [string]: st
 	return response.Body, nil, response.StatusCode, response.Headers
 end
 
-local function wallyFetch(url: string): (string?, string?)
-	acquireSlot()
-	local body, errorMessage, statusCode, headers = requestOnce(url)
+local function fetchAsync(url: string): (string?, string?)
+	RateLimiter.acquireSlotAsync()
+	local body, errorMessage, statusCode, headers = requestOnceAsync(url)
 
 	if statusCode == 429 then
-		local retry = parseRetryAfter(headers)
-		waitRateLimited(retry)
-		body, errorMessage, statusCode, headers = requestOnce(url)
+		RateLimiter.backoffAsync(parseRetryAfter(headers))
+		body, errorMessage, statusCode, headers = requestOnceAsync(url)
 	end
 
-	if errorMessage then
+	if errorMessage ~= nil then
 		return nil, errorMessage
 	end
-	if statusCode and (statusCode < 200 or statusCode >= 300) then
+	if statusCode ~= nil and (statusCode < 200 or statusCode >= 300) then
 		return nil, `HTTP {statusCode}`
 	end
-	if not body then
+	if body == nil then
 		return nil, "Empty response"
 	end
 
 	return body, nil
 end
 
-local function wallyGet(url: string)
-	local body, errorMessage = wallyFetch(url)
-	if not body then
+local function cachedGetAsync(url: string): (any?, string?)
+	local entry = cache[url]
+	if entry ~= nil and (os.clock() - entry.time) < CACHE_TTL then
+		return entry.data, nil
+	end
+	local body, errorMessage = fetchAsync(url)
+	if body == nil then
 		return nil, errorMessage
 	end
-
 	local decodeOk, data = pcall(function()
 		return HttpService:JSONDecode(body)
 	end)
 	if not decodeOk then
 		return nil, "Failed to parse response"
 	end
+	cache[url] = { data = data, time = os.clock() }
 	return data, nil
 end
 
-local function cachedGet(url: string)
-	local entry = cache[url]
-	if entry and (os.clock() - entry.time) < CACHE_TTL then
-		return entry.data, nil
+local WallyAPI = {}
+
+WallyAPI.subscribe = StatusPublisher.subscribe
+WallyAPI.getStatus = StatusPublisher.get
+
+function WallyAPI.formatWaitMessage(s: Status): string?
+	if s.state ~= "waiting" then
+		return nil
 	end
-	local data, errorMessage = wallyGet(url)
-	if data then
-		cache[url] = { data = data, time = os.clock() }
+	local remaining = math.max(0, math.ceil(s.untilClock - os.clock()))
+	if s.reason == "rate-limited" then
+		return `Rate limited by Wally, retrying in {remaining}s...`
 	end
-	return data, errorMessage
+	return `Waiting {remaining}s to respect Wally's rate limit...`
 end
 
-function WallyAPI.search(query: string)
+function WallyAPI.searchAsync(query: string): (any?, string?)
 	local trimmed = (query:gsub("^%s+", ""):gsub("%s+$", ""))
 	local encoded = (HttpService:UrlEncode(trimmed):gsub("%%20", "+"))
-	return cachedGet(`{WALLY_API}/v1/package-search?query={encoded}`)
+	return cachedGetAsync(`{WALLY_API}/v1/package-search?query={encoded}`)
 end
 
-function WallyAPI.metadata(scope: string, name: string)
-	return cachedGet(`{WALLY_API}/v1/package-metadata/{scope}/{name}`)
+function WallyAPI.metadataAsync(scope: string, name: string): (any?, string?)
+	return cachedGetAsync(`{WALLY_API}/v1/package-metadata/{scope}/{name}`)
 end
 
-function WallyAPI.download(scope: string, name: string, version: string): (string?, string?)
+function WallyAPI.downloadAsync(scope: string, name: string, version: string): (string?, string?)
 	local url = `{WALLY_API}/v1/package-contents/{scope}/{name}/{version}`
-	local body, errorMessage = wallyFetch(url)
-	if not body then
+	local body, errorMessage = fetchAsync(url)
+	if body == nil then
 		return nil, `{errorMessage} ({url})`
 	end
 	return body, nil

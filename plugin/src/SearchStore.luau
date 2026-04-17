@@ -57,7 +57,7 @@ function Search.run(text: string)
 	end)
 
 	task.spawn(function()
-		local data, errorMessage = WallyAPI.search(text)
+		local data, errorMessage = WallyAPI.searchAsync(text)
 
 		if searchVersion ~= thisVersion then
 			return

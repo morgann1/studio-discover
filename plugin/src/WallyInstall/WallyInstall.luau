@@ -288,7 +288,7 @@ local function resolveRoots(
 		end
 		log(`Resolving root {root.scope}/{root.name}@{root.version} (realm={rootRealm}, alias={root.alias})`)
 
-		local rootMeta = WallyAPI.metadata(root.scope, root.name)
+		local rootMeta = WallyAPI.metadataAsync(root.scope, root.name)
 		if not rootMeta or not rootMeta.versions then
 			table.insert(failures, `{root.scope}/{root.name}: metadata unavailable`)
 			log(`  metadata unavailable for {root.scope}/{root.name}`)
@@ -407,7 +407,7 @@ local function resolveRoots(
 			`Resolving {fullName}@{req.constraints} (requestedBy={req.requestedBy}, realm={req.requestRealm}, alias={req.alias})`
 		)
 
-		local meta = WallyAPI.metadata(req.scope, req.name)
+		local meta = WallyAPI.metadataAsync(req.scope, req.name)
 		if not meta or not meta.versions then
 			table.insert(failures, `{fullName}: metadata unavailable`)
 			log(`  metadata unavailable for {fullName}`)
@@ -724,7 +724,7 @@ local function findSourcePath(zipData: string, prefix: string): string?
 end
 
 local function downloadAndExtract(scope: string, name: string, version: string): (Folder?, string?)
-	local result, errorMessage = WallyAPI.download(scope, name, version)
+	local result, errorMessage = WallyAPI.downloadAsync(scope, name, version)
 	if not result then
 		return nil, `Failed to download: {errorMessage}`
 	end

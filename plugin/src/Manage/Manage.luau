@@ -43,7 +43,7 @@ local function Manage()
 		local cancelled = false
 		for _, installedPackage in installed do
 			task.spawn(function()
-				local meta = WallyAPI.metadata(installedPackage.scope, installedPackage.name)
+				local meta = WallyAPI.metadataAsync(installedPackage.scope, installedPackage.name)
 				if cancelled then
 					return
 				end

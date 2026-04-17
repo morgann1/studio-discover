@@ -56,7 +56,7 @@ local function Package()
 		local cancelled = false
 		setIsLoading(true)
 		task.spawn(function()
-			local data = WallyAPI.metadata(scope, rawName)
+			local data = WallyAPI.metadataAsync(scope, rawName)
 			if cancelled then
 				return
 			end

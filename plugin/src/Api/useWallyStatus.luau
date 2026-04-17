@@ -1,3 +1,5 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
@@ -31,7 +33,7 @@ local function useWallyStatusMessage(): string?
 		return function()
 			cancelled = true
 			unsubscribe()
-			if tickHandle then
+			if tickHandle ~= nil then
 				task.cancel(tickHandle)
 			end
 		end
