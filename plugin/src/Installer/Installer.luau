@@ -976,8 +976,11 @@ local function applyResolved(
 
 			-- Keep the package code, but wipe and rebuild the dep link
 			-- ModuleScripts so they retarget to the resolved versions.
+			-- Only destroy children that look like dep links — packages
+			-- with a top-level init.lua promote the package folder's main
+			-- ModuleScript to a direct child, which we must preserve.
 			for _, child in existing.folder:GetChildren() do
-				if child:IsA("ModuleScript") then
+				if child:IsA("ModuleScript") and InstalledPackages.extractPackageId(child.Source) then
 					child:Destroy()
 				end
 			end

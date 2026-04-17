@@ -65,6 +65,10 @@ local function scanRealm(packagesFolder: Folder?, realm: "shared" | "server", ou
 	end
 end
 
+function InstalledPackages.extractPackageId(source: string): string?
+	return extractPackageId(source)
+end
+
 function InstalledPackages.list(): { InstalledPackage }
 	local out = {}
 	scanRealm(ReplicatedStorage:FindFirstChild("Packages"), "shared", out)
