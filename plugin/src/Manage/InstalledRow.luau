@@ -5,7 +5,8 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Pill = require(Discover.Src.Common.Pill)
-local ReactHelpers = require(Discover.Src.Common.React)
+local createNextOrder = require(Discover.Src.Util.createNextOrder)
+local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -51,7 +52,7 @@ local function InstalledRow(props: InstalledRowProps)
 		onUninstall(scope, name)
 	end, { scope, name, onUninstall } :: { any })
 
-	local nextPill = ReactHelpers.createNextOrder()
+	local nextPill = createNextOrder()
 
 	local pills: { [string]: any } = {
 		PillLayout = e("UIListLayout", {
@@ -106,7 +107,7 @@ local function InstalledRow(props: InstalledRowProps)
 				Padding = UDim.new(0, 4),
 			}),
 			Title = e(Text, {
-				Text = `{props.scope}/{props.name}`,
+				Text = formatPackageKey(props.scope, props.name),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				Size = UDim2.fromScale(1, 0),
 				tag = "text-label-medium content-emphasis text-truncate-end text-align-x-left",

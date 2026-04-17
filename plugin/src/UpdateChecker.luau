@@ -6,6 +6,8 @@ local Packages = Discover.Packages
 local React = require(Packages.React)
 
 local Version = require(Discover.Src.Version)
+local isNewerSemver = require(Discover.Src.Util.isNewerSemver)
+local useCancellableEffect = require(Discover.Src.Common.useCancellableEffect)
 
 local RELEASES_API = "https://api.github.com/repos/morgann1/studio-discover/releases/latest"
 local CHECK_INTERVAL = 3600
@@ -14,30 +16,6 @@ type UpdateInfo = {
 	version: string,
 	url: string,
 }
-
-local function parseVersion(version: string): { major: number, minor: number, patch: number }?
-	local cleaned = version:gsub("^v", "")
-	local major, minor, patch = cleaned:match("^(%d+)%.(%d+)%.(%d+)")
-	if not major then
-		return nil
-	end
-	return { major = tonumber(major) :: number, minor = tonumber(minor) :: number, patch = tonumber(patch) :: number }
-end
-
-local function isNewer(remote: string, current: string): boolean
-	local r = parseVersion(remote)
-	local c = parseVersion(current)
-	if not r or not c then
-		return false
-	end
-	if r.major ~= c.major then
-		return r.major > c.major
-	end
-	if r.minor ~= c.minor then
-		return r.minor > c.minor
-	end
-	return r.patch > c.patch
-end
 
 local function fetchLatestRelease(): UpdateInfo?
 	local ok, result = pcall(function()
@@ -58,7 +36,7 @@ local function fetchLatestRelease(): UpdateInfo?
 	local version = decoded.tag_name:gsub("^v", "")
 	local url = decoded.html_url or "https://github.com/morgann1/studio-discover/releases/latest"
 
-	if isNewer(version, Version) then
+	if isNewerSemver(version, Version) then
 		return { version = version, url = url }
 	end
 	return nil
@@ -68,28 +46,23 @@ local function useUpdateChecker(isEnabled: boolean, widgetEnabled: boolean): Upd
 	local update: UpdateInfo?, setUpdate = React.useState(nil :: UpdateInfo?)
 	local lastCheckTime, setLastCheckTime = React.useState(0)
 
-	React.useEffect(function()
+	useCancellableEffect(function(isCancelled)
 		if not isEnabled or not widgetEnabled then
-			return nil
+			return
 		end
 
 		if os.clock() - lastCheckTime < CHECK_INTERVAL then
-			return nil
+			return
 		end
-
-		local cancelled = false
 
 		task.spawn(function()
 			local info = fetchLatestRelease()
-			if not cancelled then
-				setUpdate(info)
-				setLastCheckTime(os.clock())
+			if isCancelled() then
+				return
 			end
+			setUpdate(info)
+			setLastCheckTime(os.clock())
 		end)
-
-		return function()
-			cancelled = true
-		end
 	end, { isEnabled, widgetEnabled } :: { any })
 
 	React.useEffect(function()

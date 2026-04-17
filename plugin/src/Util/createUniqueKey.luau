@@ -1,14 +1,6 @@
-local React = {}
+--!strict
 
-function React.createNextOrder(): () -> number
-	local order = 0
-	return function()
-		order += 1
-		return order
-	end
-end
-
-function React.createUniqueKey(): (string) -> string
+local function createUniqueKey(): (string) -> string
 	local names: { [string]: number } = {}
 	return function(name: string): string
 		if names[name] == nil then
@@ -25,4 +17,4 @@ function React.createUniqueKey(): (string) -> string
 	end
 end
 
-return React
+return createUniqueKey

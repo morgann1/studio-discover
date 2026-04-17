@@ -1,6 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
+local Discover = script:FindFirstAncestor("Discover")
+
+local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
+
 export type InstalledPackage = {
 	scope: string,
 	name: string,
@@ -79,7 +83,7 @@ end
 function InstalledPackages.map(): { [string]: InstalledPackage }
 	local out = {}
 	for _, installedPackage in InstalledPackages.list() do
-		out[`{installedPackage.scope}/{installedPackage.name}`] = installedPackage
+		out[formatPackageKey(installedPackage.scope, installedPackage.name)] = installedPackage
 	end
 	return out
 end

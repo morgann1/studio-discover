@@ -5,7 +5,9 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local PackageCard = require(Discover.Src.Common.PackageCard)
-local ReactHelpers = require(Discover.Src.Common.React)
+local createNextOrder = require(Discover.Src.Util.createNextOrder)
+local createUniqueKey = require(Discover.Src.Util.createUniqueKey)
+local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -32,8 +34,8 @@ type PackageListProps = {
 }
 
 local function PackageList(props: PackageListProps)
-	local cardKey = ReactHelpers.createUniqueKey()
-	local nextCardOrder = ReactHelpers.createNextOrder()
+	local cardKey = createUniqueKey()
+	local nextCardOrder = createNextOrder()
 
 	local scrollChildren: { [string]: any } = {
 		Layout = e("UIListLayout", {
@@ -42,7 +44,7 @@ local function PackageList(props: PackageListProps)
 		}),
 	}
 	for _, item in props.items do
-		scrollChildren[cardKey(`{item.scope}/{item.name}`)] = e(PackageCard, {
+		scrollChildren[cardKey(formatPackageKey(item.scope, item.name))] = e(PackageCard, {
 			name = item.name,
 			scope = item.scope,
 			description = item.description,
@@ -57,7 +59,7 @@ local function PackageList(props: PackageListProps)
 		})
 	end
 
-	local sectionOrder = ReactHelpers.createNextOrder()
+	local sectionOrder = createNextOrder()
 
 	return e("Frame", {
 		Size = UDim2.fromScale(1, 1),

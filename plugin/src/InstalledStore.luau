@@ -4,6 +4,7 @@ local Packages = Discover.Packages
 local Charm = require(Packages.Charm)
 
 local InstalledPackages = require(Discover.Src.WallyInstall.InstalledPackages)
+local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
 
 type InstalledPackage = InstalledPackages.InstalledPackage
 
@@ -16,7 +17,7 @@ function Installed.refresh()
 	local list = InstalledPackages.list()
 	local map: { [string]: InstalledPackage } = {}
 	for _, installedPackage in list do
-		map[`{installedPackage.scope}/{installedPackage.name}`] = installedPackage
+		map[formatPackageKey(installedPackage.scope, installedPackage.name)] = installedPackage
 	end
 	Charm.batch(function()
 		Installed.list(list)

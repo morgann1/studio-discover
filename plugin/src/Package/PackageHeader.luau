@@ -5,6 +5,7 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Pill = require(Discover.Src.Common.Pill)
+local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
 
 local View = Foundation.View
 local Text = Foundation.Text
@@ -89,7 +90,7 @@ local function PackageHeader(props: PackageHeaderProps)
 				Padding = UDim.new(0, 8),
 			}),
 			Title = e(Text, {
-				Text = `{props.scope}/{props.name}`,
+				Text = formatPackageKey(props.scope, props.name),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				Size = UDim2.fromScale(1, 0),
 				TextWrapped = true,

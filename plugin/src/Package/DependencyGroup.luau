@@ -4,7 +4,8 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
-local ReactHelpers = require(Discover.Src.Common.React)
+local createNextOrder = require(Discover.Src.Util.createNextOrder)
+local createUniqueKey = require(Discover.Src.Util.createUniqueKey)
 
 local Button = Foundation.Button
 local Text = Foundation.Text
@@ -43,8 +44,8 @@ local function parseDepSpec(dependencyVersion: string): (string?, string?, strin
 end
 
 local function DependencyGroup(props: DependencyGroupProps)
-	local depKey = ReactHelpers.createUniqueKey()
-	local nextOrder = ReactHelpers.createNextOrder()
+	local depKey = createUniqueKey()
+	local nextOrder = createNextOrder()
 
 	local children: { [string]: any } = {
 		Layout = e("UIListLayout", {

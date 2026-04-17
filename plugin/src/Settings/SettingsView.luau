@@ -5,11 +5,11 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local ReactHelpers = require(Discover.Src.Common.React)
 local SettingRow = require(script.Parent.SettingRow)
 local SettingsModule = require(Discover.Src.Settings.SettingsStore)
+local TopBar = require(Discover.Src.Common.TopBar)
+local createNextOrder = require(Discover.Src.Util.createNextOrder)
 
-local View = Foundation.View
 local Text = Foundation.Text
 local Checkbox = Foundation.Checkbox
 local IconButton = Foundation.IconButton
@@ -120,7 +120,7 @@ local function Settings()
 		},
 	}
 
-	local nextContentOrder = ReactHelpers.createNextOrder()
+	local nextContentOrder = createNextOrder()
 	local rowChildren: { [string]: any } = {
 		ScrollLayout = e("UIListLayout", {
 			FillDirection = Enum.FillDirection.Vertical,
@@ -142,22 +142,9 @@ local function Settings()
 	end
 
 	return e(React.Fragment, nil, {
-		TopBar = e(View, {
-			Size = UDim2.new(1, 0, 0, 56),
+		TopBar = e(TopBar, {
 			LayoutOrder = 1,
 		}, {
-			RowLayout = e("UIListLayout", {
-				FillDirection = Enum.FillDirection.Horizontal,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = UDim.new(0, 8),
-			}),
-			Padding = e("UIPadding", {
-				PaddingLeft = UDim.new(0, 8),
-				PaddingRight = UDim.new(0, 8),
-				PaddingTop = UDim.new(0, 8),
-				PaddingBottom = UDim.new(0, 8),
-			}),
 			Back = e(IconButton, {
 				icon = Foundation.Enums.IconName.ChevronLargeLeft,
 				size = InputSize.Medium,

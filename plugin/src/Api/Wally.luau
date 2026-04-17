@@ -8,6 +8,7 @@ local StudioService = game:GetService("StudioService")
 local RateLimiter = require(Discover.Src.Api.RateLimiter)
 local StatusPublisher = require(Discover.Src.Api.StatusPublisher)
 local Version = require(Discover.Src.Version)
+local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
 
 local WALLY_API = "https://api.wally.run"
 local CACHE_TTL = 300
@@ -113,7 +114,7 @@ function WallyAPI.searchAsync(query: string): (any?, string?)
 end
 
 function WallyAPI.metadataAsync(scope: string, name: string): (any?, string?)
-	return cachedGetAsync(`{WALLY_API}/v1/package-metadata/{scope}/{name}`)
+	return cachedGetAsync(`{WALLY_API}/v1/package-metadata/{formatPackageKey(scope, name)}`)
 end
 
 function WallyAPI.downloadAsync(scope: string, name: string, version: string): (string?, string?)
