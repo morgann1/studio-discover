@@ -15,15 +15,12 @@ export type SettingsData = {
 	dismissedUpdateVersion: string?,
 	reduceMotion: boolean,
 	verboseLogging: boolean,
-	backendUrl: string,
 }
 
 export type SettingsContext = {
 	settings: SettingsData,
 	setSetting: (key: string, value: any) -> (),
 }
-
-local DEFAULT_BACKEND_URL = "https://wally.morgann1.com"
 
 local DEFAULT_SETTINGS: SettingsData = {
 	namingConvention = "Normal",
@@ -32,7 +29,6 @@ local DEFAULT_SETTINGS: SettingsData = {
 	checkForUpdates = true,
 	reduceMotion = false,
 	verboseLogging = false,
-	backendUrl = DEFAULT_BACKEND_URL,
 }
 
 local Context = React.createContext(nil :: SettingsContext?)
@@ -170,5 +166,4 @@ return {
 	SettingsProvider = SettingsProvider,
 	useSettings = useSettings,
 	formatPackageName = formatPackageName,
-	DEFAULT_BACKEND_URL = DEFAULT_BACKEND_URL,
 }

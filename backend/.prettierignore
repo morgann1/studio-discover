@@ -1,4 +1,0 @@
-node_modules/
-.wrangler/
-worker-configuration.d.ts
-package-lock.json
