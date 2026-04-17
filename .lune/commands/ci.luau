@@ -136,13 +136,32 @@ function ci.run(options_: Options?): boolean
 	end
 	print()
 
-	-- Step 3: Fetch global types
+	-- Step 3: Prettier for backend/
+	local prettierDesc = if fix
+		then "Format (prettier --write) for backend/"
+		else "Format check (prettier) for backend/"
+	local prettierArgs = if fix then { "prettier", "--write", "." } else { "prettier", "--check", "." }
+	print(color.cyan(`→ {prettierDesc}`))
+	local prettierResult = process.exec("npx", prettierArgs, {
+		stdio = "inherit",
+		shell = true,
+		cwd = "backend",
+	})
+	if prettierResult.ok then
+		print(color.green(`  ✓ {prettierDesc} passed`))
+	else
+		print(color.red(`  ✗ {prettierDesc} failed`))
+		allPassed = false
+	end
+	print()
+
+	-- Step 4: Fetch global types
 	if not fetchGlobalTypes() then
 		allPassed = false
 	end
 	print()
 
-	-- Step 4: Update sourcemap
+	-- Step 5: Update sourcemap
 	print(color.cyan("→ Updating sourcemap"))
 	local codegenSuccess = codegen.run({ quiet = true, generateSourcemap = true })
 	if codegenSuccess then
@@ -153,7 +172,7 @@ function ci.run(options_: Options?): boolean
 	end
 	print()
 
-	-- Step 5: Type check (luau-lsp)
+	-- Step 6: Type check (luau-lsp)
 	local luauArgs = {
 		"analyze",
 		"--sourcemap",
