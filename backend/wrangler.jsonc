@@ -6,6 +6,9 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
 		"enabled": true,
+		"logs": {
+			"invocation_logs": false,
+		},
 	},
 	"upload_source_maps": true,
 	"workers_dev": false,
