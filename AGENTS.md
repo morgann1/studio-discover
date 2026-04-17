@@ -27,6 +27,17 @@ Maintainability is a first-class priority, not a clean-up step. Hold every chang
 - **Reduce coupling.** Avoid module-level mutable state that multiple free functions read and write. If a module has two or more independent units of state, split them into sibling modules with explicit APIs.
 - **Reduce spaghetti.** Control flow should be readable from a function's arguments and return values, not from tracing side effects through shared state in other helpers.
 
+## Design principles
+
+- **KISS (Keep It Simple, Stupid).** Prefer straightforward solutions. Avoid over-engineering and unnecessary complexity — readable, maintainable code beats clever code.
+- **YAGNI (You Aren't Gonna Need It).** Implement only what's needed now. Don't add speculative features, options, or abstractions for hypothetical future needs.
+- **SOLID.** Apply the five principles when shaping modules and interfaces:
+  - *Single Responsibility* — each module has one reason to change.
+  - *Open-Closed* — extend behavior without modifying existing code.
+  - *Liskov Substitution* — subtypes honor the contracts of their base types.
+  - *Interface Segregation* — callers depend only on the surface they use.
+  - *Dependency Inversion* — depend on abstractions, not concrete implementations.
+
 ## Style guides
 
 - [docs/process/luau-style.md](docs/process/luau-style.md) — Luau (Roblox plugin).
