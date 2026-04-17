@@ -5,13 +5,13 @@ local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
-local PackageList = require(script.PackageList)
-local PopularPackages = require(script.PopularPackages)
+local PackageList = require(script.Parent.PackageList)
+local PopularPackages = require(script.Parent.PopularPackages)
 local ReactHelpers = require(Discover.Src.Common.React)
-local SearchState = require(Discover.Src.Wally.SearchStore)
-local SettingsModule = require(Discover.Src.Settings)
+local SearchState = require(Discover.Src.SearchStore)
+local SettingsModule = require(Discover.Src.Settings.SettingsStore)
 local useAtom = require(Discover.Src.Common.useAtom)
-local useWallyStatusMessage = require(Discover.Src.Wally.useWallyStatus)
+local useWallyStatusMessage = require(Discover.Src.Api.useWallyStatus)
 
 local View = Foundation.View
 local Text = Foundation.Text

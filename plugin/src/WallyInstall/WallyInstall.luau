@@ -6,9 +6,9 @@ local Packages = Discover.Packages
 
 local zzlib = require(Packages.zzlib)
 
-local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
-local PackageTypes = require(Discover.Src.Common.PackageTypes)
-local WallyAPI = require(Discover.Src.Wally.Api)
+local InstalledPackages = require(Discover.Src.WallyInstall.InstalledPackages)
+local PackageTypes = require(Discover.Src.WallyPackageTypes)
+local WallyAPI = require(Discover.Src.Api.Wally)
 
 local DEFAULT_EXCLUDE = { ".*", "wally.lock", "Packages", "ServerPackages", "DevPackages", "node_modules", "*.toml" }
 local LOCKFILE_NAME = "WallyLock"

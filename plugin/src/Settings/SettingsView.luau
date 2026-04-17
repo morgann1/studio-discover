@@ -6,8 +6,8 @@ local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
 local ReactHelpers = require(Discover.Src.Common.React)
-local SettingRow = require(script.SettingRow)
-local SettingsModule = require(Discover.Src.Settings)
+local SettingRow = require(script.Parent.SettingRow)
+local SettingsModule = require(Discover.Src.Settings.SettingsStore)
 
 local View = Foundation.View
 local Text = Foundation.Text

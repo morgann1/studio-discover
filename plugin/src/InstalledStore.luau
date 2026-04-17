@@ -3,7 +3,7 @@ local Packages = Discover.Packages
 
 local Charm = require(Packages.Charm)
 
-local InstalledPackages = require(Discover.Src.Installer.InstalledPackages)
+local InstalledPackages = require(Discover.Src.WallyInstall.InstalledPackages)
 
 type InstalledPackage = InstalledPackages.InstalledPackage
 

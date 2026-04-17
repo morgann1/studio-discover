@@ -3,8 +3,8 @@ local Packages = Discover.Packages
 
 local React = require(Packages.React)
 
-local InstalledState = require(Discover.Src.Installer.InstalledStore)
-local Installer = require(Discover.Src.Installer.Installer)
+local InstalledState = require(Discover.Src.InstalledStore)
+local WallyInstall = require(Discover.Src.WallyInstall)
 
 type InstallerState = {
 	status: string,
@@ -38,8 +38,8 @@ local function useInstaller(
 		setProgress("Starting install...")
 
 		task.spawn(function()
-			Installer.setVerbose(verboseLogging)
-			local success, errorMessage, failures = Installer.install(
+			WallyInstall.setVerbose(verboseLogging)
+			local success, errorMessage, failures = WallyInstall.install(
 				scope,
 				name,
 				version,

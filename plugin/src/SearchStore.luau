@@ -3,7 +3,7 @@ local Packages = Discover.Packages
 
 local Charm = require(Packages.Charm)
 
-local WallyAPI = require(Discover.Src.Wally.Api)
+local WallyAPI = require(Discover.Src.Api.Wally)
 
 local Search = {}
 

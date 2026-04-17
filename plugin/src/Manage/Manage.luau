@@ -4,13 +4,13 @@ local Packages = Discover.Packages
 local Foundation = require(Packages.Foundation)
 local React = require(Packages.React)
 
-local InstalledRow = require(script.InstalledRow)
-local InstalledState = require(Discover.Src.Installer.InstalledStore)
-local Installer = require(Discover.Src.Installer.Installer)
+local InstalledRow = require(script.Parent.InstalledRow)
+local InstalledState = require(Discover.Src.InstalledStore)
 local Navigation = require(Discover.Src.Navigation)
 local ReactHelpers = require(Discover.Src.Common.React)
-local SettingsModule = require(Discover.Src.Settings)
-local WallyAPI = require(Discover.Src.Wally.Api)
+local SettingsModule = require(Discover.Src.Settings.SettingsStore)
+local WallyAPI = require(Discover.Src.Api.Wally)
+local WallyInstall = require(Discover.Src.WallyInstall)
 local useAtom = require(Discover.Src.Common.useAtom)
 
 local View = Foundation.View
@@ -90,7 +90,7 @@ local function Manage()
 			local alias = SettingsModule.formatPackageName(name, settingsContext.settings.namingConvention, {
 				overrides = settingsContext.settings.nameOverrides,
 			})
-			local ok, errorMessage = Installer.install(scope, name, target, alias, matchedPackage.realm)
+			local ok, errorMessage = WallyInstall.install(scope, name, target, alias, matchedPackage.realm)
 			if not ok then
 				warn("[Discover] Update failed:", errorMessage)
 			end
@@ -100,7 +100,7 @@ local function Manage()
 
 	local onRowUninstall = React.useCallback(function(scope: string, name: string)
 		if settingsCtx.settings.skipUninstallConfirm then
-			local ok, errorMessage = Installer.uninstall(scope, name)
+			local ok, errorMessage = WallyInstall.uninstall(scope, name)
 			if not ok then
 				warn("[Discover] Uninstall failed:", errorMessage)
 			end
@@ -241,7 +241,7 @@ local function Manage()
 							onActivated = function()
 								if pendingUninstall then
 									local ok, errorMessage =
-										Installer.uninstall(pendingUninstall.scope, pendingUninstall.name)
+										WallyInstall.uninstall(pendingUninstall.scope, pendingUninstall.name)
 									if not ok then
 										warn("[Discover] Uninstall failed:", errorMessage)
 									end

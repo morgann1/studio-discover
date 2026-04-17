@@ -6,15 +6,15 @@ local React = require(Packages.React)
 
 local Navigation = require(Discover.Src.Navigation)
 local Page = require(Discover.Src.Common.Page)
-local SettingsModule = require(Discover.Src.Settings)
+local SettingsModule = require(Discover.Src.Settings.SettingsStore)
 local UpdateChecker = require(Discover.Src.UpdateChecker)
 local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 
-local Home = require(Discover.Src.Pages.Home)
-local Manage = require(Discover.Src.Pages.Manage)
-local Overrides = require(Discover.Src.Pages.Overrides)
-local Package = require(Discover.Src.Pages.Package)
-local Settings = require(Discover.Src.Pages.Settings)
+local Home = require(Discover.Src.Home)
+local Manage = require(Discover.Src.Manage)
+local Overrides = require(Discover.Src.Overrides)
+local Package = require(Discover.Src.Package)
+local Settings = require(Discover.Src.Settings.SettingsView)
 
 local e = React.createElement
 

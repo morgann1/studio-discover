@@ -4,7 +4,7 @@ local Packages = Discover.Packages
 local React = require(Packages.React)
 local ReactOtter = require(Packages.ReactOtter)
 
-local Settings = require(Discover.Src.Settings)
+local Settings = require(Discover.Src.Settings.SettingsStore)
 
 local e = React.createElement
 

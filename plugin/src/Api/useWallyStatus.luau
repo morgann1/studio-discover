@@ -2,7 +2,7 @@ local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local React = require(Packages.React)
-local WallyAPI = require(Discover.Src.Wally.Api)
+local WallyAPI = require(Discover.Src.Api.Wally)
 
 local function useWallyStatusMessage(): string?
 	local message, setMessage = React.useState(WallyAPI.formatWaitMessage(WallyAPI.getStatus()) :: string?)
