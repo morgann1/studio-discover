@@ -27,5 +27,13 @@
 				"period": 10,
 			},
 		},
+		{
+			"name": "USER_RATE_LIMITER",
+			"namespace_id": "1002",
+			"simple": {
+				"limit": 5,
+				"period": 10,
+			},
+		},
 	],
 }

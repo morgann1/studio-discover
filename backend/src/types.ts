@@ -4,6 +4,7 @@ declare global {
 	namespace Cloudflare {
 		interface Env {
 			RATE_LIMITER: RateLimit;
+			USER_RATE_LIMITER: RateLimit;
 		}
 	}
 }
@@ -13,5 +14,6 @@ export type HonoEnv = {
 	Variables: {
 		uid: string;
 		version: string;
+		requestId: string;
 	};
 };
