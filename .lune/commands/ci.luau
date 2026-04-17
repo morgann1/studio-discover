@@ -155,13 +155,29 @@ function ci.run(options_: Options?): boolean
 	end
 	print()
 
-	-- Step 4: Fetch global types
+	-- Step 4: Vitest for backend/
+	local vitestDesc = "Test (vitest) for backend/"
+	print(color.cyan(`→ {vitestDesc}`))
+	local vitestResult = process.exec("npx", { "vitest", "run" }, {
+		stdio = "inherit",
+		shell = true,
+		cwd = "backend",
+	})
+	if vitestResult.ok then
+		print(color.green(`  ✓ {vitestDesc} passed`))
+	else
+		print(color.red(`  ✗ {vitestDesc} failed`))
+		allPassed = false
+	end
+	print()
+
+	-- Step 5: Fetch global types
 	if not fetchGlobalTypes() then
 		allPassed = false
 	end
 	print()
 
-	-- Step 5: Update sourcemap
+	-- Step 6: Update sourcemap
 	print(color.cyan("→ Updating sourcemap"))
 	local codegenSuccess = codegen.run({ quiet = true, generateSourcemap = true })
 	if codegenSuccess then
@@ -172,7 +188,7 @@ function ci.run(options_: Options?): boolean
 	end
 	print()
 
-	-- Step 6: Type check (luau-lsp)
+	-- Step 7: Type check (luau-lsp)
 	local luauArgs = {
 		"analyze",
 		"--sourcemap",
