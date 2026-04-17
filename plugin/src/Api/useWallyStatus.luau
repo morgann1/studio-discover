@@ -4,10 +4,10 @@ local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local React = require(Packages.React)
-local WallyAPI = require(Discover.Src.Api.Wally)
+local WallyStatus = require(Discover.Src.Api.WallyStatus)
 
 local function useWallyStatusMessage(): string?
-	local message, setMessage = React.useState(WallyAPI.formatWaitMessage(WallyAPI.getStatus()) :: string?)
+	local message, setMessage = React.useState(WallyStatus.formatWaitMessage(WallyStatus.get()) :: string?)
 
 	React.useEffect(function()
 		local cancelled = false
@@ -17,8 +17,8 @@ local function useWallyStatusMessage(): string?
 			if cancelled then
 				return
 			end
-			local s = WallyAPI.getStatus()
-			setMessage(WallyAPI.formatWaitMessage(s))
+			local s = WallyStatus.get()
+			setMessage(WallyStatus.formatWaitMessage(s))
 			if s.state == "waiting" then
 				tickHandle = task.delay(0.5, refresh)
 			else
@@ -26,7 +26,7 @@ local function useWallyStatusMessage(): string?
 			end
 		end
 
-		local unsubscribe = WallyAPI.subscribe(function()
+		local unsubscribe = WallyStatus.subscribe(function()
 			refresh()
 		end)
 

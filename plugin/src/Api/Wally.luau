@@ -6,14 +6,11 @@ local HttpService = game:GetService("HttpService")
 local StudioService = game:GetService("StudioService")
 
 local RateLimiter = require(Discover.Src.Api.RateLimiter)
-local StatusPublisher = require(Discover.Src.Api.StatusPublisher)
 local Version = require(Discover.Src.Version)
 local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
 
 local WALLY_API = "https://api.wally.run"
 local CACHE_TTL = 300
-
-export type Status = StatusPublisher.Status
 
 local cache: { [string]: { data: any, time: number }? } = {}
 
@@ -92,20 +89,6 @@ local function cachedGetAsync(url: string): (any?, string?)
 end
 
 local WallyAPI = {}
-
-WallyAPI.subscribe = StatusPublisher.subscribe
-WallyAPI.getStatus = StatusPublisher.get
-
-function WallyAPI.formatWaitMessage(s: Status): string?
-	if s.state ~= "waiting" then
-		return nil
-	end
-	local remaining = math.max(0, math.ceil(s.untilClock - os.clock()))
-	if s.reason == "rate-limited" then
-		return `Rate limited by Wally, retrying in {remaining}s...`
-	end
-	return `Waiting {remaining}s to respect Wally's rate limit...`
-end
 
 function WallyAPI.searchAsync(query: string): (any?, string?)
 	local trimmed = (query:gsub("^%s+", ""):gsub("%s+$", ""))
