@@ -48,6 +48,11 @@ local function Package()
 	local isLoading, setIsLoading = React.useState(true)
 
 	React.useEffect(function()
+		if scope == "" or rawName == "" then
+			setIsLoading(false)
+			return
+		end
+
 		local cancelled = false
 		setIsLoading(true)
 		task.spawn(function()

@@ -31,10 +31,20 @@ function Search.clear()
 end
 
 function Search.run(text: string)
-	if text == "" then
+	local trimmed = text:match("^%s*(.-)%s*$") or ""
+
+	-- Wally's ngram index tokenizes from 2 chars; single-char queries don't match.
+	if #trimmed < 2 then
 		Search.clear()
 		return
 	end
+
+	-- Dedupe: same text already in-flight or last completed successfully.
+	if Search.text() == trimmed and Search.hasSearched() and Search.error() == nil then
+		return
+	end
+
+	text = trimmed
 
 	searchVersion += 1
 	local thisVersion = searchVersion

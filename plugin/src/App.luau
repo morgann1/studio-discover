@@ -8,6 +8,7 @@ local Navigation = require(Discover.Src.Navigation)
 local Page = require(Discover.Src.Common.Page)
 local SettingsModule = require(Discover.Src.Settings)
 local UpdateChecker = require(Discover.Src.UpdateChecker)
+local WallyAPI = require(Discover.Src.Wally.Api)
 local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 
 local Home = require(Discover.Src.Pages.Home)
@@ -120,6 +121,11 @@ local function AppContent(props: { overlayGui: Instance? })
 	local isEnabled = settingsContext.settings.checkForUpdates
 	local widgetEnabled = useWidgetEnabled(props.overlayGui)
 	local update = UpdateChecker.useUpdateChecker(isEnabled, widgetEnabled)
+	local backendUrl = settingsContext.settings.backendUrl
+
+	React.useEffect(function()
+		WallyAPI.setBackendUrl(backendUrl)
+	end, { backendUrl })
 
 	local isDismissed = update ~= nil and settingsContext.settings.dismissedUpdateVersion == update.version
 

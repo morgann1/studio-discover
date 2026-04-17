@@ -16,6 +16,7 @@ local IconButton = Foundation.IconButton
 local Divider = Foundation.Divider
 local Dropdown = Foundation.Dropdown
 local ScrollView = Foundation.ScrollView
+local TextInput = Foundation.TextInput
 
 local InputSize = Foundation.Enums.InputSize
 local ButtonVariant = Foundation.Enums.ButtonVariant
@@ -116,6 +117,27 @@ local function Settings()
 				onActivated = function()
 					nav.push("Overrides")
 				end,
+			}),
+		},
+		{
+			key = "BackendUrl",
+			name = "Backend URL",
+			description = "Proxy that adds a compliant User-Agent to Wally requests. Leave blank to use the default.",
+			control = e("Frame", {
+				Size = UDim2.fromOffset(240, 40),
+				BackgroundTransparency = 1,
+			}, {
+				Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
+				Input = e(TextInput, {
+					text = settingsContext.settings.backendUrl,
+					label = "",
+					placeholder = SettingsModule.DEFAULT_BACKEND_URL,
+					size = InputSize.Medium,
+					width = UDim.new(1, 0),
+					onChanged = function(text: string)
+						settingsContext.setSetting("backendUrl", text)
+					end,
+				}),
 			}),
 		},
 	}

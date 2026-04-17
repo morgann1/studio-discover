@@ -1,10 +1,16 @@
-local HttpService = game:GetService("HttpService")
+local Discover = script:FindFirstAncestor("Discover")
 
-local WALLY_SEARCH_API = "https://api.wally.run/v1/package-search?query="
-local WALLY_METADATA_API = "https://api.wally.run/v1/package-metadata/"
+local HttpService = game:GetService("HttpService")
+local StudioService = game:GetService("StudioService")
+
+local Version = require(Discover.Src.Version)
+
+local DEFAULT_BACKEND_URL = "https://wally.morgann1.com"
 
 local CACHE_TTL = 300
 local MIN_INTERVAL = 1.05
+
+local backendUrl = DEFAULT_BACKEND_URL
 
 export type Status = {
 	state: "idle" | "waiting",
@@ -47,6 +53,11 @@ end
 
 function WallyAPI.getStatus(): Status
 	return status
+end
+
+function WallyAPI.setBackendUrl(url: string)
+	local trimmed = url:gsub("/+$", "")
+	backendUrl = if trimmed == "" then DEFAULT_BACKEND_URL else trimmed
 end
 
 function WallyAPI.formatWaitMessage(s: Status): string?
@@ -106,6 +117,10 @@ local function requestOnce(url: string): (any?, string?, number?, { [string]: st
 		return HttpService:RequestAsync({
 			Url = url,
 			Method = "GET",
+			Headers = {
+				["X-Studio-UserId"] = tostring(StudioService:GetUserId()),
+				["X-Plugin-Version"] = Version,
+			},
 		})
 	end)
 	if not ok then
@@ -155,17 +170,14 @@ local function cachedGet(url: string)
 	return data, errorMessage
 end
 
-local function formatQuery(query: string): string
-	local trimmed = string.gsub(query, "^%s+", "")
-	return string.gsub(trimmed, "%s+", "+")
-end
-
 function WallyAPI.search(query: string)
-	return cachedGet(`{WALLY_SEARCH_API}{formatQuery(query)}`)
+	local trimmed = (query:gsub("^%s+", ""):gsub("%s+$", ""))
+	local encoded = (HttpService:UrlEncode(trimmed):gsub("%%20", "+"))
+	return cachedGet(`{backendUrl}/v1/package-search?query={encoded}`)
 end
 
 function WallyAPI.metadata(scope: string, name: string)
-	return cachedGet(`{WALLY_METADATA_API}{scope}/{name}`)
+	return cachedGet(`{backendUrl}/v1/package-metadata/{scope}/{name}`)
 end
 
 return WallyAPI
