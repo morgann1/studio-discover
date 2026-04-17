@@ -1,24 +1,24 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local Foundation = require(Packages.Foundation)
-local React = require(Packages.React)
-
+local Home = require(Discover.Src.Home)
+local Manage = require(Discover.Src.Manage)
 local Navigation = require(Discover.Src.Navigation)
+local Overrides = require(Discover.Src.Overrides)
+local Package = require(Discover.Src.Package)
 local Page = require(Discover.Src.Common.Page)
+local React = require(Packages.React)
+local Settings = require(Discover.Src.Settings.SettingsView)
 local SettingsModule = require(Discover.Src.Settings.SettingsStore)
 local UpdateChecker = require(Discover.Src.UpdateChecker)
 local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
 
-local Home = require(Discover.Src.Home)
-local Manage = require(Discover.Src.Manage)
-local Overrides = require(Discover.Src.Overrides)
-local Package = require(Discover.Src.Package)
-local Settings = require(Discover.Src.Settings.SettingsView)
-
 local e = React.createElement
 
-local Pages = {
+local Pages: { [string]: any? } = {
 	Home = Home,
 	Manage = Manage,
 	Overrides = Overrides,
@@ -47,7 +47,7 @@ local function PageRouter()
 				end
 			end
 			local component = Pages[nav.screen.name]
-			if not component then
+			if component == nil then
 				warn("[Discover] Unknown page:", nav.screen.name)
 				component = Home
 			end
@@ -93,14 +93,14 @@ local AlertSeverity = Foundation.Enums.AlertSeverity
 
 local function useWidgetEnabled(widget: Instance?): boolean
 	local enabled, setEnabled = React.useState(function()
-		if widget and (widget :: any).Enabled ~= nil then
+		if widget ~= nil and (widget :: any).Enabled ~= nil then
 			return (widget :: any).Enabled
 		end
 		return true
 	end)
 
-	React.useEffect(function()
-		if not widget then
+	React.useEffect(function(): (() -> ())?
+		if widget == nil then
 			return nil
 		end
 		local gui = widget :: DockWidgetPluginGui
@@ -124,7 +124,7 @@ local function AppContent(props: { overlayGui: Instance? })
 	local isDismissed = update ~= nil and settingsContext.settings.dismissedUpdateVersion == update.version
 
 	local onDismiss = React.useCallback(function()
-		if update then
+		if update ~= nil then
 			settingsContext.setSetting("dismissedUpdateVersion", update.version)
 		end
 	end, { update, settingsContext } :: { any })
@@ -170,7 +170,7 @@ local function AppContent(props: { overlayGui: Instance? })
 	})
 end
 
-local function App(props: { plugin: Plugin?, overlayGui: Instance? })
+local function App(props: { plugin: Plugin?, overlayGui: Instance? }): React.ReactNode
 	local theme = useStudioTheme()
 	return e(Foundation.FoundationProvider, {
 		theme = theme,
