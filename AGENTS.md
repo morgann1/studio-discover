@@ -6,7 +6,7 @@
 
 ## Project Snapshot
 
-TBD
+Discover is a Roblox Studio plugin for browsing and installing [Wally](https://wally.run) packages without leaving Studio. It's a pure-Luau alternative to the external Rokit/Rojo/Wally CLI toolchain, aimed at game creators who work entirely inside Studio.
 
 ## Core Priorities
 
@@ -25,7 +25,3 @@ Long term maintainability is a core priority. If you add new functionality, firs
 - [docs/process/luau-style.md](docs/process/luau-style.md) — Luau (Roblox plugin).
 - [docs/process/react-patterns.md](docs/process/react-patterns.md) — React (Roblox plugin).
 - [docs/process/typescript-style.md](docs/process/typescript-style.md) — TypeScript (Cloudflare Worker proxy).
-
-## Subdirectory guidance
-
-- Working in `backend/`? See [`backend/AGENTS.md`](backend/AGENTS.md) for Wrangler commands and Worker-scoped notes.
