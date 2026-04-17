@@ -5,12 +5,10 @@ local StudioService = game:GetService("StudioService")
 
 local Version = require(Discover.Src.Version)
 
-local DEFAULT_BACKEND_URL = "https://wally.morgann1.com"
+local WALLY_API = "https://api.wally.run"
 
 local CACHE_TTL = 300
 local MIN_INTERVAL = 1.05
-
-local backendUrl = DEFAULT_BACKEND_URL
 
 export type Status = {
 	state: "idle" | "waiting",
@@ -53,11 +51,6 @@ end
 
 function WallyAPI.getStatus(): Status
 	return status
-end
-
-function WallyAPI.setBackendUrl(url: string)
-	local trimmed = url:gsub("/+$", "")
-	backendUrl = if trimmed == "" then DEFAULT_BACKEND_URL else trimmed
 end
 
 function WallyAPI.formatWaitMessage(s: Status): string?
@@ -112,14 +105,18 @@ local function waitRateLimited(seconds: number)
 	end
 end
 
+local function userAgent(): string
+	return `Discover/{Version} (+https://github.com/morgann1/studio-discover; StudioUserId={StudioService:GetUserId()})`
+end
+
 local function requestOnce(url: string): (any?, string?, number?, { [string]: string }?)
 	local ok, response = pcall(function()
 		return HttpService:RequestAsync({
 			Url = url,
 			Method = "GET",
 			Headers = {
-				["X-Studio-UserId"] = tostring(StudioService:GetUserId()),
-				["X-Plugin-Version"] = Version,
+				["X-Real-User-Agent"] = userAgent(),
+				["Wally-Version"] = "0.3.2",
 			},
 		})
 	end)
@@ -182,15 +179,15 @@ end
 function WallyAPI.search(query: string)
 	local trimmed = (query:gsub("^%s+", ""):gsub("%s+$", ""))
 	local encoded = (HttpService:UrlEncode(trimmed):gsub("%%20", "+"))
-	return cachedGet(`{backendUrl}/v1/package-search?query={encoded}`)
+	return cachedGet(`{WALLY_API}/v1/package-search?query={encoded}`)
 end
 
 function WallyAPI.metadata(scope: string, name: string)
-	return cachedGet(`{backendUrl}/v1/package-metadata/{scope}/{name}`)
+	return cachedGet(`{WALLY_API}/v1/package-metadata/{scope}/{name}`)
 end
 
 function WallyAPI.download(scope: string, name: string, version: string): (string?, string?)
-	local url = `{backendUrl}/v1/package-contents/{scope}/{name}/{version}`
+	local url = `{WALLY_API}/v1/package-contents/{scope}/{name}/{version}`
 	local body, errorMessage = wallyFetch(url)
 	if not body then
 		return nil, `{errorMessage} ({url})`
