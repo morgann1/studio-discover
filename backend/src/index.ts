@@ -1,20 +1,14 @@
-import { ghRedirect } from "./routes";
+import { Hono } from "hono";
 
-type Handler = (request: Request) => Response | Promise<Response>;
+import { requirePluginHeaders } from "./middleware/require-plugin-headers";
+import { ghRedirect, packageSearch } from "./routes";
+import type { HonoEnv } from "./types";
 
-const routes: Record<string, Handler> = {
-	"/": ghRedirect,
-};
+const app = new Hono<HonoEnv>();
 
-export default {
-	async fetch(request): Promise<Response> {
-		const url = new URL(request.url);
-		const handler = routes[url.pathname];
+app.get("/", ghRedirect);
 
-		if (handler) {
-			return handler(request);
-		}
+app.use("/v1/*", requirePluginHeaders);
+app.get("/v1/package-search", packageSearch);
 
-		return new Response("Not found", { status: 404 });
-	},
-} satisfies ExportedHandler<Env>;
+export default app;
