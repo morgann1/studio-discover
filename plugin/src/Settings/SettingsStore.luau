@@ -72,7 +72,7 @@ local function saveSettings(pluginInstance: Plugin?, data: SettingsData)
 	end)
 end
 
-local function SettingsProvider(props: { plugin: Plugin?, children: any }): React.ReactNode
+local function SettingsProvider(props: { plugin: Plugin?, children: React.Node }): React.ReactNode
 	local settings: SettingsData, setSettings = React.useState(function(): SettingsData
 		return loadSettings(props.plugin)
 	end)
@@ -86,12 +86,11 @@ local function SettingsProvider(props: { plugin: Plugin?, children: any }): Reac
 		end)
 	end, { props.plugin })
 
-	local value: SettingsContext = React.useMemo(function()
-		local v: SettingsContext = {
+	local value = React.useMemo(function(): SettingsContext
+		return {
 			settings = settings,
 			setSetting = setSetting,
 		}
-		return v
 	end, { settings, setSetting } :: { any })
 
 	return e(Context.Provider, {

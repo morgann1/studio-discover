@@ -1,3 +1,5 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
@@ -16,9 +18,7 @@ export type Screen = {
 export type NavigationContext = {
 	push: (name: string, options: { [string]: any }?) -> (),
 	pop: () -> (),
-	replace: (name: string, options: { [string]: any }?) -> (),
 	screen: Screen,
-	depth: number,
 }
 
 local BASE_SCREEN: Screen = {
@@ -30,9 +30,7 @@ local BASE_SCREEN: Screen = {
 local DEFAULT_CONTEXT: NavigationContext = {
 	push = function(_name, _options) end,
 	pop = function() end,
-	replace = function(_name, _options) end,
 	screen = BASE_SCREEN,
-	depth = 1,
 }
 
 local Context = React.createContext<<NavigationContext>>(DEFAULT_CONTEXT)
@@ -49,7 +47,7 @@ local function getScreen(stack: { Screen }): Screen
 	end
 end
 
-local function NavigationProvider(props: { children: any })
+local function NavigationProvider(props: { children: React.Node }): React.ReactNode
 	local stack, setStack = React.useState({} :: { Screen })
 
 	local push = React.useCallback(function(name: string, options: { [string]: any }?)
@@ -75,34 +73,15 @@ local function NavigationProvider(props: { children: any })
 		end)
 	end, {})
 
-	local replace = React.useCallback(function(name: string, options: { [string]: any }?)
-		setStack(function(prev)
-			local new = table.clone(prev)
-			if #new > 0 then
-				table.remove(new)
-			end
-			table.insert(new, {
-				id = generateId(),
-				name = name,
-				options = options or {},
-			})
-			return new
-		end)
-	end, {})
-
 	local screen = getScreen(stack)
-	local depth = #stack + 1
 
-	local value: NavigationContext = React.useMemo(function()
-		local v: NavigationContext = {
+	local value = React.useMemo(function(): NavigationContext
+		return {
 			push = push,
 			pop = pop,
-			replace = replace,
 			screen = screen,
-			depth = depth,
 		}
-		return v
-	end, { push, pop, replace, screen, depth } :: { any })
+	end, { push, pop, screen } :: { any })
 
 	return e(Context.Provider, {
 		value = value,
