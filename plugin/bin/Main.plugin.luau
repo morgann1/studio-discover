@@ -5,7 +5,12 @@ if RunService:IsRunning() then
 	return
 end
 
-local Discover = script.Parent.Parent
+local Discover = script:FindFirstAncestor("Discover")
+local Packages = Discover.Packages
+
+local App = require(Discover.Src.App)
+local React = require(Packages.React)
+local ReactRoblox = require(Packages.ReactRoblox)
 
 local studio = settings().Studio
 
@@ -27,10 +32,10 @@ widget.Name = "Discover"
 widget.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local connections: { RBXScriptConnection } = {}
-local reactRoot: any = nil
+local reactRoot: ReactRoblox.RootType? = nil
 
 local function mount()
-	if reactRoot then
+	if reactRoot ~= nil then
 		return
 	end
 
@@ -39,13 +44,9 @@ local function mount()
 		return
 	end
 
-	local Packages = Discover.Packages
-	local React = require(Packages.React)
-	local ReactRoblox = require(Packages.ReactRoblox)
-	local App = require(Discover.Src.App)
-
-	reactRoot = ReactRoblox.createRoot(widget)
-	reactRoot:render(React.createElement(App, { plugin = plugin, overlayGui = widget }))
+	local newRoot = ReactRoblox.createRoot(widget)
+	newRoot:render(React.createElement(App, { plugin = plugin, overlayGui = widget }))
+	reactRoot = newRoot
 end
 
 table.insert(
@@ -82,7 +83,7 @@ plugin.Unloading:Connect(function()
 		connection:Disconnect()
 	end
 	table.clear(connections)
-	if reactRoot then
+	if reactRoot ~= nil then
 		reactRoot:unmount()
 	end
 end)
