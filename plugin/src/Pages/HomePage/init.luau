@@ -1,12 +1,13 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local Foundation = require(Packages.Foundation)
-local React = require(Packages.React)
-
 local Navigation = require(Discover.Src.Navigation)
 local PackageList = require(script.PackageList)
 local PopularPackages = require(script.PopularPackages)
+local React = require(Packages.React)
 local SearchState = require(Discover.Src.SearchStore)
 local SettingsModule = require(Discover.Src.SettingsStore)
 local TopBar = require(Discover.Src.Common.TopBar)
@@ -30,7 +31,7 @@ local AlertSeverity = Foundation.Enums.AlertSeverity
 
 local e = React.createElement
 
-local function Home()
+local function Home(): React.ReactNode
 	local nav = Navigation.useNavigation()
 	local results = useAtom(SearchState.results)
 	local isLoading = useAtom(SearchState.isLoading)
@@ -65,7 +66,7 @@ local function Home()
 	end, { nav })
 
 	local content
-	if searchError then
+	if searchError ~= nil then
 		content = e(View, {
 			Size = UDim2.fromScale(1, 1),
 		}, {
@@ -81,7 +82,7 @@ local function Home()
 			}),
 		})
 	elseif isLoading then
-		local skeletonChildren = {
+		local skeletonChildren: { [string]: any } = {
 			Layout = e("UIListLayout", {
 				FillDirection = Enum.FillDirection.Vertical,
 				SortOrder = Enum.SortOrder.LayoutOrder,
@@ -93,7 +94,7 @@ local function Home()
 				PaddingTop = UDim.new(0, 12),
 			}),
 		}
-		if wallyWaitMessage then
+		if wallyWaitMessage ~= nil then
 			skeletonChildren.WaitMessage = e(Text, {
 				Text = wallyWaitMessage,
 				AutomaticSize = Enum.AutomaticSize.Y,
@@ -128,7 +129,7 @@ local function Home()
 				overrides = settingsCtx.settings.nameOverrides,
 			})
 			local description = result.description
-			if not description or description == "" then
+			if description == nil or description == "" then
 				description = `{displayName} has no provided description.`
 			end
 			table.insert(items, {
@@ -148,7 +149,7 @@ local function Home()
 	else
 		content = e(PackageList, {
 			header = "Popular packages",
-			items = PopularPackages,
+			items = PopularPackages :: any,
 			onSelect = onCardSelect,
 		})
 	end

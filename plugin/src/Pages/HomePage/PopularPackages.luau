@@ -1,3 +1,5 @@
+--!strict
+
 return {
 	{
 		scope = "evaera",

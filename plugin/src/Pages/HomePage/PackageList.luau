@@ -1,10 +1,11 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local Foundation = require(Packages.Foundation)
-local React = require(Packages.React)
-
 local PackageCard = require(Discover.Src.Common.PackageCard)
+local React = require(Packages.React)
 local createNextOrder = require(Discover.Src.Util.createNextOrder)
 local createUniqueKey = require(Discover.Src.Util.createUniqueKey)
 local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
@@ -33,7 +34,7 @@ type PackageListProps = {
 	onSelect: (scope: string, name: string) -> (),
 }
 
-local function PackageList(props: PackageListProps)
+local function PackageList(props: PackageListProps): React.ReactNode
 	local cardKey = createUniqueKey()
 	local nextCardOrder = createNextOrder()
 
