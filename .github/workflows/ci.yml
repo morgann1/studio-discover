@@ -28,6 +28,9 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
+      - name: Generate Lune type definitions
+        run: lune setup
+
       - name: Install Luau packages
         run: lune run install --quiet
 
