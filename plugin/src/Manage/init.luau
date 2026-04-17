@@ -14,6 +14,7 @@ local WallyInstall = require(Discover.Src.WallyInstall)
 local createNextOrder = require(Discover.Src.Util.createNextOrder)
 local createUniqueKey = require(Discover.Src.Util.createUniqueKey)
 local formatPackageKey = require(Discover.Src.Util.formatPackageKey)
+local formatPackageName = require(Discover.Src.Util.formatPackageName)
 local useAtom = require(Discover.Src.Common.useAtom)
 local useCancellableEffect = require(Discover.Src.Common.useCancellableEffect)
 
@@ -87,7 +88,7 @@ local function Manage()
 		end
 		task.spawn(function()
 			local settingsContext = settingsRef.current
-			local alias = SettingsModule.formatPackageName(name, settingsContext.settings.namingConvention, {
+			local alias = formatPackageName(name, settingsContext.settings.namingConvention, {
 				overrides = settingsContext.settings.nameOverrides,
 			})
 			local ok, errorMessage = WallyInstall.install(scope, name, target, alias, matchedPackage.realm)

@@ -1,3 +1,5 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
@@ -17,7 +19,7 @@ type SettingRowProps = {
 	LayoutOrder: number,
 }
 
-local function SettingRow(props: SettingRowProps)
+local function SettingRow(props: SettingRowProps): React.ReactNode
 	return e("Frame", {
 		Size = UDim2.fromScale(1, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,

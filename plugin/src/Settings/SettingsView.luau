@@ -1,14 +1,16 @@
+--!strict
+
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local Foundation = require(Packages.Foundation)
-local React = require(Packages.React)
-
 local Navigation = require(Discover.Src.Navigation)
+local React = require(Packages.React)
 local SettingRow = require(script.Parent.SettingRow)
 local SettingsModule = require(Discover.Src.Settings.SettingsStore)
 local TopBar = require(Discover.Src.Common.TopBar)
 local createNextOrder = require(Discover.Src.Util.createNextOrder)
+local formatPackageName = require(Discover.Src.Util.formatPackageName)
 
 local Text = Foundation.Text
 local Checkbox = Foundation.Checkbox
@@ -32,17 +34,25 @@ local CONVENTION_ITEMS = {
 
 local PREVIEW_SAMPLE = "react-roblox"
 
-local function Settings()
+local function Settings(): React.ReactNode
 	local nav = Navigation.useNavigation()
 	local settingsContext = SettingsModule.useSettings()
 	local current = settingsContext.settings.namingConvention
-	local previewText = SettingsModule.formatPackageName(PREVIEW_SAMPLE, current)
+	local previewText = formatPackageName(PREVIEW_SAMPLE, current :: any)
 
 	local onBack = React.useCallback(function()
 		nav.pop()
 	end, { nav })
 
-	local rows = {
+	type Row = {
+		key: string,
+		name: string,
+		description: string?,
+		footer: React.ReactNode?,
+		control: React.ReactNode,
+	}
+
+	local rows: { Row } = {
 		{
 			key = "NamingConvention",
 			name = "Naming Convention",
@@ -141,9 +151,10 @@ local function Settings()
 		})
 	end
 
+	local nextPageOrder = createNextOrder()
 	return e(React.Fragment, nil, {
 		TopBar = e(TopBar, {
-			LayoutOrder = 1,
+			LayoutOrder = nextPageOrder(),
 		}, {
 			Back = e(IconButton, {
 				icon = Foundation.Enums.IconName.ChevronLargeLeft,
@@ -161,13 +172,13 @@ local function Settings()
 		}),
 
 		TopDivider = e(Divider, {
-			LayoutOrder = 2,
+			LayoutOrder = nextPageOrder(),
 		}),
 
 		Content = e("Frame", {
 			Size = UDim2.new(1, 0, 1, -58),
 			BackgroundTransparency = 1,
-			LayoutOrder = 3,
+			LayoutOrder = nextPageOrder(),
 		}, {
 			Scroll = e(ScrollView, {
 				Size = UDim2.fromScale(1, 1),

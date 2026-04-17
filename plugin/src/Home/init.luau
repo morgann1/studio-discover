@@ -11,6 +11,7 @@ local SearchState = require(Discover.Src.SearchStore)
 local SettingsModule = require(Discover.Src.Settings.SettingsStore)
 local TopBar = require(Discover.Src.Common.TopBar)
 local createNextOrder = require(Discover.Src.Util.createNextOrder)
+local formatPackageName = require(Discover.Src.Util.formatPackageName)
 local useAtom = require(Discover.Src.Common.useAtom)
 local useWallyStatusMessage = require(Discover.Src.Api.useWallyStatus)
 
@@ -123,10 +124,9 @@ local function Home()
 	elseif #results > 0 then
 		local items = {}
 		for _, result in results do
-			local displayName =
-				SettingsModule.formatPackageName(result.name or "", settingsCtx.settings.namingConvention, {
-					overrides = settingsCtx.settings.nameOverrides,
-				})
+			local displayName = formatPackageName(result.name or "", settingsCtx.settings.namingConvention, {
+				overrides = settingsCtx.settings.nameOverrides,
+			})
 			local description = result.description
 			if not description or description == "" then
 				description = `{displayName} has no provided description.`

@@ -18,6 +18,7 @@ local TopBar = require(Discover.Src.Common.TopBar)
 local WallyAPI = require(Discover.Src.Api.Wally)
 local createNextOrder = require(Discover.Src.Util.createNextOrder)
 local createUniqueKey = require(Discover.Src.Util.createUniqueKey)
+local formatPackageName = require(Discover.Src.Util.formatPackageName)
 local useAtom = require(Discover.Src.Common.useAtom)
 local useCancellableEffect = require(Discover.Src.Common.useCancellableEffect)
 local useInstaller = require(script.useInstaller)
@@ -100,7 +101,7 @@ local function Package()
 			repositoryHint = lastSegment
 		end
 	end
-	local name = SettingsModule.formatPackageName(rawName, settingsContext.settings.namingConvention, {
+	local name = formatPackageName(rawName, settingsContext.settings.namingConvention, {
 		hint = repositoryHint,
 		overrides = settingsContext.settings.nameOverrides,
 	})
@@ -117,7 +118,7 @@ local function Package()
 	local installRealm = if packageData then packageData.realm or "shared" else "shared"
 	local alreadyInstalled = installedEntry ~= nil and installedEntry.version == selectedVersion
 
-	local installAlias = SettingsModule.formatPackageName(rawName, settingsContext.settings.namingConvention, {
+	local installAlias = formatPackageName(rawName, settingsContext.settings.namingConvention, {
 		hint = repositoryHint,
 		overrides = settingsContext.settings.nameOverrides,
 	})
