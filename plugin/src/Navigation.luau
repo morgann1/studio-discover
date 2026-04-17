@@ -27,7 +27,15 @@ local BASE_SCREEN: Screen = {
 	options = {},
 }
 
-local Context = React.createContext(nil :: NavigationContext?)
+local DEFAULT_CONTEXT: NavigationContext = {
+	push = function(_name, _options) end,
+	pop = function() end,
+	replace = function(_name, _options) end,
+	screen = BASE_SCREEN,
+	depth = 1,
+}
+
+local Context = React.createContext<<NavigationContext>>(DEFAULT_CONTEXT)
 
 local function generateId(): string
 	return HttpService:GenerateGUID(false)
@@ -102,9 +110,7 @@ local function NavigationProvider(props: { children: any })
 end
 
 local function useNavigation(): NavigationContext
-	local navigationContext = React.useContext(Context)
-	assert(navigationContext, "useNavigation must be used within a NavigationProvider")
-	return navigationContext
+	return React.useContext(Context)
 end
 
 return {
