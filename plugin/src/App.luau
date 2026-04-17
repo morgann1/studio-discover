@@ -13,8 +13,8 @@ local Page = require(Discover.Src.Common.Page)
 local React = require(Packages.React)
 local Settings = require(Discover.Src.Settings.SettingsView)
 local SettingsModule = require(Discover.Src.Settings.SettingsStore)
-local UpdateChecker = require(Discover.Src.UpdateChecker)
 local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
+local useUpdateChecker = require(Discover.Src.UpdateChecker)
 
 local e = React.createElement
 
@@ -119,7 +119,7 @@ local function AppContent(props: { overlayGui: Instance? })
 	local settingsContext = SettingsModule.useSettings()
 	local isEnabled = settingsContext.settings.checkForUpdates
 	local widgetEnabled = useWidgetEnabled(props.overlayGui)
-	local update = UpdateChecker.useUpdateChecker(isEnabled, widgetEnabled)
+	local update = useUpdateChecker(isEnabled, widgetEnabled)
 
 	local isDismissed = update ~= nil and settingsContext.settings.dismissedUpdateVersion == update.version
 

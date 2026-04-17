@@ -1,10 +1,11 @@
+--!strict
+
 local HttpService = game:GetService("HttpService")
 
 local Discover = script:FindFirstAncestor("Discover")
 local Packages = Discover.Packages
 
 local React = require(Packages.React)
-
 local Version = require(Discover.Src.Version)
 local isNewerSemver = require(Discover.Src.Util.isNewerSemver)
 local useCancellableEffect = require(Discover.Src.Common.useCancellableEffect)
@@ -17,7 +18,7 @@ type UpdateInfo = {
 	url: string,
 }
 
-local function fetchLatestRelease(): UpdateInfo?
+local function fetchLatestReleaseAsync(): UpdateInfo?
 	local ok, result = pcall(function()
 		return HttpService:RequestAsync({
 			Url = RELEASES_API,
@@ -29,7 +30,7 @@ local function fetchLatestRelease(): UpdateInfo?
 	end
 
 	local decoded = HttpService:JSONDecode(result.Body)
-	if not decoded or not decoded.tag_name then
+	if decoded == nil or decoded.tag_name == nil then
 		return nil
 	end
 
@@ -56,7 +57,7 @@ local function useUpdateChecker(isEnabled: boolean, widgetEnabled: boolean): Upd
 		end
 
 		task.spawn(function()
-			local info = fetchLatestRelease()
+			local info = fetchLatestReleaseAsync()
 			if isCancelled() then
 				return
 			end
@@ -75,7 +76,4 @@ local function useUpdateChecker(isEnabled: boolean, widgetEnabled: boolean): Upd
 	return update
 end
 
-return {
-	useUpdateChecker = useUpdateChecker,
-	currentVersion = Version,
-}
+return useUpdateChecker
