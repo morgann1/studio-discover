@@ -286,10 +286,12 @@ local function resolveRoots(
 		if onProgress then
 			onProgress(`Resolving {root.scope}/{root.name}@{root.version}...`)
 		end
+		log(`Resolving root {root.scope}/{root.name}@{root.version} (realm={rootRealm}, alias={root.alias})`)
 
 		local rootMeta = WallyAPI.metadata(root.scope, root.name)
 		if not rootMeta or not rootMeta.versions then
 			table.insert(failures, `{root.scope}/{root.name}: metadata unavailable`)
+			log(`  metadata unavailable for {root.scope}/{root.name}`)
 			continue
 		end
 
@@ -302,6 +304,7 @@ local function resolveRoots(
 		end
 		if not rootVersionData then
 			table.insert(failures, `{root.scope}/{root.name}@{root.version}: version not found`)
+			log(`  version {root.version} not found in metadata for {root.scope}/{root.name}`)
 			continue
 		end
 
@@ -332,14 +335,25 @@ local function resolveRoots(
 
 		for _, source in depSources do
 			for depAlias, depValue in source.deps do
-				local _, _, constraints = depValue:match("^([^@]+)@(.+)$")
-				if not constraints then
-					constraints = ""
+				local depPath, depConstraints = depValue:match("^([^@]+)@(.+)$")
+				if not depPath or not depConstraints then
+					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
+					log(`  could not parse root dep "{depValue}"`)
+					continue
 				end
+				local dependencyScope, dependencyName = depPath:match("^(.+)/(.+)$")
+				if not dependencyScope or not dependencyName then
+					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
+					log(`  could not parse root dep path "{depPath}"`)
+					continue
+				end
+				log(
+					`  queued {dependencyScope}/{dependencyName}@{depConstraints} (alias={depAlias}, realm={source.requestRealm})`
+				)
 				table.insert(queue, {
-					scope = depValue:match("^(.+)/") or "",
-					name = depValue:match("/([^@]+)") or "",
-					constraints = constraints,
+					scope = dependencyScope,
+					name = dependencyName,
+					constraints = depConstraints,
 					requestRealm = source.requestRealm,
 					originRealm = source.requestRealm,
 					requestedBy = rootPackageId,
@@ -389,9 +403,14 @@ local function resolveRoots(
 			onProgress(`Resolving {fullName}...`)
 		end
 
+		log(
+			`Resolving {fullName}@{req.constraints} (requestedBy={req.requestedBy}, realm={req.requestRealm}, alias={req.alias})`
+		)
+
 		local meta = WallyAPI.metadata(req.scope, req.name)
 		if not meta or not meta.versions then
 			table.insert(failures, `{fullName}: metadata unavailable`)
+			log(`  metadata unavailable for {fullName}`)
 			continue
 		end
 
@@ -401,6 +420,7 @@ local function resolveRoots(
 				table.insert(candidates, vd)
 			end
 		end
+		log(`  {#candidates} candidate(s) of {#meta.versions} total match "{req.constraints}"`)
 
 		table.sort(candidates, function(a, b)
 			local aId = formatPackageId(req.scope, req.name, a.package.version)
@@ -449,12 +469,14 @@ local function resolveRoots(
 
 		if not chosen then
 			table.insert(failures, `{fullName}: no compatible version for "{req.constraints}"`)
+			log(`  no compatible version for {fullName}@{req.constraints}`)
 			continue
 		end
 
 		local chosenVersion = chosen.package.version
 		local chosenRealm = promoteRealm(chosen.package.realm or "shared", req.originRealm)
 		local chosenPackageId = formatPackageId(req.scope, req.name, chosenVersion)
+		log(`  chose {fullName}@{chosenVersion} (realm={chosenRealm})`)
 
 		activate(req.scope, req.name, chosenVersion, chosenRealm, chosenPackageId)
 
@@ -965,6 +987,7 @@ local function applyResolved(
 		if onProgress then
 			onProgress(`Downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}...`)
 		end
+		log(`Downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}`)
 		local tree, errorMessage =
 			downloadAndExtract(resolvedPackage.scope, resolvedPackage.name, resolvedPackage.version)
 		if not tree then
@@ -977,6 +1000,7 @@ local function applyResolved(
 			)
 			continue
 		end
+		log(`  downloaded {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}`)
 
 		local moduleName = getModuleName(tree, resolvedPackage.name)
 		moduleNames[packageId] = moduleName

@@ -190,7 +190,12 @@ function WallyAPI.metadata(scope: string, name: string)
 end
 
 function WallyAPI.download(scope: string, name: string, version: string): (string?, string?)
-	return wallyFetch(`{backendUrl}/v1/package-contents/{scope}/{name}/{version}`)
+	local url = `{backendUrl}/v1/package-contents/{scope}/{name}/{version}`
+	local body, errorMessage = wallyFetch(url)
+	if not body then
+		return nil, `{errorMessage} ({url})`
+	end
+	return body, nil
 end
 
 return WallyAPI
