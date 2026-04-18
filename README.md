@@ -1,6 +1,14 @@
 <a name="top"></a>
-![Studio Discover](./media/github-banner-v1.jpg)
-[![language](https://img.shields.io/badge/language-Luau-3d5ef5)](https://luau.org/)
-[![platform](https://img.shields.io/badge/platform-Roblox%20Studio-00a2ff)](https://create.roblox.com/)
-[![release](https://img.shields.io/github/v/release/morgann1/studio-discover)](https://github.com/morgann1/studio-discover/releases/latest)
-[![last commit](https://img.shields.io/github/last-commit/morgann1/studio-discover)](https://github.com/morgann1/studio-discover/commits)
+![Studio Discover](./.github/assets/banner.jpg)
+[![GitHub Repository](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Community/GitHub/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
+[![GitHub Releases](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Community/GitHub/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
+[![Download](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Roblox-Styled/Original/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/Discover.rbxm)
+
+
+## 🚀 About
+
+[Wally](https://wally.run/) is the most popular package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a game creator who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package. Not everyone wants to make that switch.
+
+[studio-wally](https://github.com/fewkz/studio-wally) exists, but it hasn't been updated in over a year, [doesn't support the server realm](https://github.com/fewkz/studio-wally/issues/4), and depends on the [Rojo headless API](https://github.com/rojo-rbx/rojo/pull/639).
+
+Studio Discover is a pure-Luau alternative. It talks directly to the Wally registry over HTTP, handles both `shared` and `server` realms, re-exports package types through link modules, and writes everything into the DataModel. No external tools required. It aims to replicate what `wally install` and `wally-package-types` do, entirely from inside Roblox Studio.
