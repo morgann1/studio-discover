@@ -4,7 +4,11 @@
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
+[![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
 [![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
+
+[![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
+[![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
@@ -95,7 +99,11 @@ Then drag the generated `Discover.rbxm` into Roblox Studio, right-click the **Di
 
 ## 🤝 Feedback and Contributions
 
-TBD
+Issues and pull requests are welcome.
+
+- **Bugs and feature requests**: open an issue at [GitHub Issues](https://github.com/morgann1/studio-discover/issues).
+- **Pull requests**: before opening one, please file an issue describing the change so we can agree on direction. Run `lune run ci` locally before pushing. It mirrors what CI checks.
+- **Scope**: contributions that fit the project's goals (see [About](#-about)) are the easiest to land. Studio Discover is a solo project, so response times vary.
 
 ## 📃 License
 
