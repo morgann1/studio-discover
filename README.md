@@ -4,6 +4,17 @@
 [![GitHub Repository](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Community/GitHub/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
 [![GitHub Releases](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Community/GitHub/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 
+## Table of Contents
+- [Table of Contents](#table-of-contents)
+- [🚀 About](#-about)
+- [✨ What's New](#-whats-new)
+  - [Version 3.5 (Latest)](#version-35-latest)
+- [📝 How to Build](#-how-to-build)
+  - [Prerequisites](#prerequisites)
+  - [Build](#build)
+- [🤝 Feedback and Contributions](#-feedback-and-contributions)
+- [📃 License](#-license)
+
 ## 🚀 About
 
 [Wally](https://wally.run/) is the most popular package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a game creator who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package. Not everyone wants to make that switch.
@@ -33,8 +44,9 @@ Studio Discover is a pure-Luau alternative. It talks directly to the Wally regis
 
 ### Prerequisites
 
-1. [Rokit](https://github.com/rojo-rbx/rokit)
-2. [Lune](https://github.com/lune-org/lune)
+Please ensure that you have both [Rokit](https://github.com/rojo-rbx/rokit) and [Lune](https://github.com/lune-org/lune) installed.
+
+### Build
 
 To build the plugin, follow these steps:
 
@@ -62,3 +74,13 @@ Then drag the generated `Discover.rbxm` into Roblox Studio, right-click the **Di
 > `lune run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
 
 > If you plan to fork this or contribute, also run `lune run setup` — luau-lsp won't resolve things out of the box without it.
+
+## 🤝 Feedback and Contributions
+
+TBD
+
+## 📃 License
+
+TBD
+
+[Back to top](#top)
