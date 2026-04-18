@@ -1,13 +1,15 @@
 <a name="top"></a>
 ![Studio Discover](./.github/assets/banner.jpg)
 [![Download](./.github/assets/badges/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/Discover.rbxm)
-[![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
-[![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
+[![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
+[![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
+[![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [🚀 About](#-about)
+- [📸 Screenshots](#-screenshots)
 - [✨ What's New](#-whats-new)
   - [Version 3.5 (Latest)](#version-35-latest)
 - [📝 How to Build](#-how-to-build)
@@ -23,6 +25,21 @@
 [studio-wally](https://github.com/fewkz/studio-wally) exists, but it hasn't been updated in over a year, [doesn't support the server realm](https://github.com/fewkz/studio-wally/issues/4), and depends on the [experimental Rojo headless API](https://github.com/rojo-rbx/rojo/pull/639).
 
 Studio Discover is a pure-Luau alternative. It talks directly to the Wally registry over HTTP, handles both `shared` and `server` realms, re-exports package types through link modules, and writes everything into the DataModel. No external tools required. It does what `wally install` and `wally-package-types` do, entirely from inside Roblox Studio.
+
+## 📸 Screenshots
+
+<details>
+<summary>Click to expand</summary>
+
+<p align="center">
+  <img src="./.github/assets/screenshots/home.png" width="420" alt="Home" title="Home" />
+  <img src="./.github/assets/screenshots/search.png" width="420" alt="Search" title="Search" />
+  <br />
+  <img src="./.github/assets/screenshots/manager.png" width="420" alt="Manager" title="Manager" />
+  <img src="./.github/assets/screenshots/settings.png" width="420" alt="Settings" title="Settings" />
+</p>
+
+</details>
 
 ## ✨ What's New
 
