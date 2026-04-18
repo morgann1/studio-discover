@@ -81,6 +81,10 @@ TBD
 
 ## 📃 License
 
-TBD
+Studio Discover's own source is intended to be freely redistributable — read it, fork it, modify it, ship it. A formal `LICENSE` file isn't in the repo yet, but the intent is permissive (MIT or similar).
+
+The one wrinkle is [Foundation](https://github.com/Roblox/foundation), Roblox's UI library, which the built `Discover.rbxm` bundles at build time. Foundation is not open source, so redistributing the *built artifact* is subject to Roblox's terms with respect to Foundation's contents — not this repo's license. A proper `LICENSE` will be added once Foundation is either swapped out or its redistribution terms are confirmed.
+
+In the meantime: treat the source in this repo as "do whatever, but check Foundation's terms before redistributing the build".
 
 [Back to top](#top)
