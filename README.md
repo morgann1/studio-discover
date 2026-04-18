@@ -38,11 +38,22 @@ Studio Discover is a pure-Luau alternative. It talks directly to the Wally regis
 
 To build the plugin, follow these steps:
 
-```bash
+```shell
+# Open a terminal (Command Prompt or PowerShell for Windows, Terminal for macOS or Linux)
+
+# Clone the repository
 git clone https://github.com/morgann1/studio-discover.git
+
+# Navigate to the project directory
 cd studio-discover
+
+# Install the toolchain
 rokit install
+
+# Install wally packages, patch in the `Foundation` package.
 lune run install
+
+# Build the plugin
 lune run build
 ```
 
