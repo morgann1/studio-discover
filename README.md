@@ -1,8 +1,8 @@
 <a name="top"></a>
 ![Studio Discover](./.github/assets/banner.jpg)
+[![Download](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Roblox-Styled/Original/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/Discover.rbxm)
 [![GitHub Repository](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Community/GitHub/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
 [![GitHub Releases](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Community/GitHub/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
-[![Download](https://raw.githubusercontent.com/maneetoo/Roblox-OSS-Badges/main/Badges/Roblox-Styled/Original/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/Discover.rbxm)
 
 
 ## 🚀 About
