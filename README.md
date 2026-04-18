@@ -1,6 +1,8 @@
-<div align="center">
+<a name="top"></a>
 
-# 📦 Studio Discover
+![Studio Discover](./media/github-banner-v1.jpg)
+
+<div align="center">
 
 **A Roblox Studio plugin for browsing and installing Wally packages.**
 
@@ -47,7 +49,6 @@ You'll need [Rokit](https://github.com/rojo-rbx/rokit) and [Lune](https://github
 git clone https://github.com/morgann1/studio-discover.git
 cd studio-discover
 rokit install
-git config core.hooksPath .githooks
 lune run install
 lune run build
 ```
@@ -55,6 +56,8 @@ lune run build
 Then follow the same steps as above: drag `Discover.rbxm` into Studio and save it as a local plugin.
 
 > `lune run install` handles the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
+
+> If you plan to fork this or contribute, also run `lune run setup` — luau-lsp won't resolve things out of the box without it.
 
 ## Credits
 
