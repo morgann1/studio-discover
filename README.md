@@ -27,4 +27,4 @@ Studio Discover is a pure-Luau alternative. It talks directly to the Wally regis
 🔒 **Security**
 - **Anonymous-session guard**: The plugin refuses to mount when a Studio `userId` isn't available, so it never makes network calls on behalf of an unidentified user.
 
-> See 📋 [Release Notes](https://github.com/morgann1/studio-discover/releases/tag/v3.5.0) for full details, or [`CHANGELOG.md`](./CHANGELOG.md) for the complete history.
+> See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
