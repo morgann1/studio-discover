@@ -28,3 +28,26 @@ Studio Discover is a pure-Luau alternative. It talks directly to the Wally regis
 - **Anonymous-session guard**: The plugin refuses to mount when a Studio `userId` isn't available, so it never makes network calls on behalf of an unidentified user.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
+
+## 📝 How to Build
+
+### Prerequisites
+
+1. [Rokit](https://github.com/rojo-rbx/rokit)
+2. [Lune](https://github.com/lune-org/lune)
+
+To build the plugin, follow these steps:
+
+```bash
+git clone https://github.com/morgann1/studio-discover.git
+cd studio-discover
+rokit install
+lune run install
+lune run build
+```
+
+Then drag the generated `Discover.rbxm` into Roblox Studio, right-click the **Discover** folder in the Explorer, and pick **Save / Export > Save as Local Plugin**. A **Discover** button will appear in your toolbar.
+
+> `lune run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
+
+> If you plan to fork this or contribute, also run `lune run setup` — luau-lsp won't resolve things out of the box without it.
