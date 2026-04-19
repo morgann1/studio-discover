@@ -9,7 +9,10 @@ local Content = require(StudioDiscover.Source.Common.Content)
 local Screen = require(StudioDiscover.Source.Common.Screen)
 local Section = require(StudioDiscover.Source.Common.Section)
 local Version = require(StudioDiscover.Source.Util.Version)
+local compareSemver = require(StudioDiscover.Source.Util.compareSemver)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
+local useLatestVersion = require(StudioDiscover.Source.Api.useLatestVersion)
 
 local LinkRow = require(script.LinkRow)
 
@@ -24,6 +27,21 @@ local DESCRIPTION = "Studio Discover is a pure-Luau alternative to the Wally CLI
 	.. "and writes everything into the DataModel. No external toolchain required."
 
 local function AboutScreen()
+	local latest = useLatestVersion()
+
+	local updateLabel: string? = nil
+	if latest.version ~= nil then
+		local latestSv = parseSemver(latest.version)
+		local currentSv = parseSemver(Version)
+		if latestSv ~= nil and currentSv ~= nil and compareSemver(latestSv, currentSv) > 0 then
+			updateLabel = `v{latest.version} available`
+		else
+			updateLabel = "Up to date"
+		end
+	elseif latest.loading then
+		updateLabel = "Checking…"
+	end
+
 	local nextOrder = createNextOrder()
 	local nextHeaderOrder = createNextOrder()
 	local nextAboutOrder = createNextOrder()
@@ -63,6 +81,13 @@ local function AboutScreen()
 					url = Version,
 					LayoutOrder = nextAboutOrder(),
 				}),
+				Update = if updateLabel ~= nil
+					then e(LinkRow, {
+						label = "Update",
+						url = updateLabel,
+						LayoutOrder = nextAboutOrder(),
+					})
+					else nil,
 				License = e(LinkRow, {
 					label = "License",
 					url = "Permissive (see repository)",
