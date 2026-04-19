@@ -157,8 +157,13 @@ local function installAsync(scope: string, name: string, version: string, alias:
 	end
 	logger.info(`apply complete ({#applyFailures} non-fatal warning(s))`)
 
-	if recordingId ~= nil then
-		ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Commit)
+	local rootFailureMarker = `{scope}/{name}@{version}:`
+	local rootFailed = false
+	for _, failure in applyFailures do
+		if string.sub(failure, 1, #rootFailureMarker) == rootFailureMarker then
+			rootFailed = true
+			break
+		end
 	end
 
 	local allFailures: { string } = {}
@@ -167,6 +172,28 @@ local function installAsync(scope: string, name: string, version: string, alias:
 	end
 	for _, failure in applyFailures do
 		table.insert(allFailures, failure)
+	end
+
+	if rootFailed then
+		if recordingId ~= nil then
+			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
+		end
+		local message = `Failed to install {scope}/{name}@{version}`
+		logger.warn(`install failed: root package did not apply`)
+		setState({
+			status = "error",
+			message = message,
+			errors = allFailures,
+		})
+		return {
+			ok = false,
+			error = message,
+			failures = allFailures,
+		}
+	end
+
+	if recordingId ~= nil then
+		ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Commit)
 	end
 
 	logger.info(`install succeeded: {scope}/{name}@{version}`)
