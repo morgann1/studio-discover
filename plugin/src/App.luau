@@ -7,6 +7,7 @@ local React = require(StudioDiscover.Packages.React)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
 local AboutScreen = require(StudioDiscover.Source.Screens.AboutScreen)
+local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 local ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
 local DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
 local HomeScreen = require(StudioDiscover.Source.Screens.HomeScreen)
@@ -63,24 +64,28 @@ local function App(props: Props)
 	return e(ContextProviders, {
 		overlayGui = props.overlayGui :: GuiBase2d,
 	}, {
-		Root = e(View, {
-			tag = "size-full row",
+		CompactScope = e(CompactContext.Provider, {
+			value = isCompact,
 		}, {
-			Sidebar = e(Sidebar, {
-				LayoutOrder = nextOrder(),
-				compact = isCompact,
-			}),
-
-			Divider = e(Divider, {
-				orientation = Orientation.Vertical,
-				LayoutOrder = nextOrder(),
-			}),
-
-			Content = e(View, {
-				tag = "size-0-full grow",
-				LayoutOrder = nextOrder(),
+			Root = e(View, {
+				tag = "size-full row",
 			}, {
-				Screen = e(CurrentScreen),
+				Sidebar = e(Sidebar, {
+					LayoutOrder = nextOrder(),
+					compact = isCompact,
+				}),
+
+				Divider = e(Divider, {
+					orientation = Orientation.Vertical,
+					LayoutOrder = nextOrder(),
+				}),
+
+				Content = e(View, {
+					tag = "size-0-full grow",
+					LayoutOrder = nextOrder(),
+				}, {
+					Screen = e(CurrentScreen),
+				}),
 			}),
 		}),
 	})
