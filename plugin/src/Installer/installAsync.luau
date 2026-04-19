@@ -4,8 +4,11 @@ local ChangeHistoryService = game:GetService("ChangeHistoryService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
+local SettingsStore = require(StudioDiscover.Source.SettingsStore)
+
 local applyAsync = require(StudioDiscover.Source.Installer.applyAsync)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local formatName = require(StudioDiscover.Source.Util.formatName)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
 local lockfile = require(StudioDiscover.Source.Installer.lockfile)
 local packageId = require(StudioDiscover.Source.Installer.packageId)
@@ -75,12 +78,20 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		errors = {},
 	})
 
+	-- Format the top-level alias per the user's naming-convention setting so
+	-- `require(Packages.X)` matches their house style.
+	local settings = SettingsStore.get().getStorage()
+	local formattedAlias = formatName(alias, settings.namingConvention)
+	if formattedAlias ~= alias then
+		logger.info(`alias "{alias}" formatted to "{formattedAlias}" ({settings.namingConvention})`)
+	end
+
 	local root: RootRequest = {
 		scope = scope,
 		name = name,
 		version = version,
 		requestRealm = realm or "shared",
-		alias = alias,
+		alias = formattedAlias,
 	}
 
 	local roots: { RootRequest } = { root }
