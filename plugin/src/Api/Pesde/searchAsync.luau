@@ -4,12 +4,13 @@ local HttpService = game:GetService("HttpService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
+local buildUserAgent = require(StudioDiscover.Source.Api.buildUserAgent)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local types = require(StudioDiscover.Source.Api.types)
 
 local logger = createLogger.createLogger("api.pesdeSearch")
 
-local API_BASE = "https://registry.pesde.daimond113.com/v1"
+local API_BASE = "https://registry.Pesde.daimond113.com/v1"
 
 -- Studio can't run Lune/Luau-only packages, so non-Roblox targets are
 -- filtered out before any result leaves this module.
@@ -33,6 +34,9 @@ local function searchPesdeAsync(query: string): ({ types.PackageBrief }?, string
 		return HttpService:RequestAsync({
 			Url = url,
 			Method = "GET",
+			Headers = {
+				["X-Real-User-Agent"] = buildUserAgent(),
+			},
 		})
 	end)
 	if not success then

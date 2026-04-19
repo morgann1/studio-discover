@@ -12,7 +12,7 @@ local Version = require(StudioDiscover.Source.Util.Version)
 local compareSemver = require(StudioDiscover.Source.Util.compareSemver)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
-local useLatestVersion = require(StudioDiscover.Source.Api.useLatestVersion)
+local useLatestVersion = require(StudioDiscover.Source.Api.GitHub.useLatestVersion)
 
 local LinkRow = require(script.LinkRow)
 

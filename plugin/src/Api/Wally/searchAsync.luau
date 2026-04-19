@@ -5,7 +5,7 @@ local HttpService = game:GetService("HttpService")
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local cache = require(StudioDiscover.Source.Api.cache)
-local httpClient = require(StudioDiscover.Source.Api.httpClient)
+local httpClient = require(StudioDiscover.Source.Api.Wally.httpClient)
 local types = require(StudioDiscover.Source.Api.types)
 
 -- Matches the wally.run frontend convention: queries shorter than this skip

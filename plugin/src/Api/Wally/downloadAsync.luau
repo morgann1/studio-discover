@@ -4,7 +4,7 @@ local HttpService = game:GetService("HttpService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local httpClient = require(StudioDiscover.Source.Api.httpClient)
+local httpClient = require(StudioDiscover.Source.Api.Wally.httpClient)
 
 -- Fetches the zip archive bytes for a specific package version.
 -- Not cached: zip blobs are large and versions are immutable, so re-fetch

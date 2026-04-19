@@ -4,8 +4,8 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
-local searchPackagesAsync = require(StudioDiscover.Source.Api.searchPackagesAsync)
-local searchPesdeAsync = require(StudioDiscover.Source.Api.searchPesdeAsync)
+local searchPackagesAsync = require(StudioDiscover.Source.Api.Wally.searchAsync)
+local searchPesdeAsync = require(StudioDiscover.Source.Api.Pesde.searchAsync)
 local types = require(StudioDiscover.Source.Api.types)
 
 local DEBOUNCE_SECONDS = 0.25

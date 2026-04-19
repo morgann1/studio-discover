@@ -2,7 +2,7 @@
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local getPackageMetadataAsync = require(StudioDiscover.Source.Api.getPackageMetadataAsync)
+local getPackageMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
 
 local isDependencyValid = require(StudioDiscover.Source.Installer.isDependencyValid)
 local packageId = require(StudioDiscover.Source.Installer.packageId)

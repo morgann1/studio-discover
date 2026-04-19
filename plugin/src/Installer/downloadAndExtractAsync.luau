@@ -6,7 +6,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local zzlib = require(StudioDiscover.Packages.zzlib)
 
-local downloadPackageAsync = require(StudioDiscover.Source.Api.downloadPackageAsync)
+local downloadPackageAsync = require(StudioDiscover.Source.Api.Wally.downloadAsync)
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 

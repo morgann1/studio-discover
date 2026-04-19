@@ -5,7 +5,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local React = require(StudioDiscover.Packages.React)
 
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local getLatestReleaseAsync = require(StudioDiscover.Source.Api.getLatestReleaseAsync)
+local getLatestReleaseAsync = require(StudioDiscover.Source.Api.GitHub.getLatestReleaseAsync)
 
 export type LatestVersionState = {
 	loading: boolean,

@@ -4,7 +4,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
-local getPackageMetadataAsync = require(StudioDiscover.Source.Api.getPackageMetadataAsync)
+local getPackageMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
 
 local compareSemver = require(StudioDiscover.Source.Util.compareSemver)
 local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
