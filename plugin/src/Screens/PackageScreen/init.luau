@@ -6,6 +6,7 @@ local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 
 local Content = require(StudioDiscover.Source.Common.Content)
+local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
 local Screen = require(StudioDiscover.Source.Common.Screen)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
@@ -72,6 +73,7 @@ local function PackageScreen()
 	local requestedVersion = (screen.options.version :: string?) or ""
 
 	local state = usePackageMetadata(scope, name)
+	local installerState = Installer.useInstaller()
 	local selectedVersion, setSelectedVersion = React.useState("")
 
 	React.useEffect(function()
@@ -167,15 +169,27 @@ local function PackageScreen()
 			Versions = aboutRow("Versions", tostring(#metadata.versions), aboutOrder()),
 		}
 
+		local installRealm: "shared" | "server" = if pkg.realm == "server" then "server" else "shared"
+		local activeVersion = if selectedVersion ~= "" then selectedVersion else pkg.version
+		local onInstall = function()
+			task.spawn(function()
+				Installer.installAsync(scope, name, activeVersion, name, installRealm)
+			end)
+		end
+
 		body = e(Content, {}, {
 			Hero = e(Hero, {
 				scope = scope,
 				name = name,
 				authors = pkg.authors,
 				description = description,
-				selectedVersion = if selectedVersion ~= "" then selectedVersion else pkg.version,
+				selectedVersion = activeVersion,
 				versionItems = versionItems,
 				onVersionChanged = setSelectedVersion,
+				installStatus = installerState.status,
+				installMessage = installerState.message,
+				isInstallBlocked = pkg.realm == "dev",
+				onInstall = onInstall,
 				LayoutOrder = nextOrder(),
 			}),
 
