@@ -136,6 +136,36 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			logger.info(`replacing prior root {prior.scope}/{prior.name}@{prior.version} (same package)`)
 		end
 	end
+
+	-- Disambiguate a different package that formats to the same alias by
+	-- appending a numeric suffix, otherwise the second install would clobber
+	-- the first's top-level link under the same realm.
+	local baseAlias = newRoot.alias
+	local suffix = 2
+	while true do
+		local conflict = false
+		for _, prior in roots do
+			if prior.requestRealm == newRoot.requestRealm and prior.alias == newRoot.alias then
+				conflict = true
+				break
+			end
+		end
+		if not conflict then
+			break
+		end
+		newRoot = {
+			scope = newRoot.scope,
+			name = newRoot.name,
+			version = newRoot.version,
+			requestRealm = newRoot.requestRealm,
+			alias = `{baseAlias}{suffix}`,
+		}
+		suffix += 1
+	end
+	if newRoot.alias ~= baseAlias then
+		logger.warn(`alias "{baseAlias}" collided with an installed root; using "{newRoot.alias}" instead`)
+	end
+
 	table.insert(roots, newRoot)
 
 	local lockData = lockfile.load()
