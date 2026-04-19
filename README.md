@@ -40,12 +40,28 @@ Studio Discover is a pure-Luau alternative. It talks directly to the Wally regis
 <details>
 <summary>Click to expand</summary>
 
+**Expanded sidebar**
+
 <p align="center">
-  <img src="./.github/assets/screenshots/home.png" width="420" alt="Home" title="Home" />
-  <img src="./.github/assets/screenshots/search.png" width="420" alt="Search" title="Search" />
+  <img src="./.github/assets/screenshots/expanded/home.png" width="420" alt="Home" title="Home" />
+  <img src="./.github/assets/screenshots/expanded/installed.png" width="420" alt="Installed" title="Installed" />
   <br />
-  <img src="./.github/assets/screenshots/manager.png" width="420" alt="Manager" title="Manager" />
-  <img src="./.github/assets/screenshots/settings.png" width="420" alt="Settings" title="Settings" />
+  <img src="./.github/assets/screenshots/expanded/updates.png" width="420" alt="Updates" title="Updates" />
+  <img src="./.github/assets/screenshots/expanded/settings.png" width="420" alt="Settings" title="Settings" />
+  <br />
+  <img src="./.github/assets/screenshots/expanded/about.png" width="420" alt="About" title="About" />
+</p>
+
+**Collapsed sidebar**
+
+<p align="center">
+  <img src="./.github/assets/screenshots/collapsed/home.png" width="420" alt="Home (collapsed)" title="Home (collapsed)" />
+  <img src="./.github/assets/screenshots/collapsed/installed.png" width="420" alt="Installed (collapsed)" title="Installed (collapsed)" />
+  <br />
+  <img src="./.github/assets/screenshots/collapsed/updates.png" width="420" alt="Updates (collapsed)" title="Updates (collapsed)" />
+  <img src="./.github/assets/screenshots/collapsed/settings.png" width="420" alt="Settings (collapsed)" title="Settings (collapsed)" />
+  <br />
+  <img src="./.github/assets/screenshots/collapsed/about.png" width="420" alt="About (collapsed)" title="About (collapsed)" />
 </p>
 
 </details>
