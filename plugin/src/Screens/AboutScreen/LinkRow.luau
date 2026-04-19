@@ -9,6 +9,7 @@ local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
 local Text = Foundation.Text
 local View = Foundation.View
+local useTokens = Foundation.Hooks.useTokens
 
 local e = React.createElement
 
@@ -18,10 +19,15 @@ type Props = {
 	LayoutOrder: number?,
 }
 
--- Static label + URL pair. Plugin security can't trigger external browser
--- opens, so the URL is shown as plain text for the user to copy by hand.
+-- Plugins can't open external URLs and `CopyToClipboard` is locked to
+-- built-in plugins, so the URL cell uses a native TextBox with editing
+-- disabled — users can select and Ctrl+C the text manually.
 local function LinkRow(props: Props)
+	local tokens = useTokens()
 	local nextOrder = createNextOrder()
+
+	local typography = tokens.Typography.BodySmall
+	local foreground = tokens.Color.Content.Default
 
 	return e(View, {
 		tag = "size-full-0 auto-y row align-y-center gap-medium",
@@ -32,10 +38,26 @@ local function LinkRow(props: Props)
 			Text = `{props.label}:`,
 			LayoutOrder = nextOrder(),
 		}),
-		Url = e(Text, {
-			tag = "grow auto-y text-body-small content-default text-align-x-left text-truncate",
-			Text = props.url,
+		UrlCell = e(View, {
+			tag = "grow auto-y",
 			LayoutOrder = nextOrder(),
+		}, {
+			Box = e("TextBox", {
+				Text = props.url,
+				TextEditable = false,
+				ClearTextOnFocus = false,
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextColor3 = foreground.Color3,
+				TextTransparency = foreground.Transparency,
+				FontFace = typography.Font,
+				TextSize = typography.FontSize,
+				LineHeight = typography.LineHeight,
+				Size = UDim2.fromScale(1, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+			}),
 		}),
 	})
 end
