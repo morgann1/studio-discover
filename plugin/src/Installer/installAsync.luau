@@ -1,15 +1,12 @@
 --!strict
 
-local ChangeHistoryService = game:GetService("ChangeHistoryService")
-
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 
-local applyAsync = require(StudioDiscover.Source.Installer.applyAsync)
+local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
-local installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
 local lockfile = require(StudioDiscover.Source.Installer.lockfile)
 local packageId = require(StudioDiscover.Source.Installer.packageId)
@@ -31,24 +28,6 @@ type Realm = "shared" | "server"
 type RootRequest = types.RootRequest
 type InstallerState = types.InstallerState
 type InstallerTarget = types.InstallerTarget
-type InstalledRoot = types.InstalledRoot
-
--- Re-reads the top-level alias links from disk and publishes them on the
--- installed-roots atom so every `useInstalledRoots()` consumer repaints.
-local function refreshInstalledRoots()
-	local roots = snapshotRoots()
-	local installed: { InstalledRoot } = {}
-	for _, root in roots do
-		table.insert(installed, {
-			scope = root.scope,
-			name = root.name,
-			version = root.version,
-			realm = root.requestRealm,
-			alias = root.alias,
-		})
-	end
-	installedRootsAtom(installed)
-end
 
 export type InstallResult = {
 	ok: boolean,
@@ -56,11 +35,10 @@ export type InstallResult = {
 	failures: { string },
 }
 
--- Installs a single package as a new root into the project. Currently
--- phase (a): add-only — no snapshot of prior roots yet, no re-resolve of
--- sibling packages. Subsequent installs overwrite the root set with just
--- the new package. Multi-package support lands when we wire install into a
--- project manifest.
+-- Adds a package as a new root, merging it with any prior roots snapshotted
+-- from the packages folders. The resolve/apply pipeline handles dedup for
+-- repeated installs of the same `(realm, scope, name)` and keeps unchanged
+-- roots' already-downloaded `_Index` entries in place.
 local function installAsync(scope: string, name: string, version: string, alias: string, realm: Realm?): InstallResult
 	logger.info(`install {scope}/{name}@{version} alias={alias} realm={realm or "shared"}`)
 
@@ -174,71 +152,39 @@ local function installAsync(scope: string, name: string, version: string, alias:
 
 	logger.info(`resolve complete: {countPairs(resolved)} package(s) activated`)
 
-	-- Wrap DataModel mutations in a ChangeHistory recording so users can
-	-- Ctrl+Z the entire install as one step. Bail out of the waypoint on
-	-- error so the partial state doesn't land on the undo stack.
-	local recordingId = ChangeHistoryService:TryBeginRecording(`Install {scope}/{name}@{version}`)
-	if recordingId == nil then
-		logger.warn("could not begin ChangeHistory recording; install will not be undoable")
+	-- Veto the commit when the package we set out to install is itself in
+	-- `applyFailures`, so a botched download doesn't leave a "successful"
+	-- install on the undo stack.
+	local rootFailureMarker = `{scope}/{name}@{version}:`
+	local decideCommit = function(applyFailures: { string }): boolean
+		for _, failure in applyFailures do
+			if string.sub(failure, 1, #rootFailureMarker) == rootFailureMarker then
+				return false
+			end
+		end
+		return true
 	end
 
 	logger.info("apply starting")
-	local applySuccess, applyOutcome = pcall(function()
-		local failures = applyAsync(resolved, rootAliases, progress)
-		lockfile.save(resolved)
-		return failures
-	end)
-
-	if not applySuccess then
-		logger.error(`apply threw: {applyOutcome}`)
-		if recordingId ~= nil then
-			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
-		end
-		local message = `Install failed: {applyOutcome}`
-		setState({
-			status = "error",
-			message = message,
-			errors = resolutionFailures,
-			target = target,
-		})
-		return {
-			ok = false,
-			error = message,
-			failures = resolutionFailures,
-		}
-	end
-
-	local applyFailures: { string } = applyOutcome :: { string }
-	if #applyFailures > 0 then
-		for _, failure in applyFailures do
-			logger.warn(`apply failure: {failure}`)
-		end
-	end
-	logger.info(`apply complete ({#applyFailures} non-fatal warning(s))`)
-
-	local rootFailureMarker = `{scope}/{name}@{version}:`
-	local rootFailed = false
-	for _, failure in applyFailures do
-		if string.sub(failure, 1, #rootFailureMarker) == rootFailureMarker then
-			rootFailed = true
-			break
-		end
-	end
+	local applyResult =
+		applyRootsAsync(resolved, rootAliases, `Install {scope}/{name}@{version}`, progress, decideCommit)
 
 	local allFailures: { string } = {}
 	for _, failure in resolutionFailures do
 		table.insert(allFailures, failure)
 	end
-	for _, failure in applyFailures do
+	for _, failure in applyResult.failures do
 		table.insert(allFailures, failure)
 	end
 
-	if rootFailed then
-		if recordingId ~= nil then
-			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
+	if not applyResult.ok then
+		local message = applyResult.error or `Failed to install {scope}/{name}@{version}`
+		if applyResult.error == "Root package did not apply" then
+			message = `Failed to install {scope}/{name}@{version}`
+			logger.warn(`install failed: root package did not apply`)
+		else
+			message = `Install failed: {message}`
 		end
-		local message = `Failed to install {scope}/{name}@{version}`
-		logger.warn(`install failed: root package did not apply`)
 		setState({
 			status = "error",
 			message = message,
@@ -252,11 +198,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		}
 	end
 
-	if recordingId ~= nil then
-		ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Commit)
-	end
-
-	refreshInstalledRoots()
+	logger.info(`apply complete ({#applyResult.failures} non-fatal warning(s))`)
 	logger.info(`install succeeded: {scope}/{name}@{version}`)
 
 	setState({
