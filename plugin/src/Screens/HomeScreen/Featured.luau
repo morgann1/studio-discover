@@ -6,24 +6,19 @@ local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 
 local Content = require(StudioDiscover.Source.Common.Content)
-local useSearchPackages = require(StudioDiscover.Source.Api.useSearchPackages)
+local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
 local PackageCard = require(script.Parent.PackageCard)
+local useFeatured = require(script.Parent.useFeatured)
 
-local Empty = Foundation.Empty
 local Loading = Foundation.Loading
 local Text = Foundation.Text
 local View = Foundation.View
 
 local e = React.createElement
 
-type Props = {
-	query: string,
-	state: useSearchPackages.SearchState,
-}
-
-local function SearchResults(props: Props)
-	local state = props.state
+local function Featured()
+	local state = useFeatured()
 
 	if state.loading then
 		return e(View, {
@@ -33,40 +28,37 @@ local function SearchResults(props: Props)
 		})
 	end
 
-	if state.error ~= nil then
+	if #state.packages == 0 then
 		return e(View, {
 			tag = "size-full align-x-center align-y-center padding-large",
 		}, {
 			Message = e(Text, {
 				tag = "auto-xy text-body-medium content-muted",
-				Text = `Couldn't load results: {state.error}`,
+				Text = "Couldn't load featured packages.",
 			}),
 		})
 	end
 
-	local data = state.data
-	if data == nil or #data == 0 then
-		return e(View, {
-			tag = "size-full align-x-center align-y-center",
-		}, {
-			EmptyState = e(Empty, {
-				text = `No packages matching "{props.query}"`,
-			}),
-		})
-	end
+	local nextOrder = createNextOrder()
+	local children: { [string]: any } = {}
 
-	local cards: { [string]: any } = {}
-	for i, pkg in data do
-		cards[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
+	children.Heading = e(Text, {
+		tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left",
+		Text = "Featured",
+		LayoutOrder = nextOrder(),
+	})
+
+	for _, pkg in state.packages do
+		children[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
 			scope = pkg.scope,
 			name = pkg.name,
 			description = pkg.description,
-			latestVersion = pkg.versions[1],
-			LayoutOrder = i,
+			latestVersion = pkg.latestVersion,
+			LayoutOrder = nextOrder(),
 		})
 	end
 
-	return e(Content, {}, cards)
+	return e(Content, {}, children)
 end
 
-return SearchResults
+return Featured
