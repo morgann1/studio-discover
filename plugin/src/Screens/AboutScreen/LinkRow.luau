@@ -21,6 +21,18 @@ type Props = {
 
 -- Native TextBox (not Foundation.Text) so users can select and Ctrl+C the
 -- URL. Plugins can't open browsers and `CopyToClipboard` is built-in only.
+-- `Typography.*.Font` is either an EnumItem, a FontFaceTable, or a Font
+-- binding. TextBox.FontFace only accepts a Font, so we normalize here.
+local function resolveFont(fontProp: any): Font
+	if typeof(fontProp) == "EnumItem" then
+		return Font.fromEnum(fontProp :: Enum.Font)
+	end
+	if typeof(fontProp) == "table" then
+		return Font.new(fontProp.Family, fontProp.Weight, fontProp.Style)
+	end
+	return fontProp
+end
+
 local function LinkRow(props: Props)
 	local tokens = useTokens()
 	local nextOrder = createNextOrder()
@@ -50,7 +62,7 @@ local function LinkRow(props: Props)
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextColor3 = foreground.Color3,
 				TextTransparency = foreground.Transparency,
-				FontFace = typography.Font,
+				FontFace = resolveFont(typography.Font),
 				TextSize = typography.FontSize,
 				LineHeight = typography.LineHeight,
 				Size = UDim2.fromScale(1, 0),
