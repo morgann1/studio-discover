@@ -5,6 +5,12 @@
 -- lose type information — autocomplete and Luau type-flow break.
 -- Ported from wally-package-types; known edge cases tracked in issue #14.
 
+local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+
+local createLogger = require(StudioDiscover.Source.Util.createLogger)
+
+local logger = createLogger.createLogger("installer.processTypes")
+
 local BUILTIN_TYPES: { [string]: boolean } = {
 	["any"] = true,
 	["boolean"] = true,
@@ -186,16 +192,19 @@ end
 local function processLink(linkModule: ModuleScript): boolean
 	local prefix, linkPackageId, moduleName = parseLinkRequire(linkModule.Source)
 	if prefix == nil or linkPackageId == nil or moduleName == nil then
+		logger.debug(`skip "{linkModule.Name}": source does not match link pattern`)
 		return false
 	end
 
 	local target = resolveLink(linkModule)
 	if target == nil then
+		logger.debug(`skip "{linkModule.Name}": could not resolve target {linkPackageId}.{moduleName}`)
 		return false
 	end
 
 	local exported = extractExportedTypes(target.Source)
 	if #exported == 0 then
+		logger.debug(`skip "{linkModule.Name}": target {linkPackageId}.{moduleName} has no exported types`)
 		return false
 	end
 
@@ -229,6 +238,7 @@ local function processLink(linkModule: ModuleScript): boolean
 
 	table.insert(lines, "return REQUIRED_MODULE")
 	linkModule.Source = table.concat(lines, "\n")
+	logger.debug(`rewrote "{linkModule.Name}" with {#exported} exported type(s) from {linkPackageId}.{moduleName}`)
 	return true
 end
 

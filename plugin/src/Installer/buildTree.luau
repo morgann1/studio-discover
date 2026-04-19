@@ -3,6 +3,9 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local classifyFile = require(StudioDiscover.Source.Installer.classifyFile)
+local createLogger = require(StudioDiscover.Source.Util.createLogger)
+
+local logger = createLogger.createLogger("installer.buildTree")
 
 export type Entry = {
 	path: string,
@@ -23,8 +26,13 @@ end
 -- Returns either a Folder or a ModuleScript depending on whether the root
 -- itself had an `init` file.
 local function buildTree(entries: { Entry }, packageName: string): Instance
+	logger.debug(`building tree for "{packageName}" ({#entries} entries)`)
 	local root: any = Instance.new("Folder")
 	root.Name = packageName
+
+	local skipped = 0
+	local moduleCount = 0
+	local initPromotions = 0
 
 	-- Process non-init entries first so subsequent init promotions have
 	-- siblings to move.
@@ -40,6 +48,7 @@ local function buildTree(entries: { Entry }, packageName: string): Instance
 	for _, entry in entries do
 		local className = classifyFile(entry.path)
 		if className == "skip" then
+			skipped += 1
 			continue
 		end
 
@@ -87,15 +96,21 @@ local function buildTree(entries: { Entry }, packageName: string): Instance
 					end
 					parent:Destroy()
 				end
+				initPromotions += 1
+				moduleCount += 1
 			end
 		else
 			local inst: any = Instance.new(className :: any)
 			inst.Name = instanceName
 			inst.Source = entry.content
 			inst.Parent = parent
+			moduleCount += 1
 		end
 	end
 
+	logger.debug(
+		`built "{packageName}" tree: {moduleCount} module(s), {initPromotions} init promotion(s), {skipped} skipped`
+	)
 	return root
 end
 

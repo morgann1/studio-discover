@@ -1,5 +1,11 @@
 --!strict
 
+local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+
+local createLogger = require(StudioDiscover.Source.Util.createLogger)
+
+local logger = createLogger.createLogger("installer.fileFilter")
+
 local DEFAULT_EXCLUDE: { string } = {
 	".*",
 	"wally.lock",
@@ -74,11 +80,22 @@ local function buildFileFilter(wallyToml: string?): (string) -> boolean
 		end
 	end
 
+	if include ~= nil then
+		logger.debug(`using include list ({#include} pattern(s))`)
+	else
+		logger.debug(`using exclude list ({#exclude} pattern(s))`)
+	end
+
 	return function(path: string): boolean
 		if include ~= nil and #include > 0 then
-			return matchesAnyGlob(path, include)
+			local keep = matchesAnyGlob(path, include)
+			if not keep then
+				logger.debug(`drop "{path}" (not in include)`)
+			end
+			return keep
 		end
 		if matchesAnyGlob(path, exclude) then
+			logger.debug(`drop "{path}" (matches exclude)`)
 			return false
 		end
 		return true
