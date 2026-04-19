@@ -9,6 +9,7 @@ local Content = require(StudioDiscover.Source.Common.Content)
 local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
 local Screen = require(StudioDiscover.Source.Common.Screen)
+local Section = require(StudioDiscover.Source.Common.Section)
 local capitalize = require(StudioDiscover.Source.Util.capitalize)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local types = require(StudioDiscover.Source.Api.types)
@@ -16,7 +17,6 @@ local usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
 
 local Dependencies = require(script.Dependencies)
 local Hero = require(script.Hero)
-local Section = require(script.Section)
 
 local Loading = Foundation.Loading
 local Text = Foundation.Text
