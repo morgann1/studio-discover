@@ -68,7 +68,7 @@ local function PackageScreen()
 
 	local state = usePackageMetadata(scope, name)
 	local installerState = Installer.useInstaller()
-	local installedRoots = Installer.useInstalledRoots()
+	local installedRoots = Installer.useInstalledRoots().roots
 	local selectedVersion, setSelectedVersion = React.useState("")
 
 	React.useEffect(function()

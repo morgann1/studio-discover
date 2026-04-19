@@ -32,10 +32,15 @@ local EMPTY: UpdatesState = { updates = {}, loading = false }
 -- Fetches are sequential so the 1-RPS Wally rate limiter isn't starved;
 -- `getPackageMetadataAsync` caches, so repeat renders don't re-hit the API.
 local function useUpdates(): UpdatesState
-	local installedRoots = useInstalledRoots()
+	local installedState = useInstalledRoots()
+	local installedRoots = installedState.roots
 	local state: UpdatesState, setState = React.useState(EMPTY)
 
 	React.useEffect(function(): (() -> ())?
+		if installedState.loading then
+			setState({ updates = {}, loading = true })
+			return nil
+		end
 		if #installedRoots == 0 then
 			setState(EMPTY)
 			return nil

@@ -13,15 +13,23 @@ local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local Row = require(script.Row)
 
 local Empty = Foundation.Empty
+local Loading = Foundation.Loading
 local View = Foundation.View
 
 local e = React.createElement
 
 local function ManageScreen()
-	local installedRoots = Installer.useInstalledRoots()
+	local installedState = Installer.useInstalledRoots()
+	local installedRoots = installedState.roots
 
 	local body: React.ReactNode
-	if #installedRoots == 0 then
+	if installedState.loading then
+		body = e(View, {
+			tag = "size-full align-x-center align-y-center",
+		}, {
+			Spinner = e(Loading, {}),
+		})
+	elseif #installedRoots == 0 then
 		body = e(View, {
 			tag = "size-full align-x-center align-y-center",
 		}, {

@@ -11,7 +11,12 @@ local types = require(StudioDiscover.Source.Installer.types)
 
 type InstalledRoot = types.InstalledRoot
 
-local function useInstalledRoots(): { InstalledRoot }
+export type InstalledRootsState = {
+	roots: { InstalledRoot },
+	loading: boolean,
+}
+
+local function useInstalledRoots(): InstalledRootsState
 	React.useEffect(function()
 		if installedRootsAtom() ~= nil then
 			return
@@ -20,7 +25,10 @@ local function useInstalledRoots(): { InstalledRoot }
 	end, {})
 
 	local value = ReactCharm.useAtom(installedRootsAtom)
-	return value or {}
+	if value == nil then
+		return { roots = {}, loading = true }
+	end
+	return { roots = value, loading = false }
 end
 
 return useInstalledRoots
