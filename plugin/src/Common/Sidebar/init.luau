@@ -69,6 +69,15 @@ local function Sidebar(props: Props)
 		end
 	end, { searchExpanded })
 
+	-- Typing while on another screen pulls the user back to Home so results
+	-- render. Only searchText is in deps — navigation changes shouldn't loop
+	-- back into a redirect.
+	React.useEffect(function()
+		if searchText ~= "" and current.name ~= "Home" then
+			Navigation.resetScreen("Home")
+		end
+	end, { searchText })
+
 	local onSearchIconActivated = React.useCallback(function()
 		setSearchExpanded(true)
 	end, {})
