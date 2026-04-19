@@ -31,8 +31,8 @@ jobs:
       - name: 📦 Install packages
         run: lune run install
 
-      - name: 🏗️ Build Discover.rbxm
-        run: rojo build plugin/default.project.json -o Discover.rbxm
+      - name: 🏗️ Build StudioDiscover.rbxm
+        run: rojo build plugin/default.project.json -o StudioDiscover.rbxm
 
       - name: 🔗 Build commits link
         id: commits
@@ -54,5 +54,5 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          files: Discover.rbxm
+          files: StudioDiscover.rbxm
           body: ${{ steps.commits.outputs.body }}
