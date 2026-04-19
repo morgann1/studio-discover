@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-04-19
+
 ### ✨ New
 - Installed page lists every top-level package with a Remove action that also drops orphaned dependencies.
 - Updates page lists packages with a newer release, with per-row and Update-All actions.
+- Home page now shows a curated Featured list instead of a blank placeholder.
 - Sidebar badges the Updates item with the pending count.
 - Display Names setting overrides the auto-formatted alias per package name (scope-agnostic).
 - About page shows version, license, links, and a release-check row when Check for Updates is on.
@@ -27,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wally `/package-contents` requests now send the `Wally-Version` header required by the registry.
 - Uninstall and update surface errors inline and reset the row action instead of sticking in a progress state.
 - Long search-result titles and descriptions wrap instead of overflowing the dock widget.
+- About page URLs render without the `FontFace` property error on older Foundation builds.
 
 ## [3.5.0] - 2026-04-17
 

@@ -20,7 +20,7 @@
 - [🚀 About](#-about)
 - [📸 Screenshots](#-screenshots)
 - [✨ What's New](#-whats-new)
-  - [Version 3.5 (Latest)](#version-35-latest)
+  - [Version 3.6 (Latest)](#version-36-latest)
 - [📝 How to Build](#-how-to-build)
   - [Prerequisites](#prerequisites)
   - [Build](#build)
@@ -68,18 +68,27 @@ Studio Discover is a pure-Luau alternative. It talks directly to the Wally regis
 
 ## ✨ What's New
 
-### Version 3.5 (Latest)
+### Version 3.6 (Latest)
 
-🚨 **Breaking Changes**
-- **"Backend URL" setting removed**: A Cloudflare Worker proxy was briefly added and then rolled back before this release. Any Backend URL you set is now ignored.
+✨ **New**
+- **Installed page**: lists every top-level package with a Remove action that also drops orphaned dependencies.
+- **Updates page**: lists packages with a newer release and offers per-row and "Update All" actions.
+- **Home page**: opens on a curated Featured list instead of a blank placeholder.
+- **Display Names setting**: override the auto-formatted alias per package name (scope-agnostic).
+- **About page**: version, license, links, credits, and an optional release-check row.
+- **Progress-bar buttons**: Install, Remove, and Update morph into an indeterminate progress bar while the operation runs.
 
 ✏️ **Improvements**
-- **Plugin renamed to "Studio Discover"**: Both the plugin title and the repo moved off the single-word "Discover" name to avoid naming collisions.
-- **Direct Wally API calls**: The plugin now talks to `api.wally.run` directly with an `X-Real-User-Agent` header. UpliftGames confirmed direct Studio requests are fine, so the proxy is gone.
-- **Wording refresh**: The plugin UI and README were rewritten to speak to game creators rather than pure developers.
+- **Concurrent-op mutex**: install, uninstall, and update can no longer race on the `_Index` or the lockfile.
+- **Prior roots preserved**: a new install merges with your existing packages instead of wiping them. Re-installing the same `(realm, scope, name)` swaps version or alias in place, and formatted-alias collisions disambiguate with a numeric suffix.
+- **Install state persists**: the Install button reads the packages folder, not just the transient installer atom, so a package you already installed still shows as Installed after reopening Studio.
+- **Studio user id in requests**: `X-Real-User-Agent` now identifies the signed-in Studio user, and the plugin skips init entirely when no user is signed in.
 
-🔒 **Security**
-- **Anonymous-session guard**: The plugin won't load without a signed-in Studio user, so it can't make network calls on behalf of an unidentified session.
+🛠 **Fixes**
+- Root-package apply failures cancel the ChangeHistory waypoint so a botched install doesn't land on the undo stack.
+- Wally `/package-contents` requests now send the `Wally-Version` header required by the registry.
+- Uninstall and update surface errors inline and reset the row action instead of sticking in a progress state.
+- Long search-result titles and descriptions wrap instead of overflowing the dock widget.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
