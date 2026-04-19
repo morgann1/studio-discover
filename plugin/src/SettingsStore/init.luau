@@ -12,9 +12,15 @@ local createPluginSettingsStore = require(StudioDiscover.Source.Plugin.createPlu
 export type NamingConvention = "Original" | "PascalCase" | "camelCase" | "snake_case" | "kebab-case"
 export type SidebarMode = "Auto" | "Expanded" | "Compact"
 
+export type DisplayNameRule = {
+	name: string,
+	displayName: string,
+}
+
 export type SettingsState = {
 	namingConvention: NamingConvention,
 	checkForUpdates: boolean,
+	displayNames: { DisplayNameRule },
 	reduceMotion: boolean,
 	sidebarMode: SidebarMode,
 	verboseLogging: boolean,
@@ -23,6 +29,7 @@ export type SettingsState = {
 local DEFAULTS: SettingsState = table.freeze({
 	namingConvention = "Original" :: NamingConvention,
 	checkForUpdates = true,
+	displayNames = table.freeze({}) :: { DisplayNameRule },
 	reduceMotion = false,
 	sidebarMode = "Auto" :: SidebarMode,
 	verboseLogging = false,
@@ -31,6 +38,10 @@ local DEFAULTS: SettingsState = table.freeze({
 local VALIDATORS = {
 	namingConvention = t.literal("Original", "PascalCase", "camelCase", "snake_case", "kebab-case"),
 	checkForUpdates = t.boolean,
+	displayNames = t.array(t.strictInterface({
+		name = t.string,
+		displayName = t.string,
+	})),
 	reduceMotion = t.boolean,
 	sidebarMode = t.literal("Auto", "Expanded", "Compact"),
 	verboseLogging = t.boolean,

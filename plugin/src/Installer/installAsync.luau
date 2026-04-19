@@ -86,12 +86,26 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		target = target,
 	})
 
-	-- Format the top-level alias per the user's naming-convention setting so
-	-- `require(Packages.X)` matches their house style.
+	-- Per-package override wins over the naming-convention formatter; the
+	-- Display Names settings page lets users pin a specific alias for a given
+	-- package name (scope-agnostic) regardless of the global convention.
 	local settings = SettingsStore.get().getStorage()
-	local formattedAlias = formatName(alias, settings.namingConvention)
-	if formattedAlias ~= alias then
-		logger.info(`alias "{alias}" formatted to "{formattedAlias}" ({settings.namingConvention})`)
+	local override: string? = nil
+	for _, rule in settings.displayNames do
+		if rule.name == name and rule.displayName ~= "" then
+			override = rule.displayName
+			break
+		end
+	end
+	local formattedAlias: string
+	if override ~= nil then
+		formattedAlias = override
+		logger.info(`alias "{alias}" overridden to "{formattedAlias}" (display-name rule)`)
+	else
+		formattedAlias = formatName(alias, settings.namingConvention)
+		if formattedAlias ~= alias then
+			logger.info(`alias "{alias}" formatted to "{formattedAlias}" ({settings.namingConvention})`)
+		end
 	end
 
 	local newRoot: RootRequest = {
