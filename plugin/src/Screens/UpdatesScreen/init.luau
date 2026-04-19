@@ -24,7 +24,9 @@ local e = React.createElement
 
 local function UpdatesScreen()
 	local state = Installer.useUpdates()
+	local isBusy = Installer.useIsBusy()
 	local isUpdatingAll, setIsUpdatingAll = React.useState(false)
+	local errorText: string?, setErrorText = React.useState(nil :: string?)
 	local mountedRef = React.useRef(true)
 
 	React.useEffect(function()
@@ -47,10 +49,15 @@ local function UpdatesScreen()
 			})
 		end
 		setIsUpdatingAll(true)
+		setErrorText(nil)
 		task.spawn(function()
-			Installer.updateAllAsync(payload)
-			if mountedRef.current then
-				setIsUpdatingAll(false)
+			local result = Installer.updateAllAsync(payload)
+			if not mountedRef.current then
+				return
+			end
+			setIsUpdatingAll(false)
+			if not result.ok then
+				setErrorText(result.error or "Update failed")
 			end
 		end)
 	end, { state.updates } :: { any })
@@ -86,10 +93,18 @@ local function UpdatesScreen()
 				text = if isUpdatingAll then "Updating…" else "Update All",
 				variant = ButtonVariant.Emphasis,
 				size = InputSize.Medium,
-				isDisabled = isUpdatingAll,
+				isDisabled = isBusy,
 				onActivated = onUpdateAll,
 			}),
 		})
+
+		if errorText ~= nil then
+			children.Error = e(Text, {
+				tag = "size-full-0 auto-y text-body-small content-alert text-align-x-left text-wrap",
+				Text = errorText,
+				LayoutOrder = nextOrder(),
+			})
+		end
 
 		for _, entry in state.updates do
 			local key = `{entry.realm}::{entry.scope}/{entry.name}`
