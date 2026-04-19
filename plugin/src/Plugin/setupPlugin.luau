@@ -1,10 +1,14 @@
 --!strict
 
 local RunService = game:GetService("RunService")
+local StudioService = game:GetService("StudioService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
+local createLogger = require(StudioDiscover.Source.Util.createLogger)
+
+local logger = createLogger.createLogger("plugin.bootstrap")
 
 local LIGHT_ICON = "rbxassetid://122071679257586"
 local DARK_ICON = "rbxassetid://125842588490194"
@@ -19,6 +23,14 @@ end
 
 local function setupPlugin(plugin: Plugin): ()
 	if RunService:IsRunning() then
+		return
+	end
+
+	-- Wally requires a signed-in Studio session to register API usage against
+	-- a real account. Running without one is likely offline Studio or a test
+	-- harness; either way the plugin has nothing useful to do.
+	if StudioService:GetUserId() == 0 then
+		logger.warn("Studio is not signed in (GetUserId == 0); Discover will not initialize")
 		return
 	end
 
