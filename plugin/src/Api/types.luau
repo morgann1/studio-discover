@@ -3,7 +3,7 @@
 export type WallyPackageBrief = {
 	scope: string,
 	name: string,
-	description: string,
+	description: string?,
 	versions: { string },
 }
 
@@ -11,8 +11,8 @@ export type WallyDependencyMap = { [string]: string }
 
 export type WallyPackageInfo = {
 	authors: { string },
-	description: string,
-	license: string,
+	description: string?,
+	license: string?,
 	name: string,
 	realm: string,
 	registry: string,
@@ -21,7 +21,7 @@ export type WallyPackageInfo = {
 	repository: string?,
 }
 
-export type WallyPackageMetadata = {
+export type WallyPackageVersion = {
 	package: WallyPackageInfo,
 	place: {
 		["shared-packages"]: string?,
@@ -30,6 +30,12 @@ export type WallyPackageMetadata = {
 	dependencies: WallyDependencyMap,
 	["server-dependencies"]: WallyDependencyMap,
 	["dev-dependencies"]: WallyDependencyMap,
+}
+
+-- The `/package-metadata/{scope}/{name}` endpoint returns every published
+-- version in `versions`, latest first.
+export type WallyPackageMetadata = {
+	versions: { WallyPackageVersion },
 }
 
 return nil
