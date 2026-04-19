@@ -9,10 +9,12 @@ local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local applyAsync = require(StudioDiscover.Source.Installer.applyAsync)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
+local installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
 local lockfile = require(StudioDiscover.Source.Installer.lockfile)
 local packageId = require(StudioDiscover.Source.Installer.packageId)
 local resolveAsync = require(StudioDiscover.Source.Installer.resolveAsync)
+local snapshotRoots = require(StudioDiscover.Source.Installer.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("installer.install")
@@ -28,6 +30,25 @@ end
 type Realm = "shared" | "server"
 type RootRequest = types.RootRequest
 type InstallerState = types.InstallerState
+type InstallerTarget = types.InstallerTarget
+type InstalledRoot = types.InstalledRoot
+
+-- Re-reads the top-level alias links from disk and publishes them on the
+-- installed-roots atom so every `useInstalledRoots()` consumer repaints.
+local function refreshInstalledRoots()
+	local roots = snapshotRoots()
+	local installed: { InstalledRoot } = {}
+	for _, root in roots do
+		table.insert(installed, {
+			scope = root.scope,
+			name = root.name,
+			version = root.version,
+			realm = root.requestRealm,
+			alias = root.alias,
+		})
+	end
+	installedRootsAtom(installed)
+end
 
 export type InstallResult = {
 	ok: boolean,
@@ -43,6 +64,12 @@ export type InstallResult = {
 local function installAsync(scope: string, name: string, version: string, alias: string, realm: Realm?): InstallResult
 	logger.info(`install {scope}/{name}@{version} alias={alias} realm={realm or "shared"}`)
 
+	local target: InstallerTarget = {
+		scope = scope,
+		name = name,
+		version = version,
+	}
+
 	local function setState(next: InstallerState)
 		installerAtom(next)
 	end
@@ -54,6 +81,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			status = current.status,
 			message = message,
 			errors = current.errors,
+			target = target,
 		})
 	end
 
@@ -68,6 +96,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			status = "error",
 			message = result.error,
 			errors = {},
+			target = target,
 		})
 		return result
 	end
@@ -76,6 +105,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		status = "running",
 		message = "Resolving dependencies...",
 		errors = {},
+		target = target,
 	})
 
 	-- Format the top-level alias per the user's naming-convention setting so
@@ -86,7 +116,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		logger.info(`alias "{alias}" formatted to "{formattedAlias}" ({settings.namingConvention})`)
 	end
 
-	local root: RootRequest = {
+	local newRoot: RootRequest = {
 		scope = scope,
 		name = name,
 		version = version,
@@ -94,7 +124,23 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		alias = formattedAlias,
 	}
 
-	local roots: { RootRequest } = { root }
+	-- Snapshot prior top-level roots so this install merges with them rather
+	-- than wiping everything. Replace when the same package (realm+scope+name)
+	-- is being re-installed — covers alias renames from convention changes.
+	local priorRoots = snapshotRoots()
+	local roots: { RootRequest } = {}
+	for _, prior in priorRoots do
+		local samePackage = prior.requestRealm == newRoot.requestRealm
+			and prior.scope == newRoot.scope
+			and prior.name == newRoot.name
+		if not samePackage then
+			table.insert(roots, prior)
+		else
+			logger.info(`replacing prior root {prior.scope}/{prior.name}@{prior.version} (same package)`)
+		end
+	end
+	table.insert(roots, newRoot)
+
 	local lockData = lockfile.load()
 	logger.info(`resolve starting ({#roots} root(s), lockfile has {countPairs(lockData)} entries)`)
 	local resolved, rootAliases, resolutionFailures = resolveAsync(roots, lockData, progress)
@@ -121,6 +167,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			status = "error",
 			message = message,
 			errors = resolutionFailures,
+			target = target,
 		})
 		return result
 	end
@@ -152,6 +199,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			status = "error",
 			message = message,
 			errors = resolutionFailures,
+			target = target,
 		})
 		return {
 			ok = false,
@@ -195,6 +243,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			status = "error",
 			message = message,
 			errors = allFailures,
+			target = target,
 		})
 		return {
 			ok = false,
@@ -207,6 +256,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Commit)
 	end
 
+	refreshInstalledRoots()
 	logger.info(`install succeeded: {scope}/{name}@{version}`)
 
 	setState({
@@ -215,6 +265,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			then `Installed with {#allFailures} warning(s)`
 			else `Installed {scope}/{name}@{version}`,
 		errors = allFailures,
+		target = target,
 	})
 
 	return {

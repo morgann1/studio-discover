@@ -74,6 +74,7 @@ local function PackageScreen()
 
 	local state = usePackageMetadata(scope, name)
 	local installerState = Installer.useInstaller()
+	local installedRoots = Installer.useInstalledRoots()
 	local selectedVersion, setSelectedVersion = React.useState("")
 
 	React.useEffect(function()
@@ -177,6 +178,36 @@ local function PackageScreen()
 			end)
 		end
 
+		-- The installer atom is global; scope its status to this screen by
+		-- matching the current package against the atom's target. For
+		-- persistence across plugin reloads, also consult the on-disk
+		-- installed-roots snapshot so a previously-installed package still
+		-- shows "Installed" after a fresh session.
+		local target = installerState.target
+		local isForThisPackage = target ~= nil
+			and target.scope == scope
+			and target.name == name
+			and target.version == activeVersion
+		local isPersistedInstalled = false
+		for _, root in installedRoots do
+			if root.scope == scope and root.name == name and root.version == activeVersion then
+				isPersistedInstalled = true
+				break
+			end
+		end
+		local heroStatus: "idle" | "running" | "success" | "error"
+		local heroMessage: string?
+		if isForThisPackage then
+			heroStatus = installerState.status
+			heroMessage = installerState.message
+		elseif isPersistedInstalled then
+			heroStatus = "success"
+			heroMessage = nil
+		else
+			heroStatus = "idle"
+			heroMessage = nil
+		end
+
 		body = e(Content, {}, {
 			Hero = e(Hero, {
 				scope = scope,
@@ -186,8 +217,8 @@ local function PackageScreen()
 				selectedVersion = activeVersion,
 				versionItems = versionItems,
 				onVersionChanged = setSelectedVersion,
-				installStatus = installerState.status,
-				installMessage = installerState.message,
+				installStatus = heroStatus,
+				installMessage = heroMessage,
 				isInstallBlocked = pkg.realm == "dev",
 				onInstall = onInstall,
 				LayoutOrder = nextOrder(),

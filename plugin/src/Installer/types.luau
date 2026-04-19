@@ -25,6 +25,14 @@ export type RootRequest = {
 	alias: string,
 }
 
+export type InstalledRoot = {
+	scope: string,
+	name: string,
+	version: string,
+	realm: Realm,
+	alias: string,
+}
+
 export type LockDependency = {
 	alias: string,
 	packageId: string,
@@ -41,10 +49,17 @@ export type ProgressCallback = (message: string) -> ()
 
 export type InstallStatus = "idle" | "running" | "success" | "error"
 
+export type InstallerTarget = {
+	scope: string,
+	name: string,
+	version: string,
+}
+
 export type InstallerState = {
 	status: InstallStatus,
 	message: string?,
 	errors: { string },
+	target: InstallerTarget?,
 }
 
 return nil
