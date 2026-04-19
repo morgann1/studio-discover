@@ -10,13 +10,13 @@ local Screen = require(StudioDiscover.Source.Common.Screen)
 
 local e = React.createElement
 
-local function PackageScreen()
+local function DisplayNamesScreen()
 	return e(Screen, {
-		title = "Package",
+		title = "Display Names",
 		onBack = Navigation.popScreen,
 	}, {
 		Body = e(Content),
 	})
 end
 
-return PackageScreen
+return DisplayNamesScreen

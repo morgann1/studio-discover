@@ -1,11 +1,11 @@
 {
-  "name": "Discover",
+  "name": "StudioDiscover",
   "tree": {
     "$className": "Folder",
     "Bin": {
       "$path": "bin/"
     },
-    "Src": {
+    "Source": {
       "$path": "src/"
     },
     "Packages": {

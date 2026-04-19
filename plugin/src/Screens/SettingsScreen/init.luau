@@ -1,196 +1,122 @@
 --!strict
 
-local Discover = script:FindFirstAncestor("Discover")
-local Packages = Discover.Packages
+local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(Packages.Foundation)
-local Navigation = require(Discover.Src.Navigation)
-local React = require(Packages.React)
-local SettingRow = require(script.SettingRow)
-local SettingsModule = require(Discover.Src.SettingsStore)
-local TopBar = require(Discover.Src.Common.TopBar)
-local createNextOrder = require(Discover.Src.Util.createNextOrder)
-local formatPackageName = require(Discover.Src.Util.formatPackageName)
+local Foundation = require(StudioDiscover.Packages.Foundation)
+local React = require(StudioDiscover.Packages.React)
 
-local Text = Foundation.Text
-local Checkbox = Foundation.Checkbox
-local IconButton = Foundation.IconButton
-local Divider = Foundation.Divider
-local Dropdown = Foundation.Dropdown
-local ScrollView = Foundation.ScrollView
+local Content = require(StudioDiscover.Source.Common.Content)
+local Navigation = require(StudioDiscover.Source.Navigation)
+local Screen = require(StudioDiscover.Source.Common.Screen)
+local SettingsStore = require(StudioDiscover.Source.SettingsStore)
+local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local InputSize = Foundation.Enums.InputSize
+local Setting = require(script.Setting)
+
+local Button = Foundation.Button
+local View = Foundation.View
 local ButtonVariant = Foundation.Enums.ButtonVariant
-local Visibility = Foundation.Enums.Visibility
+local IconName = Foundation.Enums.IconName
+local InputSize = Foundation.Enums.InputSize
 
 local e = React.createElement
 
-local CONVENTION_ITEMS = {
-	{ id = "Normal", text = "Normal" },
-	{ id = "PascalCase", text = "PascalCase" },
-	{ id = "camelCase", text = "camelCase" },
-	{ id = "snake_case", text = "snake_case" },
-}
+local NAMING_CONVENTIONS: { string } =
+	table.freeze({ "Original", "PascalCase", "camelCase", "snake_case", "kebab-case" })
+local SIDEBAR_MODES: { string } = table.freeze({ "Auto", "Expanded", "Compact" })
 
-local PREVIEW_SAMPLE = "react-roblox"
+local function SettingsScreen()
+	local state = SettingsStore.useSettings()
+	local nextOrder = createNextOrder()
 
-local function Settings(): React.ReactNode
-	local nav = Navigation.useNavigation()
-	local settingsContext = SettingsModule.useSettings()
-	local current = settingsContext.settings.namingConvention
-	local previewText = formatPackageName(PREVIEW_SAMPLE, current :: any)
+	local onNamingConventionChange = React.useCallback(function(value: any)
+		SettingsStore.setSetting("namingConvention", value)
+	end, {})
 
-	local onBack = React.useCallback(function()
-		nav.pop()
-	end, { nav })
+	local onCheckForUpdatesChange = React.useCallback(function(value: any)
+		SettingsStore.setSetting("checkForUpdates", value)
+	end, {})
 
-	type Row = {
-		key: string,
-		name: string,
-		description: string?,
-		footer: React.ReactNode?,
-		control: React.ReactNode,
-	}
+	local onReduceMotionChange = React.useCallback(function(value: any)
+		SettingsStore.setSetting("reduceMotion", value)
+	end, {})
 
-	local rows: { Row } = {
-		{
-			key = "NamingConvention",
-			name = "Naming Convention",
-			description = "How package names are formatted when installed.",
-			footer = e(Text, {
-				Text = `Example: {PREVIEW_SAMPLE} → {previewText}`,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.fromScale(1, 0),
-				tag = "text-caption-small content-muted text-align-x-left",
-			}),
-			control = e("Frame", {
-				Size = UDim2.fromOffset(200, 40),
-				BackgroundTransparency = 1,
+	local onSidebarModeChange = React.useCallback(function(value: any)
+		SettingsStore.setSetting("sidebarMode", value)
+	end, {})
+
+	local onVerboseLoggingChange = React.useCallback(function(value: any)
+		SettingsStore.setSetting("verboseLogging", value)
+	end, {})
+
+	local onEditDisplayNames = React.useCallback(function()
+		Navigation.pushScreen("DisplayNames")
+	end, {})
+
+	local editButton: React.ReactNode = e(Button, {
+		text = "Edit",
+		icon = IconName.Pencil,
+		variant = ButtonVariant.Utility,
+		size = InputSize.Small,
+		onActivated = onEditDisplayNames,
+	})
+
+	return e(Screen, { title = "Settings" }, {
+		Body = e(Content, {}, {
+			SettingsList = e(View, {
+				tag = "size-full-0 auto-y col",
 			}, {
-				Dropdown = e(Dropdown.Root, {
-					label = "",
-					size = InputSize.Medium,
-					width = UDim.new(1, 0),
-					value = current,
-					items = CONVENTION_ITEMS,
-					onItemChanged = function(id: string)
-						settingsContext.setSetting("namingConvention", id)
-					end,
+				CheckForUpdates = e(Setting, {
+					name = "Check for Updates",
+					description = "Notify about newer Discover releases",
+					value = state.checkForUpdates,
+					onChange = onCheckForUpdatesChange,
+					LayoutOrder = nextOrder(),
+				}),
+
+				DisplayNames = e(Setting, {
+					name = "Display Names",
+					description = "Customize how specific packages are labeled across the plugin",
+					input = editButton,
+					LayoutOrder = nextOrder(),
+				}),
+
+				NamingConvention = e(Setting, {
+					name = "Naming Convention",
+					description = "How package names are displayed in lists and detail views",
+					value = state.namingConvention,
+					onChange = onNamingConventionChange,
+					options = NAMING_CONVENTIONS,
+					LayoutOrder = nextOrder(),
+				}),
+
+				ReduceMotion = e(Setting, {
+					name = "Reduce Motion",
+					description = "Disable UI animations. Foundation components still animate.",
+					value = state.reduceMotion,
+					onChange = onReduceMotionChange,
+					LayoutOrder = nextOrder(),
+				}),
+
+				SidebarDisplay = e(Setting, {
+					name = "Sidebar Display",
+					description = "Auto adjusts with widget width. Expanded shows labels; Compact is icon-only.",
+					value = state.sidebarMode,
+					onChange = onSidebarModeChange,
+					options = SIDEBAR_MODES,
+					LayoutOrder = nextOrder(),
+				}),
+
+				VerboseLogging = e(Setting, {
+					name = "Verbose Logging",
+					description = "Enable detailed diagnostic logging in the Output window",
+					value = state.verboseLogging,
+					onChange = onVerboseLoggingChange,
+					LayoutOrder = nextOrder(),
 				}),
 			}),
-		},
-		{
-			key = "CheckForUpdates",
-			name = "Check for updates",
-			description = "Show a banner when a new version of Discover is available on GitHub.",
-			control = e(Checkbox, {
-				isChecked = settingsContext.settings.checkForUpdates,
-				onActivated = function()
-					settingsContext.setSetting("checkForUpdates", not settingsContext.settings.checkForUpdates)
-				end,
-				size = InputSize.Medium,
-			}),
-		},
-		{
-			key = "ReduceMotion",
-			name = "Reduce motion",
-			description = "Skip page transition animations.",
-			control = e(Checkbox, {
-				isChecked = settingsContext.settings.reduceMotion,
-				onActivated = function()
-					settingsContext.setSetting("reduceMotion", not settingsContext.settings.reduceMotion)
-				end,
-				size = InputSize.Medium,
-			}),
-		},
-		{
-			key = "VerboseLogging",
-			name = "Verbose logging",
-			description = "Log detailed install information to the output window.",
-			control = e(Checkbox, {
-				isChecked = settingsContext.settings.verboseLogging,
-				onActivated = function()
-					settingsContext.setSetting("verboseLogging", not settingsContext.settings.verboseLogging)
-				end,
-				size = InputSize.Medium,
-			}),
-		},
-		{
-			key = "Overrides",
-			name = "Package Name Overrides",
-			description = "Force a custom install name for packages matching a given name.",
-			control = e(IconButton, {
-				icon = Foundation.Enums.IconName.ChevronLargeRight,
-				size = InputSize.Medium,
-				variant = ButtonVariant.Standard,
-				onActivated = function()
-					nav.push("Overrides")
-				end,
-			}),
-		},
-	}
-
-	local nextContentOrder = createNextOrder()
-	local rowChildren: { [string]: any } = {
-		ScrollLayout = e("UIListLayout", {
-			FillDirection = Enum.FillDirection.Vertical,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
-		ScrollPadding = e("UIPadding", {
-			PaddingLeft = UDim.new(0, 16),
-			PaddingRight = UDim.new(0, 16),
-		}),
-	}
-	for _, row in rows do
-		rowChildren[row.key] = e(SettingRow, {
-			name = row.name,
-			description = row.description,
-			footer = row.footer,
-			control = row.control,
-			LayoutOrder = nextContentOrder(),
-		})
-	end
-
-	local nextPageOrder = createNextOrder()
-	return e(React.Fragment, nil, {
-		TopBar = e(TopBar, {
-			LayoutOrder = nextPageOrder(),
-		}, {
-			Back = e(IconButton, {
-				icon = Foundation.Enums.IconName.ChevronLargeLeft,
-				size = InputSize.Medium,
-				variant = ButtonVariant.Standard,
-				onActivated = onBack,
-				LayoutOrder = 1,
-			}),
-			Title = e(Text, {
-				Text = "Settings",
-				AutomaticSize = Enum.AutomaticSize.XY,
-				tag = "text-label-medium content-emphasis",
-				LayoutOrder = 2,
-			}),
-		}),
-
-		TopDivider = e(Divider, {
-			LayoutOrder = nextPageOrder(),
-		}),
-
-		Content = e("Frame", {
-			Size = UDim2.new(1, 0, 1, -58),
-			BackgroundTransparency = 1,
-			LayoutOrder = nextPageOrder(),
-		}, {
-			Scroll = e(ScrollView, {
-				Size = UDim2.fromScale(1, 1),
-				scroll = {
-					scrollBarVisibility = Visibility.Auto,
-					ScrollingDirection = Enum.ScrollingDirection.Y,
-					AutomaticCanvasSize = Enum.AutomaticSize.Y,
-					CanvasSize = UDim2.new(),
-				},
-			}, rowChildren),
 		}),
 	})
 end
 
-return Settings
+return SettingsScreen

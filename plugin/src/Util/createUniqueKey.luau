@@ -1,17 +1,19 @@
 --!strict
 
 local function createUniqueKey(): (string) -> string
-	local names: { [string]: number } = {}
-	return function(name: string): string
+	local names = {}
+	return function(name)
 		if names[name] == nil then
 			names[name] = 1
 			return name
-		end
-		while true do
-			names[name] += 1
-			local finalName = `{name}_{names[name]}`
-			if names[finalName] == nil then
-				return finalName
+		else
+			while true do
+				names[name] += 1
+				local finalName = `{name}_{names[name]}`
+
+				if names[finalName] == nil then
+					return finalName
+				end
 			end
 		end
 	end

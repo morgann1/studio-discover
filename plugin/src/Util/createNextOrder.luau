@@ -1,10 +1,10 @@
 --!strict
 
 local function createNextOrder(): () -> number
-	local order = 0
-	return function(): number
-		order += 1
-		return order
+	local n: number = 0
+	return function()
+		n += 1
+		return n
 	end
 end
 
