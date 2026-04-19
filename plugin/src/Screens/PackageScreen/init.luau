@@ -172,11 +172,11 @@ local function PackageScreen()
 			end)
 		end
 
-		-- The installer atom is global; scope its status to this screen by
-		-- matching the current package against the atom's target. For
-		-- persistence across plugin reloads, also consult the on-disk
-		-- installed-roots snapshot so a previously-installed package still
-		-- shows "Installed" after a fresh session.
+		-- On-disk installed-roots is the source of truth for "installed". The
+		-- transient installer atom only surfaces running/error states for the
+		-- package the user is currently driving — "success" in the atom is
+		-- ignored here because uninstall/update can retire it without clearing
+		-- that transient state.
 		local target = installerState.target
 		local isForThisPackage = target ~= nil
 			and target.scope == scope
@@ -191,8 +191,11 @@ local function PackageScreen()
 		end
 		local heroStatus: "idle" | "running" | "success" | "error"
 		local heroMessage: string?
-		if isForThisPackage then
-			heroStatus = installerState.status
+		if isForThisPackage and installerState.status == "running" then
+			heroStatus = "running"
+			heroMessage = installerState.message
+		elseif isForThisPackage and installerState.status == "error" then
+			heroStatus = "error"
 			heroMessage = installerState.message
 		elseif isPersistedInstalled then
 			heroStatus = "success"
