@@ -12,6 +12,7 @@ local Divider = Foundation.Divider
 local Text = Foundation.Text
 local View = Foundation.View
 local ButtonVariant = Foundation.Enums.ButtonVariant
+local IconName = Foundation.Enums.IconName
 local InputSize = Foundation.Enums.InputSize
 
 local e = React.createElement
@@ -38,7 +39,8 @@ local function Header(props: Props)
 		}, {
 			Back = props.onBack ~= nil and e(Button, {
 				text = "Back",
-				variant = ButtonVariant.Subtle,
+				icon = IconName.ChevronLargeLeft,
+				variant = ButtonVariant.Utility,
 				size = InputSize.Small,
 				onActivated = props.onBack,
 			}),
