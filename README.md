@@ -1,5 +1,9 @@
 <a name="top"></a>
+
+<div align="center">
+
 ![Studio Discover](./.github/assets/banner.jpg)
+
 [![Download](./.github/assets/badges/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/Discover.rbxm)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
@@ -9,6 +13,8 @@
 
 [![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
 [![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
+
+</div>
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
