@@ -10,6 +10,7 @@ local rateLimiter = require(StudioDiscover.Source.Api.rateLimiter)
 
 local API_BASE = "https://api.wally.run/v1"
 local USER_AGENT = `StudioDiscover/{Version} (+https://github.com/morgann1/studio-discover)`
+local WALLY_VERSION = "0.3.2"
 
 type Response = {
 	body: string?,
@@ -37,6 +38,7 @@ local function requestOnceAsync(path: string): Response
 			Method = "GET",
 			Headers = {
 				["X-Real-User-Agent"] = USER_AGENT,
+				["Wally-Version"] = WALLY_VERSION,
 			},
 		})
 	end)
