@@ -9,6 +9,7 @@ local Content = require(StudioDiscover.Source.Common.Content)
 local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
 local Screen = require(StudioDiscover.Source.Common.Screen)
+local capitalize = require(StudioDiscover.Source.Util.capitalize)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local types = require(StudioDiscover.Source.Api.types)
 local usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
@@ -30,13 +31,6 @@ local function findVersion(data: types.WallyPackageMetadata, version: string): t
 		end
 	end
 	return data.versions[1]
-end
-
-local function capitalize(word: string): string
-	if #word == 0 then
-		return word
-	end
-	return word:sub(1, 1):upper() .. word:sub(2)
 end
 
 local function countEntries(map: { [string]: any }): number
