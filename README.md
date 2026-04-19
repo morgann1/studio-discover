@@ -1,15 +1,14 @@
 <a name="top"></a>
+![Studio Discover](./.github/assets/banner.jpg)
 
 <div align="center">
-
-![Studio Discover](./.github/assets/banner.jpg)
 
 [![Download](./.github/assets/badges/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/Discover.rbxm)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
-[![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
 [![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
+[![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
 
 [![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
 [![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
