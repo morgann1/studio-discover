@@ -86,7 +86,7 @@ local function SearchResults(props: Props)
 				LayoutOrder = nextCardOrder(),
 			}, {
 				Title = e(Text, {
-					tag = "auto-xy text-title-medium content-emphasis",
+					tag = "grow auto-y text-title-medium content-emphasis text-align-x-left text-wrap",
 					Text = `{pkg.scope}/{pkg.name}`,
 					LayoutOrder = nextHeadingOrder(),
 				}),
@@ -97,7 +97,7 @@ local function SearchResults(props: Props)
 				}),
 			}),
 			Description = e(Text, {
-				tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left",
+				tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left text-wrap",
 				Text = description,
 				LayoutOrder = nextCardOrder(),
 			}),
