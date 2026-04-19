@@ -3,6 +3,7 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local lockfile = require(StudioDiscover.Source.Installer.lockfile)
 local resolveAsync = require(StudioDiscover.Source.Installer.resolveAsync)
@@ -45,6 +46,16 @@ local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 		return { ok = true, error = nil, failures = {} }
 	end
 
+	if busyAtom() then
+		logger.warn(`update rejected: another installer operation is in progress`)
+		return {
+			ok = false,
+			error = "Another installer operation is in progress.",
+			failures = {},
+		}
+	end
+	busyAtom(true)
+
 	logger.info(`updateAll starting ({#updates} package(s))`)
 
 	local priorRoots = snapshotRoots()
@@ -69,6 +80,7 @@ local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 
 	if appliedCount == 0 then
 		logger.warn("updateAll: no installed roots matched the requested updates")
+		busyAtom(false)
 		return {
 			ok = false,
 			error = "No installed packages matched the update list",
@@ -84,6 +96,7 @@ local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 
 	local result = applyRootsAsync(resolved, rootAliases, `Update {appliedCount} package(s)`, nil)
 	if not result.ok then
+		busyAtom(false)
 		return {
 			ok = false,
 			error = result.error or "Update failed",
@@ -100,6 +113,7 @@ local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 	end
 
 	logger.info(`updateAll succeeded ({appliedCount} package(s), {#allFailures} warning(s))`)
+	busyAtom(false)
 	return {
 		ok = true,
 		error = nil,

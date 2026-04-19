@@ -3,6 +3,7 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local lockfile = require(StudioDiscover.Source.Installer.lockfile)
 local resolveAsync = require(StudioDiscover.Source.Installer.resolveAsync)
@@ -24,6 +25,15 @@ export type UninstallResult = {
 -- entries no longer reached by an active root, effectively uninstalling the
 -- package and any deps it was the last holder of.
 local function uninstallAsync(scope: string, name: string, realm: Realm): UninstallResult
+	if busyAtom() then
+		logger.warn(`uninstall rejected: another installer operation is in progress`)
+		return {
+			ok = false,
+			error = "Another installer operation is in progress.",
+		}
+	end
+	busyAtom(true)
+
 	logger.info(`uninstall {scope}/{name} realm={realm}`)
 
 	local priorRoots = snapshotRoots()
@@ -40,6 +50,7 @@ local function uninstallAsync(scope: string, name: string, realm: Realm): Uninst
 
 	if not didMatch then
 		logger.warn(`no matching root for {scope}/{name} in {realm}`)
+		busyAtom(false)
 		return {
 			ok = false,
 			error = `No installed root matched {scope}/{name}`,
@@ -55,6 +66,7 @@ local function uninstallAsync(scope: string, name: string, realm: Realm): Uninst
 
 	local result = applyRootsAsync(resolved, rootAliases, `Uninstall {scope}/{name}`, nil)
 	if not result.ok then
+		busyAtom(false)
 		return {
 			ok = false,
 			error = result.error or "Uninstall failed",
@@ -62,6 +74,7 @@ local function uninstallAsync(scope: string, name: string, realm: Realm): Uninst
 	end
 
 	logger.info(`uninstall succeeded: {scope}/{name}`)
+	busyAtom(false)
 	return {
 		ok = true,
 		error = nil,

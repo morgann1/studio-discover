@@ -5,6 +5,7 @@ local uninstallAsync = require(script.uninstallAsync)
 local updateAllAsync = require(script.updateAllAsync)
 local useInstalledRoots = require(script.useInstalledRoots)
 local useInstaller = require(script.useInstaller)
+local useIsBusy = require(script.useIsBusy)
 local useUpdates = require(script.useUpdates)
 
 return table.freeze({
@@ -13,5 +14,6 @@ return table.freeze({
 	updateAllAsync = updateAllAsync,
 	useInstalledRoots = useInstalledRoots,
 	useInstaller = useInstaller,
+	useIsBusy = useIsBusy,
 	useUpdates = useUpdates,
 })

@@ -5,6 +5,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 
 local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
@@ -40,6 +41,16 @@ export type InstallResult = {
 -- repeated installs of the same `(realm, scope, name)` and keeps unchanged
 -- roots' already-downloaded `_Index` entries in place.
 local function installAsync(scope: string, name: string, version: string, alias: string, realm: Realm?): InstallResult
+	if busyAtom() then
+		logger.warn(`install rejected: another installer operation is in progress`)
+		return {
+			ok = false,
+			error = "Another installer operation is in progress.",
+			failures = {},
+		}
+	end
+	busyAtom(true)
+
 	logger.info(`install {scope}/{name}@{version} alias={alias} realm={realm or "shared"}`)
 
 	local target: InstallerTarget = {
@@ -76,6 +87,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			errors = {},
 			target = target,
 		})
+		busyAtom(false)
 		return result
 	end
 
@@ -161,6 +173,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			errors = resolutionFailures,
 			target = target,
 		})
+		busyAtom(false)
 		return result
 	end
 
@@ -205,6 +218,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 			errors = allFailures,
 			target = target,
 		})
+		busyAtom(false)
 		return {
 			ok = false,
 			error = message,
@@ -224,6 +238,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		target = target,
 	})
 
+	busyAtom(false)
 	return {
 		ok = true,
 		error = nil,
