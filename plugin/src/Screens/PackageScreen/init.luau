@@ -65,8 +65,9 @@ local function PackageScreen()
 	local scope = (screen.options.scope :: string?) or ""
 	local name = (screen.options.name :: string?) or ""
 	local requestedVersion = (screen.options.version :: string?) or ""
+	local registry: types.Registry = (screen.options.registry :: types.Registry?) or "wally"
 
-	local state = usePackageMetadata(scope, name)
+	local state = usePackageMetadata(scope, name, registry)
 	local installerState = Installer.useInstaller()
 	local installedRoots = Installer.useInstalledRoots().roots
 	local selectedVersion, setSelectedVersion = React.useState("")
@@ -213,7 +214,7 @@ local function PackageScreen()
 				onVersionChanged = setSelectedVersion,
 				installStatus = heroStatus,
 				installMessage = heroMessage,
-				isInstallBlocked = pkg.realm == "dev",
+				isInstallBlocked = pkg.realm == "dev" or registry == "pesde",
 				onInstall = onInstall,
 				LayoutOrder = nextOrder(),
 			}),

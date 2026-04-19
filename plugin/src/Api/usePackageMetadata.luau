@@ -4,7 +4,8 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
-local getPackageMetadataAsync = require(StudioDiscover.Source.Api.getPackageMetadataAsync)
+local getPackageMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
+local getPesdeMetadataAsync = require(StudioDiscover.Source.Api.Pesde.getMetadataAsync)
 local types = require(StudioDiscover.Source.Api.types)
 
 export type MetadataState = {
@@ -19,10 +20,17 @@ local EMPTY: MetadataState = table.freeze({
 	error = nil,
 })
 
--- Fires on (scope, name) change. Superseded responses are discarded via a
--- cancelled flag; the in-flight request finishes so its result lands in the
--- URL cache for the next navigation.
-local function usePackageMetadata(scope: string, name: string): MetadataState
+-- Registries share a normalized Wally-shaped result so the Package screen
+-- doesn't need to branch per source.
+local function fetchAsync(registry: types.Registry, scope: string, name: string): (types.WallyPackageMetadata?, string?)
+	if registry == "pesde" then
+		return getPesdeMetadataAsync(scope, name)
+	end
+	return getPackageMetadataAsync(scope, name)
+end
+
+local function usePackageMetadata(scope: string, name: string, registry: types.Registry?): MetadataState
+	local resolvedRegistry: types.Registry = registry or "wally"
 	local state: MetadataState, setState = React.useState(EMPTY)
 
 	React.useEffect(function(): (() -> ())?
@@ -35,7 +43,7 @@ local function usePackageMetadata(scope: string, name: string): MetadataState
 		setState({ loading = true, data = nil, error = nil })
 
 		task.spawn(function()
-			local data, err = getPackageMetadataAsync(scope, name)
+			local data, err = fetchAsync(resolvedRegistry, scope, name)
 			if cancelled then
 				return
 			end
@@ -49,7 +57,7 @@ local function usePackageMetadata(scope: string, name: string): MetadataState
 		return function()
 			cancelled = true
 		end
-	end, { scope, name })
+	end, { scope, name, resolvedRegistry } :: { any })
 
 	return state
 end

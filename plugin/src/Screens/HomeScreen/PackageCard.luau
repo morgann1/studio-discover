@@ -46,6 +46,7 @@ local function PackageCard(props: Props)
 
 	local onView = function()
 		Navigation.pushScreen("Package", {
+			registry = props.registry,
 			scope = props.scope,
 			name = props.name,
 		})
