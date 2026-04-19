@@ -50,6 +50,7 @@ local function Featured()
 
 	for _, pkg in state.packages do
 		children[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
+			registry = "wally",
 			scope = pkg.scope,
 			name = pkg.name,
 			description = pkg.description,

@@ -11,17 +11,26 @@ local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local formatName = require(StudioDiscover.Source.Util.formatName)
 
+local Image = Foundation.Image
 local Text = Foundation.Text
 local View = Foundation.View
 
 local e = React.createElement
 
+type Registry = "wally" | "pesde"
+
 type Props = {
+	registry: Registry,
 	scope: string,
 	name: string,
 	description: string?,
 	latestVersion: string?,
 	LayoutOrder: number?,
+}
+
+local REGISTRY_LOGOS: { [Registry]: string } = {
+	wally = "rbxassetid://122568448217279",
+	pesde = "rbxassetid://130541292025764",
 }
 
 local function PackageCard(props: Props)
@@ -62,6 +71,12 @@ local function PackageCard(props: Props)
 			Version = props.latestVersion ~= nil and e(Text, {
 				tag = "auto-xy text-body-small content-muted",
 				Text = `v{props.latestVersion}`,
+				LayoutOrder = nextHeadingOrder(),
+			}),
+			RegistryBadge = e(Image, {
+				Image = REGISTRY_LOGOS[props.registry],
+				ScaleType = Enum.ScaleType.Fit,
+				Size = UDim2.fromOffset(56, 22),
 				LayoutOrder = nextHeadingOrder(),
 			}),
 		}),

@@ -1,5 +1,15 @@
 --!strict
 
+export type Registry = "wally" | "pesde"
+
+export type PackageBrief = {
+	registry: Registry,
+	scope: string,
+	name: string,
+	description: string?,
+	latestVersion: string?,
+}
+
 export type WallyPackageBrief = {
 	scope: string,
 	name: string,
