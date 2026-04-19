@@ -36,10 +36,6 @@ export type InstallResult = {
 	failures: { string },
 }
 
--- Adds a package as a new root, merging it with any prior roots snapshotted
--- from the packages folders. The resolve/apply pipeline handles dedup for
--- repeated installs of the same `(realm, scope, name)` and keeps unchanged
--- roots' already-downloaded `_Index` entries in place.
 local function installAsync(scope: string, name: string, version: string, alias: string, realm: Realm?): InstallResult
 	if busyAtom() then
 		logger.warn(`install rejected: another installer operation is in progress`)
@@ -98,9 +94,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		target = target,
 	})
 
-	-- Per-package override wins over the naming-convention formatter; the
-	-- Display Names settings page lets users pin a specific alias for a given
-	-- package name (scope-agnostic) regardless of the global convention.
+	-- Per-package override wins over the naming-convention formatter.
 	local settings = SettingsStore.get().getStorage()
 	local override: string? = nil
 	for _, rule in settings.displayNames do
@@ -128,9 +122,8 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		alias = formattedAlias,
 	}
 
-	-- Snapshot prior top-level roots so this install merges with them rather
-	-- than wiping everything. Replace when the same package (realm+scope+name)
-	-- is being re-installed — covers alias renames from convention changes.
+	-- Merge with prior roots so this install doesn't wipe them; replace when
+	-- (realm, scope, name) matches so a re-install swaps version or alias.
 	local priorRoots = snapshotRoots()
 	local roots: { RootRequest } = {}
 	for _, prior in priorRoots do
@@ -179,9 +172,7 @@ local function installAsync(scope: string, name: string, version: string, alias:
 
 	logger.info(`resolve complete: {countPairs(resolved)} package(s) activated`)
 
-	-- Veto the commit when the package we set out to install is itself in
-	-- `applyFailures`, so a botched download doesn't leave a "successful"
-	-- install on the undo stack.
+	-- Cancel the undo waypoint if the root package itself failed to apply.
 	local rootFailureMarker = `{scope}/{name}@{version}:`
 	local decideCommit = function(applyFailures: { string }): boolean
 		for _, failure in applyFailures do

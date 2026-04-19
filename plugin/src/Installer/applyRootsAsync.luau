@@ -21,11 +21,8 @@ export type ApplyRootsResult = {
 	failures: { string },
 }
 
--- Wraps apply + lockfile save in a single ChangeHistory recording and
--- publishes the refreshed installed-roots snapshot. `decideCommit` lets the
--- caller inspect the per-package apply failures and veto the commit — e.g.
--- install cancels the waypoint when the root package itself failed to
--- download, so the user's undo stack stays clean.
+-- `decideCommit` can veto the waypoint after inspecting per-package failures;
+-- returning false cancels the ChangeHistory recording and skips the refresh.
 local function applyRootsAsync(
 	resolved: { [string]: ResolvedPackage },
 	rootAliases: { [string]: string },

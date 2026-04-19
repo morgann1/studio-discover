@@ -87,11 +87,8 @@ local function Hero(props: Props)
 		LayoutOrder = nextTitleOrder(),
 	})
 
-	-- While running, the Install button slot is replaced by an indeterminate
-	-- Progress bar, matching KDE Discover's morph-in-place pattern. Button
-	-- returns as "Installed" (disabled) on success or "Retry" on error.
-	-- Both fill their container so the hero's Right column (or the compact
-	-- stack) stays a consistent width and doesn't spill past the widget edge.
+	-- Both the Progress bar and the Button fill the container so swapping
+	-- between them doesn't change the surrounding column's width.
 	local installSlot: React.ReactNode
 	if isRunning then
 		installSlot = e(Progress, {

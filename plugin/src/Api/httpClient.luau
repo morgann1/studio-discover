@@ -12,8 +12,7 @@ local rateLimiter = require(StudioDiscover.Source.Api.rateLimiter)
 local API_BASE = "https://api.wally.run/v1"
 local WALLY_VERSION = "0.3.2"
 
--- Built per-request so the user id reflects the currently signed-in Studio
--- session rather than whatever was signed in when this module first loaded.
+-- Built per-request so a mid-session sign-in change is reflected.
 local function buildUserAgent(): string
 	local userId = StudioService:GetUserId()
 	return `StudioDiscover/{Version} (+https://github.com/morgann1/studio-discover; user={userId})`

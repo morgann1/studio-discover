@@ -19,9 +19,8 @@ type Props = {
 	LayoutOrder: number?,
 }
 
--- Plugins can't open external URLs and `CopyToClipboard` is locked to
--- built-in plugins, so the URL cell uses a native TextBox with editing
--- disabled — users can select and Ctrl+C the text manually.
+-- Native TextBox (not Foundation.Text) so users can select and Ctrl+C the
+-- URL. Plugins can't open browsers and `CopyToClipboard` is built-in only.
 local function LinkRow(props: Props)
 	local tokens = useTokens()
 	local nextOrder = createNextOrder()

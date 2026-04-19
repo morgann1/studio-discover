@@ -29,10 +29,8 @@ export type UpdatesState = {
 
 local EMPTY: UpdatesState = { updates = {}, loading = false }
 
--- For each installed root, fetches metadata (cached after first hit), picks
--- the latest published version, and includes the root in `updates` when
--- that latest is greater than what's installed. Sequential fetches respect
--- the Wally 1-RPS rate limiter; cache hits make repeat renders free.
+-- Fetches are sequential so the 1-RPS Wally rate limiter isn't starved;
+-- `getPackageMetadataAsync` caches, so repeat renders don't re-hit the API.
 local function useUpdates(): UpdatesState
 	local installedRoots = useInstalledRoots()
 	local state: UpdatesState, setState = React.useState(EMPTY)

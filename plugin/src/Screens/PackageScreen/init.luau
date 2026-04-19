@@ -172,11 +172,8 @@ local function PackageScreen()
 			end)
 		end
 
-		-- On-disk installed-roots is the source of truth for "installed". The
-		-- transient installer atom only surfaces running/error states for the
-		-- package the user is currently driving — "success" in the atom is
-		-- ignored here because uninstall/update can retire it without clearing
-		-- that transient state.
+		-- Disk is the source of truth for "installed"; the atom only drives
+		-- the transient running/error states for the active operation.
 		local target = installerState.target
 		local isForThisPackage = target ~= nil
 			and target.scope == scope

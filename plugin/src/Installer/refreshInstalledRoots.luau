@@ -8,8 +8,6 @@ local types = require(StudioDiscover.Source.Installer.types)
 
 type InstalledRoot = types.InstalledRoot
 
--- Re-reads the top-level alias links from disk and publishes them on the
--- installed-roots atom so every `useInstalledRoots()` consumer repaints.
 local function refreshInstalledRoots()
 	local roots = snapshotRoots()
 	local installed: { InstalledRoot } = {}

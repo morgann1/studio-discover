@@ -20,10 +20,8 @@ export type UninstallResult = {
 	error: string?,
 }
 
--- Removes a top-level root by re-running the resolve/apply pipeline on the
--- remaining roots. `applyAsync` (via the shared pipeline) drops any `_Index`
--- entries no longer reached by an active root, effectively uninstalling the
--- package and any deps it was the last holder of.
+-- Re-resolves without the target root; the pipeline drops any `_Index`
+-- entries no longer reached by an active root, including orphaned deps.
 local function uninstallAsync(scope: string, name: string, realm: Realm): UninstallResult
 	if busyAtom() then
 		logger.warn(`uninstall rejected: another installer operation is in progress`)

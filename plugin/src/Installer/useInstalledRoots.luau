@@ -11,9 +11,6 @@ local types = require(StudioDiscover.Source.Installer.types)
 
 type InstalledRoot = types.InstalledRoot
 
--- Reads the current installed-roots list from its atom, lazy-seeding it from
--- disk on first access. Downstream callers get a reactive view that updates
--- whenever the atom is refreshed post-commit.
 local function useInstalledRoots(): { InstalledRoot }
 	React.useEffect(function()
 		if installedRootsAtom() ~= nil then

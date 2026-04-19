@@ -26,9 +26,7 @@ local function setupPlugin(plugin: Plugin): ()
 		return
 	end
 
-	-- Wally requires a signed-in Studio session to register API usage against
-	-- a real account. Running without one is likely offline Studio or a test
-	-- harness; either way the plugin has nothing useful to do.
+	-- Wally attributes API usage to a real account; skip init without one.
 	if StudioService:GetUserId() == 0 then
 		logger.warn("Studio is not signed in (GetUserId == 0); Discover will not initialize")
 		return

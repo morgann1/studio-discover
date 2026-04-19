@@ -18,10 +18,8 @@ local function extractPackageIdFromLink(source: string): string?
 	return source:match('%["([^"]+@[^"]+)"%]%["[^"]+"%]')
 end
 
--- Reads the existing top-level alias links from the shared and server
--- packages folders and rebuilds a `{ RootRequest }` describing what was
--- installed. Missing or malformed links are skipped silently — a fresh
--- project has none of these folders at all.
+-- Fresh projects have no packages folders yet, so missing/malformed links
+-- are skipped silently rather than treated as errors.
 local function snapshotRoots(): { RootRequest }
 	local roots: { RootRequest } = {}
 

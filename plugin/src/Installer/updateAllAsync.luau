@@ -37,10 +37,8 @@ local function findMatch(updates: { UpdateRequest }, root: RootRequest): UpdateR
 	return nil
 end
 
--- Re-pins the version on every installed root that matches an entry in
--- `updates`, then runs a single resolve + apply cycle. One batch keeps the
--- Wally API round-trips (and the undo-stack waypoint) to a single unit of
--- work regardless of how many packages are being upgraded.
+-- Runs one resolve+apply for the whole batch so the Wally round-trips and
+-- undo waypoint collapse to a single unit of work.
 local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 	if #updates == 0 then
 		return { ok = true, error = nil, failures = {} }
