@@ -16,6 +16,3 @@ plugin/Packages
 # Other
 ref/
 .claude/
-
-# Per-machine Luau config (typedef paths are user-specific)
-/.luaurc

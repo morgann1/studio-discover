@@ -31,28 +31,36 @@ jobs:
       - name: 📦 Install packages
         run: lune run install
 
-      - name: 🏗️ Build Discover.rbxm
-        run: rojo build plugin/default.project.json -o Discover.rbxm
+      - name: 🏗️ Build StudioDiscover.rbxm
+        run: rojo build plugin/default.project.json -o StudioDiscover.rbxm
 
-      - name: 🔗 Build commits link
-        id: commits
+      - name: 📝 Build release notes
+        id: notes
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
+
           PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
           if [ -n "$PREV" ]; then
             URL="${{ github.server_url }}/${{ github.repository }}/compare/$PREV...$TAG"
           else
             URL="${{ github.server_url }}/${{ github.repository }}/commits/$TAG"
           fi
+
+          SECTION=$(lune run release-notes --tag "$TAG")
+
           {
-            echo "body<<EOF"
-            echo "See full commits here: $URL"
-            echo "EOF"
+            echo "body<<RELEASE_EOF"
+            echo "$SECTION"
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Full changelog**: $URL"
+            echo "RELEASE_EOF"
           } >> "$GITHUB_OUTPUT"
 
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          files: Discover.rbxm
-          body: ${{ steps.commits.outputs.body }}
+          files: StudioDiscover.rbxm
+          body: ${{ steps.notes.outputs.body }}

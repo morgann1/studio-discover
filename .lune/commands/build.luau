@@ -39,7 +39,7 @@ export type Options = {
 ]]
 function build.run(options_: Options?)
 	local options: Options = options_ or {}
-	local output = options.output or "Discover.rbxm"
+	local output = options.output or "StudioDiscover.rbxm"
 
 	print(color.bold(color.white("Building for production...\n")))
 

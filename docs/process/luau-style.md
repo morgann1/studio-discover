@@ -50,3 +50,41 @@ For React-specific patterns and idioms, see [react-patterns.md](react-patterns.m
 - **Prefer `UDim2.fromOffset` / `UDim2.fromScale`** over `UDim2.new` when one axis is zero.
 - **Nest scripts inside scripts for implementation details** (`Toolbar/init.luau` + `Toolbar/ToolbarButton.luau`).
 - **Use absolute paths** (from a service or `FindFirstAncestor`). Avoid `script.Parent` outside implementation details and never chain parents. Exception: stories and tests, which live next to their target and should use `script.Parent`.
+
+## Code quality
+
+Adapted from [evaera's Code Quality Guidelines](https://gist.github.com/evaera/fee751d4e228dd262fe1174ba142a719). These sit on top of the Luau-specific rules above.
+
+### Naming
+
+- **Full words, not abbreviations** — `player`, not `plr`. Common tight contractions (`pkg`, `req`, `dep`) in small local scope are fine; `plr`, `cnt`, `tbl` are not.
+- **Name the outcome, not the ceremony** — `notify`, not `doNotification`; `increment`, not `plusOne`.
+- **Booleans are yes/no questions** — `isFirstRun`, `hasPendingChanges`, `isInstallDisabled`. Never `firstRun` or `installIsDisabled`.
+- **Event handlers use `on*`** — `onClick`, `onVersionChanged`, `onInstall`. Never `click` / `versionChanged` / `install` for a handler.
+- **Positive booleans** — `isFlying`, `isVisible`, `missingValue`. Avoid negative framing (`isNotFlying`, `notVisible`, `notHasValue`) — it forces readers to parse a double negative at every call site.
+- **Lead with the positive conditional** — `if isOnline then ... else ... end` reads cleaner than `if not isOffline then ...`.
+
+### Function signatures
+
+- **No boolean flags that swap behavior.** If `fn(x, false)` and `fn(x, true)` do meaningfully different things, split into two named functions: `fnA(x)` and `fnB(x)`. A `kind: "a" | "b"` tag is the acceptable middle ground when you genuinely want one function.
+- **No `nil` positional arguments.** `fn(x, nil, nil, true)` is a bug farm. If a function takes optional args, take a `{ }` options record: `fn(x, { retry = true })`.
+
+### Single responsibility
+
+- **Separate data loading from calculation.** A function that fetches AND decides what to do with the fetched data is doing two things. Fetch in one place, pass the data to a calculator. Easier to test, easier to reuse.
+- **Side effects are explicit.** A function that reads or mutates state outside its arguments should be named in a way that makes that obvious (`saveFoo`, `loadFoo`, `applyBar`). Pure functions get plain verbs (`parseFoo`, `formatBar`).
+
+### Exception handling
+
+- **Return `(value, error)` tuples for fallible async work**, not exceptions. Luau's `error()` is for truly unrecoverable conditions (programmer mistakes, invariant violations), not for "the server returned 404."
+- **If a caller can do something about a failure, it's a return value. If it can't, it's an error.**
+
+### Stateful code
+
+- **Avoid module-level mutable state unless it's a single cohesive unit** with a clear getter/setter API (`SettingsStore`, `SearchStore`, `Installer.installerAtom`). If a module has two or more independent bits of state that callers mutate independently, split them into sibling modules.
+- **Resources that can be held (signals, tasks, connections) need cleanup.** Every `:Connect` needs a matching `:Disconnect`. Every `task.spawn` that isn't fire-and-forget needs a way to cancel.
+
+### Boring code
+
+- **Straightforward beats clever.** A ten-line if-chain that a new reader understands in 10 seconds is better than a three-line metatable trick that takes 5 minutes.
+- **Follow the conventions already in the codebase** even when you'd personally write it differently. Consistency has a real maintenance value.

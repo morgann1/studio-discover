@@ -1,185 +1,92 @@
-local Discover = script:FindFirstAncestor("Discover")
-local Packages = Discover.Packages
+--!strict
 
-local Foundation = require(Packages.Foundation)
-local React = require(Packages.React)
+local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Navigation = require(Discover.Src.Navigation)
-local Page = require(Discover.Src.Common.Page)
-local SettingsModule = require(Discover.Src.Settings)
-local UpdateChecker = require(Discover.Src.UpdateChecker)
-local useStudioTheme = require(Discover.Src.Common.useStudioTheme)
+local Foundation = require(StudioDiscover.Packages.Foundation)
+local React = require(StudioDiscover.Packages.React)
+local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
-local Home = require(Discover.Src.Pages.Home)
-local Manage = require(Discover.Src.Pages.Manage)
-local Overrides = require(Discover.Src.Pages.Overrides)
-local Package = require(Discover.Src.Pages.Package)
-local Settings = require(Discover.Src.Pages.Settings)
+local AboutScreen = require(StudioDiscover.Source.Screens.AboutScreen)
+local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
+local ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
+local DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
+local HomeScreen = require(StudioDiscover.Source.Screens.HomeScreen)
+local ManageScreen = require(StudioDiscover.Source.Screens.ManageScreen)
+local Navigation = require(StudioDiscover.Source.Navigation)
+local PackageScreen = require(StudioDiscover.Source.Screens.PackageScreen)
+local SettingsScreen = require(StudioDiscover.Source.Screens.SettingsScreen)
+local SettingsStore = require(StudioDiscover.Source.SettingsStore)
+local Sidebar = require(StudioDiscover.Source.Common.Sidebar)
+local UpdatesScreen = require(StudioDiscover.Source.Screens.UpdatesScreen)
+local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+local useIsCompact = require(StudioDiscover.Source.Common.useIsCompact)
+
+local Divider = Foundation.Divider
+local View = Foundation.View
+local Orientation = Foundation.Enums.Orientation
 
 local e = React.createElement
 
-local Pages = {
-	Home = Home,
-	Manage = Manage,
-	Overrides = Overrides,
-	Package = Package,
-	Settings = Settings,
+type Props = {
+	plugin: Plugin,
+	overlayGui: DockWidgetPluginGui,
 }
 
-type RenderedScreen = {
-	screen: Navigation.Screen,
-	component: any,
-}
+local CurrentScreen = React.memo(function()
+	local screen = Navigation.useScreen()
 
-local function PageRouter()
-	local nav = Navigation.useNavigation()
-	local activeId = nav.screen.id
-
-	local rendered, setRendered = React.useState(function(): { RenderedScreen }
-		return { { screen = nav.screen, component = Pages[nav.screen.name] or Home } }
-	end)
-
-	React.useEffect(function()
-		setRendered(function(prev)
-			for _, entry in prev do
-				if entry.screen.id == activeId then
-					return prev
-				end
-			end
-			local component = Pages[nav.screen.name]
-			if not component then
-				warn("[Discover] Unknown page:", nav.screen.name)
-				component = Home
-			end
-			local updated = table.clone(prev)
-			table.insert(updated, { screen = nav.screen, component = component })
-			return updated
-		end)
-	end, { activeId, nav.screen } :: { any })
-
-	local removeScreen = React.useCallback(function(id: string)
-		setRendered(function(prev)
-			local filtered = {}
-			for _, entry in prev do
-				if entry.screen.id ~= id then
-					table.insert(filtered, entry)
-				end
-			end
-			return filtered
-		end)
-	end, {})
-
-	local children: { [string]: any } = {}
-	for _, entry in rendered do
-		local id = entry.screen.id
-		children[id] = e(Page, {
-			active = id == activeId,
-			component = entry.component,
-			pageProps = { key = id },
-			onExited = function()
-				removeScreen(id)
-			end,
-		})
+	if screen.name == "Package" then
+		return e(PackageScreen)
+	elseif screen.name == "Manage" then
+		return e(ManageScreen)
+	elseif screen.name == "Updates" then
+		return e(UpdatesScreen)
+	elseif screen.name == "Settings" then
+		return e(SettingsScreen)
+	elseif screen.name == "DisplayNames" then
+		return e(DisplayNamesScreen)
+	elseif screen.name == "About" then
+		return e(AboutScreen)
 	end
 
-	return e("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-	}, children)
-end
+	return e(HomeScreen)
+end)
 
-local SystemBanner = Foundation.SystemBanner
-local AlertSeverity = Foundation.Enums.AlertSeverity
-
-local function useWidgetEnabled(widget: Instance?): boolean
-	local enabled, setEnabled = React.useState(function()
-		if widget and (widget :: any).Enabled ~= nil then
-			return (widget :: any).Enabled
-		end
-		return true
+local function App(props: Props)
+	local nextOrder = createNextOrder()
+	local auto = useIsCompact(props.overlayGui)
+	local sidebarMode = ReactCharm.useAtom(function()
+		return SettingsStore.get().getStorage().sidebarMode
 	end)
 
-	React.useEffect(function()
-		if not widget then
-			return nil
-		end
-		local gui = widget :: DockWidgetPluginGui
-		local connection = gui:GetPropertyChangedSignal("Enabled"):Connect(function()
-			setEnabled(gui.Enabled)
-		end)
-		return function()
-			connection:Disconnect()
-		end
-	end, { widget })
+	local isCompact = if sidebarMode == "Expanded" then false elseif sidebarMode == "Compact" then true else auto
 
-	return enabled
-end
-
-local function AppContent(props: { overlayGui: Instance? })
-	local settingsContext = SettingsModule.useSettings()
-	local isEnabled = settingsContext.settings.checkForUpdates
-	local widgetEnabled = useWidgetEnabled(props.overlayGui)
-	local update = UpdateChecker.useUpdateChecker(isEnabled, widgetEnabled)
-
-	local isDismissed = update ~= nil and settingsContext.settings.dismissedUpdateVersion == update.version
-
-	local onDismiss = React.useCallback(function()
-		if update then
-			settingsContext.setSetting("dismissedUpdateVersion", update.version)
-		end
-	end, { update, settingsContext } :: { any })
-
-	return e("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
+	return e(ContextProviders, {
+		overlayGui = props.overlayGui :: GuiBase2d,
 	}, {
-		Layout = e("UIListLayout", {
-			FillDirection = Enum.FillDirection.Vertical,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
-
-		UpdateBanner = update and not isDismissed and e("Frame", {
-			Size = UDim2.fromScale(1, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			LayoutOrder = 1,
+		CompactScope = e(CompactContext.Provider, {
+			value = isCompact,
 		}, {
-			Padding = e("UIPadding", {
-				PaddingLeft = UDim.new(0, 8),
-				PaddingRight = UDim.new(0, 8),
-				PaddingTop = UDim.new(0, 8),
-			}),
-			Banner = e(SystemBanner, {
-				severity = AlertSeverity.Info,
-				title = `Discover v{update.version} is available`,
-				description = "Visit GitHub releases to download the latest version.",
-				onClose = onDismiss,
-			}),
-		}),
+			Root = e(View, {
+				tag = "size-full row",
+			}, {
+				Sidebar = e(Sidebar, {
+					LayoutOrder = nextOrder(),
+					compact = isCompact,
+				}),
 
-		Content = e("Frame", {
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			LayoutOrder = 2,
-		}, {
-			Flex = e("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
-			Nav = e(Navigation.NavigationProvider, nil, {
-				Router = e(PageRouter),
-			}),
-		}),
-	})
-end
+				Divider = e(Divider, {
+					orientation = Orientation.Vertical,
+					LayoutOrder = nextOrder(),
+				}),
 
-local function App(props: { plugin: Plugin?, overlayGui: Instance? })
-	local theme = useStudioTheme()
-	return e(Foundation.FoundationProvider, {
-		theme = theme,
-		device = "Desktop",
-		plugin = props.plugin,
-		overlayGui = props.overlayGui,
-	}, {
-		Settings = e(SettingsModule.SettingsProvider, { plugin = props.plugin }, {
-			AppContent = e(AppContent, { overlayGui = props.overlayGui }),
+				Content = e(View, {
+					tag = "size-0-full grow",
+					LayoutOrder = nextOrder(),
+				}, {
+					Screen = e(CurrentScreen),
+				}),
+			}),
 		}),
 	})
 end

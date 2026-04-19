@@ -1,21 +1,26 @@
 <a name="top"></a>
 ![Studio Discover](./.github/assets/banner.jpg)
-[![Download](./.github/assets/badges/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/Discover.rbxm)
+
+<div align="center">
+
+[![Download](./.github/assets/badges/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/StudioDiscover.rbxm)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
-[![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
 [![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
+[![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
 
 [![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
 [![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
+
+</div>
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [🚀 About](#-about)
 - [📸 Screenshots](#-screenshots)
 - [✨ What's New](#-whats-new)
-  - [Version 3.5 (Latest)](#version-35-latest)
+  - [Version 3.6 (Latest)](#version-36-latest)
 - [📝 How to Build](#-how-to-build)
   - [Prerequisites](#prerequisites)
   - [Build](#build)
@@ -35,30 +40,55 @@ Studio Discover is a pure-Luau alternative. It talks directly to the Wally regis
 <details>
 <summary>Click to expand</summary>
 
+**Expanded sidebar**
+
 <p align="center">
-  <img src="./.github/assets/screenshots/home.png" width="420" alt="Home" title="Home" />
-  <img src="./.github/assets/screenshots/search.png" width="420" alt="Search" title="Search" />
+  <img src="./.github/assets/screenshots/expanded/home.png" width="420" alt="Home" title="Home" />
+  <img src="./.github/assets/screenshots/expanded/installed.png" width="420" alt="Installed" title="Installed" />
   <br />
-  <img src="./.github/assets/screenshots/manager.png" width="420" alt="Manager" title="Manager" />
-  <img src="./.github/assets/screenshots/settings.png" width="420" alt="Settings" title="Settings" />
+  <img src="./.github/assets/screenshots/expanded/updates.png" width="420" alt="Updates" title="Updates" />
+  <img src="./.github/assets/screenshots/expanded/settings.png" width="420" alt="Settings" title="Settings" />
+  <br />
+  <img src="./.github/assets/screenshots/expanded/about.png" width="420" alt="About" title="About" />
+</p>
+
+**Collapsed sidebar**
+
+<p align="center">
+  <img src="./.github/assets/screenshots/collapsed/home.png" width="420" alt="Home (collapsed)" title="Home (collapsed)" />
+  <img src="./.github/assets/screenshots/collapsed/installed.png" width="420" alt="Installed (collapsed)" title="Installed (collapsed)" />
+  <br />
+  <img src="./.github/assets/screenshots/collapsed/updates.png" width="420" alt="Updates (collapsed)" title="Updates (collapsed)" />
+  <img src="./.github/assets/screenshots/collapsed/settings.png" width="420" alt="Settings (collapsed)" title="Settings (collapsed)" />
+  <br />
+  <img src="./.github/assets/screenshots/collapsed/about.png" width="420" alt="About (collapsed)" title="About (collapsed)" />
 </p>
 
 </details>
 
 ## ✨ What's New
 
-### Version 3.5 (Latest)
+### Version 3.6 (Latest)
 
-🚨 **Breaking Changes**
-- **"Backend URL" setting removed**: A Cloudflare Worker proxy was briefly added and then rolled back before this release. Any Backend URL you set is now ignored.
+✨ **New**
+- **Installed page**: lists every top-level package with a Remove action that also drops orphaned dependencies.
+- **Updates page**: lists packages with a newer release and offers per-row and "Update All" actions.
+- **Home page**: opens on a curated Featured list instead of a blank placeholder.
+- **Display Names setting**: override the auto-formatted alias per package name (scope-agnostic).
+- **About page**: version, license, links, credits, and an optional release-check row.
+- **Progress-bar buttons**: Install, Remove, and Update morph into an indeterminate progress bar while the operation runs.
 
 ✏️ **Improvements**
-- **Plugin renamed to "Studio Discover"**: Both the plugin title and the repo moved off the single-word "Discover" name to avoid naming collisions.
-- **Direct Wally API calls**: The plugin now talks to `api.wally.run` directly with an `X-Real-User-Agent` header. UpliftGames confirmed direct Studio requests are fine, so the proxy is gone.
-- **Wording refresh**: The plugin UI and README were rewritten to speak to game creators rather than pure developers.
+- **Concurrent-op mutex**: install, uninstall, and update can no longer race on the `_Index` or the lockfile.
+- **Prior roots preserved**: a new install merges with your existing packages instead of wiping them. Re-installing the same `(realm, scope, name)` swaps version or alias in place, and formatted-alias collisions disambiguate with a numeric suffix.
+- **Install state persists**: the Install button reads the packages folder, not just the transient installer atom, so a package you already installed still shows as Installed after reopening Studio.
+- **Studio user id in requests**: `X-Real-User-Agent` now identifies the signed-in Studio user, and the plugin skips init entirely when no user is signed in.
 
-🔒 **Security**
-- **Anonymous-session guard**: The plugin won't load without a signed-in Studio user, so it can't make network calls on behalf of an unidentified session.
+🛠 **Fixes**
+- Root-package apply failures cancel the ChangeHistory waypoint so a botched install doesn't land on the undo stack.
+- Wally `/package-contents` requests now send the `Wally-Version` header required by the registry.
+- Uninstall and update surface errors inline and reset the row action instead of sticking in a progress state.
+- Long search-result titles and descriptions wrap instead of overflowing the dock widget.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
@@ -91,7 +121,7 @@ lune run install
 lune run build
 ```
 
-Then drag the generated `Discover.rbxm` into Roblox Studio, right-click the **Discover** folder in the Explorer, and pick **Save / Export > Save as Local Plugin**. A **Discover** button will appear in your toolbar.
+Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click the **Discover** folder in the Explorer, and pick **Save / Export > Save as Local Plugin**. A **Discover** button will appear in your toolbar.
 
 > `lune run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
 
@@ -109,7 +139,7 @@ Issues and pull requests are welcome.
 
 Studio Discover's own source is intended to be freely redistributable. Read it, fork it, modify it, ship it. There's no `LICENSE` file in the repo yet, but the intent is permissive (MIT or similar).
 
-The one thing to watch out for is [Foundation](https://github.com/Roblox/foundation), Roblox's UI library. The built `Discover.rbxm` bundles it at build time, and Foundation is not open source, so redistributing the *built artifact* is subject to Roblox's terms for Foundation, not this repo's license. A proper `LICENSE` will be added once Foundation is either swapped out or its redistribution terms are confirmed.
+The one thing to watch out for is [Foundation](https://github.com/Roblox/foundation), Roblox's UI library. The built `StudioDiscover.rbxm` bundles it at build time, and Foundation is not open source, so redistributing the *built artifact* is subject to Roblox's terms for Foundation, not this repo's license. A proper `LICENSE` will be added once Foundation is either swapped out or its redistribution terms are confirmed.
 
 For now: do whatever you want with the source in this repo, but check Foundation's terms before redistributing the build.
 

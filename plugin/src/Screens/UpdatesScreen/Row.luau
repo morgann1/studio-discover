@@ -1,0 +1,132 @@
+--!strict
+
+local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+
+local Foundation = require(StudioDiscover.Packages.Foundation)
+local React = require(StudioDiscover.Packages.React)
+
+local Installer = require(StudioDiscover.Source.Installer)
+local Navigation = require(StudioDiscover.Source.Navigation)
+local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+
+local Button = Foundation.Button
+local Progress = Foundation.Progress
+local Text = Foundation.Text
+local View = Foundation.View
+local ButtonVariant = Foundation.Enums.ButtonVariant
+local InputSize = Foundation.Enums.InputSize
+local ProgressShape = Foundation.Enums.ProgressShape
+local ProgressSize = Foundation.Enums.ProgressSize
+
+local e = React.createElement
+
+type Realm = "shared" | "server"
+
+type Props = {
+	scope: string,
+	name: string,
+	realm: Realm,
+	installedVersion: string,
+	latestVersion: string,
+	LayoutOrder: number?,
+}
+
+local function Row(props: Props)
+	local isUpdating, setIsUpdating = React.useState(false)
+	local errorText: string?, setErrorText = React.useState(nil :: string?)
+	local isBusy = Installer.useIsBusy()
+	local mountedRef = React.useRef(true)
+
+	React.useEffect(function()
+		return function()
+			mountedRef.current = false
+		end
+	end, {})
+
+	local onView = React.useCallback(function()
+		Navigation.pushScreen("Package", {
+			scope = props.scope,
+			name = props.name,
+		})
+	end, { props.scope, props.name } :: { any })
+
+	local onUpdate = React.useCallback(function()
+		setIsUpdating(true)
+		setErrorText(nil)
+		task.spawn(function()
+			local result = Installer.updateAllAsync({
+				{
+					scope = props.scope,
+					name = props.name,
+					realm = props.realm,
+					version = props.latestVersion,
+				},
+			})
+			if not mountedRef.current then
+				return
+			end
+			if not result.ok then
+				setErrorText(result.error or "Update failed")
+				setIsUpdating(false)
+			end
+		end)
+	end, { props.scope, props.name, props.realm, props.latestVersion } :: { any })
+
+	local nextOrder = createNextOrder()
+
+	local actionSlot: React.ReactNode
+	if isUpdating then
+		actionSlot = e(Progress, {
+			shape = ProgressShape.Bar,
+			size = ProgressSize.Small,
+			width = UDim.new(0, 120),
+			LayoutOrder = nextOrder(),
+		})
+	else
+		actionSlot = e(Button, {
+			text = "Update",
+			variant = ButtonVariant.Emphasis,
+			size = InputSize.Small,
+			isDisabled = isBusy,
+			onActivated = onUpdate,
+			LayoutOrder = nextOrder(),
+		})
+	end
+
+	local nextRootOrder = createNextOrder()
+
+	return e(View, {
+		tag = "size-full-0 auto-y col gap-xsmall",
+		LayoutOrder = props.LayoutOrder,
+	}, {
+		Card = e(View, {
+			tag = "size-full-0 auto-y row align-y-center gap-medium padding-medium bg-surface-200 radius-medium",
+			onActivated = onView,
+			LayoutOrder = nextRootOrder(),
+		}, {
+			Info = e(View, {
+				tag = "grow auto-y col gap-xsmall",
+				LayoutOrder = nextOrder(),
+			}, {
+				Title = e(Text, {
+					tag = "size-full-0 auto-y text-title-small content-emphasis text-align-x-left text-wrap",
+					Text = `{props.scope}/{props.name}`,
+				}),
+				Delta = e(Text, {
+					tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left",
+					Text = `v{props.installedVersion}  →  v{props.latestVersion}`,
+				}),
+			}),
+			Action = actionSlot,
+		}),
+		Error = if errorText ~= nil
+			then e(Text, {
+				tag = "size-full-0 auto-y text-body-small content-alert text-align-x-left text-wrap",
+				Text = errorText,
+				LayoutOrder = nextRootOrder(),
+			})
+			else nil,
+	})
+end
+
+return Row

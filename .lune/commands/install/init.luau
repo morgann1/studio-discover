@@ -48,6 +48,7 @@ local ROBLOX_PACKAGES = {
 	"ReactOtter",
 	"Promise",
 	"Dash",
+	"Motion",
 }
 
 local function runWallyInstall(): (boolean, string)
