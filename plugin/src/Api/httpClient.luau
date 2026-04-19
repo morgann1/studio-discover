@@ -1,6 +1,7 @@
 --!strict
 
 local HttpService = game:GetService("HttpService")
+local StudioService = game:GetService("StudioService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
@@ -9,8 +10,14 @@ local Version = require(StudioDiscover.Source.Util.Version)
 local rateLimiter = require(StudioDiscover.Source.Api.rateLimiter)
 
 local API_BASE = "https://api.wally.run/v1"
-local USER_AGENT = `StudioDiscover/{Version} (+https://github.com/morgann1/studio-discover)`
 local WALLY_VERSION = "0.3.2"
+
+-- Built per-request so the user id reflects the currently signed-in Studio
+-- session rather than whatever was signed in when this module first loaded.
+local function buildUserAgent(): string
+	local userId = StudioService:GetUserId()
+	return `StudioDiscover/{Version} (+https://github.com/morgann1/studio-discover; user={userId})`
+end
 
 type Response = {
 	body: string?,
@@ -37,7 +44,7 @@ local function requestOnceAsync(path: string): Response
 			Url = `{API_BASE}{path}`,
 			Method = "GET",
 			Headers = {
-				["X-Real-User-Agent"] = USER_AGENT,
+				["X-Real-User-Agent"] = buildUserAgent(),
 				["Wally-Version"] = WALLY_VERSION,
 			},
 		})
