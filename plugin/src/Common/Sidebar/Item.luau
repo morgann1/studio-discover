@@ -7,9 +7,11 @@ local React = require(StudioDiscover.Packages.React)
 
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
+local Badge = Foundation.Badge
 local Icon = Foundation.Icon
 local Text = Foundation.Text
 local View = Foundation.View
+local BadgeVariant = Foundation.Enums.BadgeVariant
 local IconSize = Foundation.Enums.IconSize
 local useTokens = Foundation.Hooks.useTokens
 
@@ -20,6 +22,7 @@ type Props = {
 	icon: string,
 	isActive: boolean,
 	compact: boolean?,
+	badge: number?,
 	onActivated: () -> (),
 	LayoutOrder: number?,
 }
@@ -35,6 +38,9 @@ local function Item(props: Props)
 		.. if compact then " align-x-center" else " gap-small padding-x-medium"
 
 	local nextOrder = createNextOrder()
+
+	local badgeCount = props.badge
+	local hasBadge = badgeCount ~= nil and badgeCount > 0
 
 	return e(View, {
 		tag = tag,
@@ -52,6 +58,11 @@ local function Item(props: Props)
 			tag = "grow auto-y text-align-x-left text-title-medium",
 			Text = props.text,
 			textStyle = foregroundStyle,
+			LayoutOrder = nextOrder(),
+		}),
+		Badge = hasBadge and e(Badge, {
+			text = tostring(badgeCount),
+			variant = BadgeVariant.Contrast,
 			LayoutOrder = nextOrder(),
 		}),
 	})

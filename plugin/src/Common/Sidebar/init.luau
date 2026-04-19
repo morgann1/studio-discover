@@ -7,6 +7,7 @@ local Motion = require(StudioDiscover.Packages.Motion)
 local React = require(StudioDiscover.Packages.React)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
+local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
 local SearchStore = require(StudioDiscover.Source.SearchStore)
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
@@ -107,6 +108,9 @@ local function Sidebar(props: Props)
 		animate(if compact then states.Compact else states.Expanded)
 	end, { compact, states } :: { any })
 
+	local updatesState = Installer.useUpdates()
+	local updatesCount = #updatesState.updates
+
 	local nextOrder = createNextOrder()
 	local nextNavOrder = createNextOrder()
 
@@ -120,6 +124,7 @@ local function Sidebar(props: Props)
 			icon = item.icon,
 			isActive = isActive,
 			compact = compact,
+			badge = if name == "Updates" then updatesCount else nil,
 			LayoutOrder = nextNavOrder(),
 			onActivated = function()
 				Navigation.resetScreen(name)
