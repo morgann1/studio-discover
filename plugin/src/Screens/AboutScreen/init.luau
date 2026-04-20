@@ -21,10 +21,7 @@ local View = Foundation.View
 
 local e = React.createElement
 
-local TAGLINE = "Browse and install Wally packages without leaving Roblox Studio."
-local DESCRIPTION = "Studio Discover is a pure-Luau alternative to the Wally CLI. It talks to the Wally "
-	.. "registry directly, handles the shared and server realms, re-exports package types through link modules, "
-	.. "and writes everything into the DataModel. No external toolchain required."
+local TAGLINE = "Browse and install Luau packages without leaving Roblox Studio."
 
 local function AboutScreen()
 	local latest = useLatestVersion()
@@ -64,12 +61,6 @@ local function AboutScreen()
 					Text = `v{Version} · {TAGLINE}`,
 					LayoutOrder = nextHeaderOrder(),
 				}),
-			}),
-
-			Description = e(Text, {
-				tag = "size-full-0 auto-y text-body-medium content-default text-align-x-left text-wrap",
-				Text = DESCRIPTION,
-				LayoutOrder = nextOrder(),
 			}),
 
 			About = e(Section, {
@@ -133,6 +124,11 @@ local function AboutScreen()
 				Wally = e(LinkRow, {
 					label = "Wally",
 					url = "https://wally.run",
+					LayoutOrder = nextCreditOrder(),
+				}),
+				Pesde = e(LinkRow, {
+					label = "pesde",
+					url = "https://pesde.dev",
 					LayoutOrder = nextCreditOrder(),
 				}),
 				Foundation = e(LinkRow, {
