@@ -17,7 +17,7 @@ local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
 local Divider = Foundation.Divider
 local IconButton = Foundation.IconButton
-local TextInput = Foundation.TextInput
+local SearchInput = Foundation.SearchInput
 local View = Foundation.View
 local ButtonVariant = Foundation.Enums.ButtonVariant
 local IconName = Foundation.Enums.IconName
@@ -141,12 +141,10 @@ local function Sidebar(props: Props)
 				onActivated = onSearchIconActivated,
 				LayoutOrder = nextOrder(),
 			})
-			else e(TextInput, {
-				textBoxRef = searchBoxRef,
+			else e(SearchInput, {
+				ref = searchBoxRef :: any,
 				text = searchText,
-				label = "",
 				placeholder = "Search",
-				leadingIcon = "icons/common/search",
 				size = InputSize.Medium,
 				width = UDim.new(1, 0),
 				onChanged = SearchStore.setQuery,
