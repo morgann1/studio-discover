@@ -19,12 +19,12 @@ end
 
 local function caretUpperBound(sv: Semver): Semver
 	if sv.major ~= 0 then
-		return { major = sv.major + 1, minor = 0, patch = 0 }
+		return { major = sv.major + 1, minor = 0, patch = 0, prerelease = {} }
 	end
 	if sv.minor ~= 0 then
-		return { major = 0, minor = sv.minor + 1, patch = 0 }
+		return { major = 0, minor = sv.minor + 1, patch = 0, prerelease = {} }
 	end
-	return { major = 0, minor = 0, patch = sv.patch + 1 }
+	return { major = 0, minor = 0, patch = sv.patch + 1, prerelease = {} }
 end
 
 type Check = {
