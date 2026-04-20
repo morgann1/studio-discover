@@ -31,8 +31,8 @@ type Props = {
 }
 
 local REGISTRY_LOGOS: { [Registry]: string } = {
-	wally = "rbxassetid://122568448217279",
-	pesde = "rbxassetid://130541292025764",
+	wally = "rbxassetid://87427394631506",
+	pesde = "rbxassetid://125159874176259",
 }
 
 local function PackageCard(props: Props)
