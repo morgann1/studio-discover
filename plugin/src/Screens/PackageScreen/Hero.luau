@@ -40,10 +40,25 @@ type Props = {
 }
 
 local function joinAuthors(authors: { string }): string
-	if #authors == 0 then
+	local names: { string } = {}
+	for _, raw in authors do
+		local stripped = raw:gsub("%s*<[^>]*>%s*", "")
+		local trimmed = stripped:match("^%s*(.-)%s*$") or ""
+		if trimmed ~= "" then
+			table.insert(names, trimmed)
+		end
+	end
+	if #names == 0 then
 		return "unknown author"
 	end
-	return table.concat(authors, ", ")
+	if #names == 1 then
+		return names[1]
+	end
+	if #names == 2 then
+		return `{names[1]} and {names[2]}`
+	end
+	local head = table.concat({ table.unpack(names, 1, #names - 1) }, ", ")
+	return `{head}, and {names[#names]}`
 end
 
 local function buttonText(status: InstallStatus): string
@@ -76,7 +91,7 @@ local function Hero(props: Props)
 	})
 
 	local author = e(Text, {
-		tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left",
+		tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left text-wrap",
 		Text = authorText,
 		LayoutOrder = nextTitleOrder(),
 	})
