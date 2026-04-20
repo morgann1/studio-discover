@@ -5,7 +5,9 @@ local HttpService = game:GetService("HttpService")
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local buildUserAgent = require(StudioDiscover.Source.Api.buildUserAgent)
+local cache = require(StudioDiscover.Source.Api.cache)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local rateLimiter = require(StudioDiscover.Source.Api.Pesde.rateLimiter)
 local types = require(StudioDiscover.Source.Api.types)
 
 local logger = createLogger.createLogger("api.pesdeSearch")
@@ -26,8 +28,15 @@ local function hasRobloxTarget(targets: any): boolean
 end
 
 local function searchPesdeAsync(query: string): ({ types.PackageBrief }?, string?)
+	local cacheKey = `pesde:search:{query}`
+	local cached = cache.get(cacheKey)
+	if cached ~= nil then
+		return cached, nil
+	end
+
 	local url = `{API_BASE}/search?query={HttpService:UrlEncode(query)}&offset=0`
 
+	rateLimiter.acquireAsync()
 	local success, response = pcall(function()
 		return HttpService:RequestAsync({
 			Url = url,
@@ -78,6 +87,7 @@ local function searchPesdeAsync(query: string): ({ types.PackageBrief }?, string
 	end
 
 	logger.info(`"{query}" -> {#results} Roblox result(s)`)
+	cache.set(cacheKey, results)
 	return results, nil
 end
 

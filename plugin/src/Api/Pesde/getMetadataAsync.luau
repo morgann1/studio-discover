@@ -7,6 +7,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local buildUserAgent = require(StudioDiscover.Source.Api.buildUserAgent)
 local cache = require(StudioDiscover.Source.Api.cache)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local rateLimiter = require(StudioDiscover.Source.Api.Pesde.rateLimiter)
 local types = require(StudioDiscover.Source.Api.types)
 
 local logger = createLogger.createLogger("api.pesdeMetadata")
@@ -94,6 +95,7 @@ local function getPesdeMetadataAsync(scope: string, name: string): (types.WallyP
 		return cached, nil
 	end
 
+	rateLimiter.acquireAsync()
 	local ok, response = pcall(function()
 		return HttpService:RequestAsync({
 			Url = `{API_BASE}{path}`,
