@@ -25,7 +25,7 @@ type Props = {
 
 local function renderCard(pkg: types.PackageBrief): any
 	return e(PackageCard, {
-		registry = pkg.registry,
+		registries = pkg.registries,
 		scope = pkg.scope,
 		name = pkg.name,
 		description = pkg.description,
@@ -56,8 +56,8 @@ local function Recent(props: Props)
 		if compact then
 			local cardOrder = createNextOrder()
 			for _, pkg in state.packages do
-				cards[`{pkg.registry}::{pkg.scope}/{pkg.name}`] = e(PackageCard, {
-					registry = pkg.registry,
+				cards[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
+					registries = pkg.registries,
 					scope = pkg.scope,
 					name = pkg.name,
 					description = pkg.description,

@@ -77,7 +77,7 @@ type Props = {
 
 local function renderCard(pkg: Entry): any
 	return e(PackageCard, {
-		registry = "wally",
+		registries = { "wally" },
 		scope = pkg.scope,
 		name = pkg.name,
 		description = pkg.description,
@@ -93,7 +93,7 @@ local function Featured(props: Props)
 		local cardOrder = createNextOrder()
 		for _, pkg in FEATURED do
 			cards[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
-				registry = "wally",
+				registries = { "wally" },
 				scope = pkg.scope,
 				name = pkg.name,
 				description = pkg.description,

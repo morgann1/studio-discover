@@ -78,7 +78,7 @@ local function searchPesdeAsync(query: string): ({ types.PackageBrief }?, string
 			continue
 		end
 		table.insert(results, {
-			registry = "pesde" :: "pesde",
+			registries = { "pesde" :: types.Registry },
 			scope = scope :: string,
 			name = name :: string,
 			description = entry.description,

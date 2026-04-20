@@ -27,7 +27,7 @@ local function briefsFromWally(wallyResults: { types.WallyPackageBrief }): { typ
 	local briefs: { types.PackageBrief } = {}
 	for _, pkg in wallyResults do
 		table.insert(briefs, {
-			registry = "wally" :: "wally",
+			registries = { "wally" :: types.Registry },
 			scope = pkg.scope,
 			name = pkg.name,
 			description = pkg.description,
@@ -37,14 +37,63 @@ local function briefsFromWally(wallyResults: { types.WallyPackageBrief }): { typ
 	return briefs
 end
 
+local function hasRegistry(registries: { types.Registry }, target: types.Registry): boolean
+	for _, r in registries do
+		if r == target then
+			return true
+		end
+	end
+	return false
+end
+
+local function mergeBriefs(left: { types.PackageBrief }, right: { types.PackageBrief }): { types.PackageBrief }
+	local byKey: { [string]: types.PackageBrief } = {}
+	local order: { string } = {}
+
+	local function absorb(brief: types.PackageBrief)
+		local key = `{brief.scope}/{brief.name}`
+		local existing = byKey[key]
+		if existing == nil then
+			byKey[key] = {
+				registries = table.clone(brief.registries),
+				scope = brief.scope,
+				name = brief.name,
+				description = brief.description,
+				latestVersion = brief.latestVersion,
+			}
+			table.insert(order, key)
+			return
+		end
+		for _, registry: types.Registry in brief.registries do
+			if not hasRegistry(existing.registries, registry) then
+				table.insert(existing.registries, registry)
+			end
+		end
+		if existing.description == nil then
+			existing.description = brief.description
+		end
+		if existing.latestVersion == nil then
+			existing.latestVersion = brief.latestVersion
+		end
+	end
+
+	for _, brief in left do
+		absorb(brief)
+	end
+	for _, brief in right do
+		absorb(brief)
+	end
+
+	local out: { types.PackageBrief } = {}
+	for _, key in order do
+		table.insert(out, byKey[key])
+	end
+	return out
+end
+
 local function sortBriefs(briefs: { types.PackageBrief })
 	table.sort(briefs, function(a, b)
-		local aKey = `{a.scope}/{a.name}`
-		local bKey = `{b.scope}/{b.name}`
-		if aKey == bKey then
-			return a.registry == "wally"
-		end
-		return aKey < bKey
+		return `{a.scope}/{a.name}` < `{b.scope}/{b.name}`
 	end)
 end
 
@@ -78,17 +127,9 @@ local function useSearchPackages(query: string): SearchState
 					return
 				end
 
-				local merged: { types.PackageBrief } = {}
-				if wallyResults ~= nil then
-					for _, brief in briefsFromWally(wallyResults) do
-						table.insert(merged, brief)
-					end
-				end
-				if pesdeResults ~= nil then
-					for _, brief in pesdeResults do
-						table.insert(merged, brief)
-					end
-				end
+				local wallyBriefs = if wallyResults ~= nil then briefsFromWally(wallyResults) else {}
+				local pesdeBriefs = pesdeResults or {}
+				local merged = mergeBriefs(wallyBriefs, pesdeBriefs)
 				sortBriefs(merged)
 
 				local finalError: string? = nil

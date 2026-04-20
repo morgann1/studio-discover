@@ -3,7 +3,7 @@
 export type Registry = "wally" | "pesde"
 
 export type PackageBrief = {
-	registry: Registry,
+	registries: { Registry },
 	scope: string,
 	name: string,
 	description: string?,

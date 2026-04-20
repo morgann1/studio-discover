@@ -18,9 +18,16 @@ local usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
 local Dependencies = require(script.Dependencies)
 local Hero = require(script.Hero)
 
+local Chip = Foundation.Chip
 local Loading = Foundation.Loading
 local Text = Foundation.Text
 local View = Foundation.View
+local ChipSize = Foundation.Enums.ChipSize
+
+local REGISTRY_LABELS: { [types.Registry]: string } = {
+	wally = "Wally",
+	pesde = "pesde",
+}
 
 local e = React.createElement
 
@@ -65,9 +72,29 @@ local function PackageScreen()
 	local scope = (screen.options.scope :: string?) or ""
 	local name = (screen.options.name :: string?) or ""
 	local requestedVersion = (screen.options.version :: string?) or ""
-	local registry: types.Registry = (screen.options.registry :: types.Registry?) or "wally"
+	local registries: { types.Registry }
+	local optionRegistries = screen.options.registries :: { types.Registry }?
+	if optionRegistries ~= nil and #optionRegistries > 0 then
+		registries = optionRegistries
+	else
+		registries = { (screen.options.registry :: types.Registry?) or "wally" }
+	end
 
-	local state = usePackageMetadata(scope, name, registry)
+	local selectedRegistry: types.Registry, setSelectedRegistry = React.useState(registries[1])
+	React.useEffect(function()
+		local stillValid = false
+		for _, r in registries do
+			if r == selectedRegistry then
+				stillValid = true
+				break
+			end
+		end
+		if not stillValid then
+			setSelectedRegistry(registries[1])
+		end
+	end, { registries } :: { any })
+
+	local state = usePackageMetadata(scope, name, selectedRegistry)
 	local installerState = Installer.useInstaller()
 	local installedRoots = Installer.useInstalledRoots().roots
 	local selectedVersion, setSelectedVersion = React.useState("")
@@ -162,6 +189,38 @@ local function PackageScreen()
 			Versions = aboutRow("Versions", tostring(#metadata.versions), aboutOrder()),
 		}
 
+		if #registries > 1 then
+			local chipOrder = createNextOrder()
+			local chips: { [string]: any } = {}
+			for _, registry: types.Registry in registries do
+				local registryLabel = REGISTRY_LABELS[registry] or (registry :: any)
+				local active = selectedRegistry == registry
+				chips[registry] = e(Chip, {
+					text = registryLabel,
+					size = ChipSize.Small,
+					isChecked = active,
+					onActivated = function()
+						setSelectedRegistry(registry)
+					end,
+					LayoutOrder = chipOrder(),
+				})
+			end
+			aboutChildren.Registry = e(View, {
+				tag = "size-full-0 auto-y row align-y-center gap-medium",
+				LayoutOrder = aboutOrder(),
+			}, {
+				Label = e(Text, {
+					tag = "auto-xy text-body-small content-muted",
+					Text = "Registry:",
+					LayoutOrder = 1,
+				}),
+				Chips = e(View, {
+					tag = "grow auto-y row align-y-center gap-xsmall",
+					LayoutOrder = 2,
+				}, chips),
+			})
+		end
+
 		local installRealm: "shared" | "server" = if pkg.realm == "server" then "server" else "shared"
 		local activeVersion = if selectedVersion ~= "" then selectedVersion else pkg.version
 		local onInstall = function()
@@ -209,7 +268,7 @@ local function PackageScreen()
 				onVersionChanged = setSelectedVersion,
 				installStatus = heroStatus,
 				installMessage = heroMessage,
-				isInstallBlocked = pkg.realm == "dev" or registry == "pesde",
+				isInstallBlocked = pkg.realm == "dev" or selectedRegistry == "pesde",
 				onInstall = onInstall,
 				LayoutOrder = nextOrder(),
 			}),

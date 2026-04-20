@@ -57,8 +57,8 @@ local function SearchResults(props: Props)
 
 	local cards: { [string]: any } = {}
 	for i, pkg in data do
-		cards[`{pkg.registry}::{pkg.scope}/{pkg.name}`] = e(PackageCard, {
-			registry = pkg.registry,
+		cards[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
+			registries = pkg.registries,
 			scope = pkg.scope,
 			name = pkg.name,
 			description = pkg.description,
