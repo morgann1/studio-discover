@@ -10,8 +10,6 @@ local logger = createLogger.createLogger("api.latestRelease")
 
 local URL = "https://api.github.com/repos/morgann1/studio-discover/releases/latest"
 
--- Tags are published as `vX.Y.Z`; the leading `v` is stripped so the result
--- is directly comparable with `parseSemver`.
 local function getLatestReleaseAsync(): (string?, string?)
 	local ok, response = pcall(function()
 		return HttpService:RequestAsync({

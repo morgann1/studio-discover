@@ -31,8 +31,6 @@ type Props = {
 	LayoutOrder: number?,
 }
 
--- Uses a raw Frame + explicit UIListLayout instead of Foundation's tag
--- layout: `align-y-center` was unreliable under auto-sized parents.
 local function Setting(props: Props)
 	local nextOrder = createNextOrder()
 	local nextRowOrder = createNextOrder()

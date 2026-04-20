@@ -25,9 +25,6 @@ export type PluginSettingsStore<T> = {
 
 export type FieldValidator = (value: any) -> (boolean, string?)
 
--- Each field in `defaultValue` must have a matching validator. On load,
--- fields are sanitized individually so schema changes (added/removed fields,
--- renamed enum options) don't discard the entire blob.
 local function createPluginSettingsStore<T>(
 	storageKey: string,
 	defaultValue: T,
@@ -117,7 +114,6 @@ local function createPluginSettingsStore<T>(
 		end
 	end)
 
-	-- Gated behind isLoading so defaults aren't written before the initial load.
 	local prevStorage: T? = defaultValue
 	local disposeWrite = Charm.effect(function()
 		local storage = storageAtom()

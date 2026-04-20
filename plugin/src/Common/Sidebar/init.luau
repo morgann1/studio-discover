@@ -60,8 +60,6 @@ local function Sidebar(props: Props)
 	local searchExpanded, setSearchExpanded = React.useState(false)
 	local searchBoxRef = React.useRef(nil :: Foundation.TextInputRef?)
 
-	-- Compact mode is temporarily overridden while the user searches via the
-	-- search icon; the input expands, auto-focuses, and collapses back on blur.
 	local compact = props.compact == true and not searchExpanded
 
 	React.useEffect(function()
@@ -70,9 +68,6 @@ local function Sidebar(props: Props)
 		end
 	end, { searchExpanded })
 
-	-- Typing while on another screen pulls the user back to Home so results
-	-- render. Only searchText is in deps — navigation changes shouldn't loop
-	-- back into a redirect.
 	React.useEffect(function()
 		if searchText ~= "" and current.name ~= "Home" then
 			Navigation.resetScreen("Home")
@@ -87,8 +82,6 @@ local function Sidebar(props: Props)
 		setSearchExpanded(false)
 	end, {})
 
-	-- Selector-based subscription: Sidebar re-renders only when reduceMotion
-	-- flips, not when any other setting changes.
 	local reduceMotion = ReactCharm.useAtom(function()
 		return SettingsStore.get().getStorage().reduceMotion
 	end)

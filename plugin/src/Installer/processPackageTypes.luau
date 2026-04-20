@@ -1,10 +1,5 @@
 --!strict
 
--- Rewrites a link ModuleScript so it re-exports the target's `export type`s.
--- Without this, call sites that `require(link)` get the runtime value but
--- lose type information — autocomplete and Luau type-flow break.
--- Ported from wally-package-types; known edge cases tracked in issue #14.
-
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
@@ -64,9 +59,6 @@ local function shouldKeepDefault(defaultType: string, resolvedTypes: { [string]:
 	return BUILTIN_TYPES[defaultType] == true or resolvedTypes[defaultType] == true
 end
 
--- Luau refuses to type-check a generic parameter default that references an
--- unknown symbol. We strip defaults that resolve to types we don't have in
--- scope, preserving only the parameter list up to that point.
 local function stripUnknownDefaults(generics: string, resolvedTypes: { [string]: true }): string
 	if generics == "" then
 		return ""

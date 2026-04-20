@@ -15,8 +15,6 @@ export type LatestVersionState = {
 
 local EMPTY: LatestVersionState = { loading = false, version = nil, error = nil }
 
--- Disabled when the Check for Updates setting is off; otherwise fetches the
--- latest release tag once per plugin session.
 local function useLatestVersion(): LatestVersionState
 	local settings = SettingsStore.useSettings()
 	local enabled = settings.checkForUpdates

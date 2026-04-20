@@ -9,8 +9,6 @@ export type Logger = {
 	warn: (...any) -> (),
 }
 
--- Module-level toggle for debug/info/warn logs. Only `error` always fires.
--- Synced from SettingsStore's `verboseLogging` setting at runtime.
 local verbose = false
 
 local function setVerbose(value: boolean)

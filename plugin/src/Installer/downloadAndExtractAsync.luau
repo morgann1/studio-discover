@@ -17,8 +17,6 @@ local logger = createLogger.createLogger("installer.download")
 
 type Entry = buildTree.Entry
 
--- Detects the leading directory a zip is nested under by looking for one of
--- the expected manifest files. Returns "" if the archive is flat at the root.
 local function detectPrefix(zipData: string): string
 	for _, filename in zzlib.files(zipData) do
 		if
@@ -32,8 +30,6 @@ local function detectPrefix(zipData: string): string
 	return ""
 end
 
--- If a package ships a `default.project.json`, honor the `tree.$path` field
--- so we only materialize files under the declared source directory.
 local function findSourcePath(zipData: string, prefix: string): string?
 	local projectFileName = prefix .. "default.project.json"
 	local projectJson: string? = nil

@@ -25,9 +25,6 @@ type ExistingEntry = {
 	realm: Realm,
 }
 
--- Identifies a link ModuleScript by looking for a require of the form
--- `...["{scope}_{name}@{version}"]["{moduleName}"]`. Non-link ModuleScripts
--- (e.g. a package's own init promotion) don't match this pattern.
 local function isLinkModule(source: string): boolean
 	return source:match('%["([^"]+@[^"]+)"%]') ~= nil
 end
@@ -55,10 +52,6 @@ local function placeTreeInFolder(tree: Instance, folder: Folder)
 	tree:Destroy()
 end
 
--- Writes the resolved package set into the DataModel. Reuses existing
--- `_Index` entries when their realm + packageId match the resolved set,
--- rebuilds every per-package dep link, and recreates top-level alias links
--- from scratch. Returns a list of non-fatal failure messages.
 local function applyAsync(
 	resolved: { [string]: ResolvedPackage },
 	rootAliases: { [string]: string },
@@ -67,8 +60,6 @@ local function applyAsync(
 	local failures: { string } = {}
 	local moduleNames: { [string]: string } = {}
 
-	-- Wipe all top-level alias links. They'll be rebuilt from the current
-	-- root set below, so anything no longer a root won't come back.
 	for _, realmName: Realm in { "shared", "server" } :: { Realm } do
 		local packagesFolder = getPackagesFolder(realmName)
 		for _, child in packagesFolder:GetChildren() do
@@ -78,8 +69,6 @@ local function applyAsync(
 		end
 	end
 
-	-- Catalog existing _Index entries so we can keep package contents that
-	-- are still in the resolved set rather than redownloading everything.
 	local existingByPackageId: { [string]: ExistingEntry } = {}
 	for _, realmName: Realm in { "shared", "server" } :: { Realm } do
 		local packagesFolder = getPackagesFolder(realmName)
@@ -96,7 +85,6 @@ local function applyAsync(
 		end
 	end
 
-	-- Drop anything not in the resolved set or needing a realm change.
 	for packageId, existing in existingByPackageId do
 		local resolvedPackage = resolved[packageId]
 		if resolvedPackage == nil then
@@ -110,7 +98,6 @@ local function applyAsync(
 		end
 	end
 
-	-- Download everything not on disk; reuse what is.
 	for packageId, resolvedPackage in resolved do
 		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
 		local indexFolder = getOrCreateIndex(packagesFolder)
@@ -121,8 +108,6 @@ local function applyAsync(
 			moduleNames[packageId] = if typeof(moduleName) == "string" then moduleName else resolvedPackage.name
 			logger.debug(`reuse existing {packageId} (ModuleName={moduleNames[packageId]})`)
 
-			-- Keep the package's code; wipe only the dep-link children so we
-			-- can rewire them to the newly-resolved targets.
 			for _, child in existing.folder:GetChildren() do
 				if child:IsA("ModuleScript") and isLinkModule(child.Source) then
 					child:Destroy()
@@ -156,7 +141,6 @@ local function applyAsync(
 		packageFolder.Parent = indexFolder
 	end
 
-	-- Rewire every per-package dep link.
 	for packageId, resolvedPackage in resolved do
 		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
 		local indexFolder = getOrCreateIndex(packagesFolder)
@@ -183,7 +167,6 @@ local function applyAsync(
 		end
 	end
 
-	-- Recreate top-level alias links.
 	for packageId, alias in rootAliases do
 		local resolvedPackage = resolved[packageId]
 		if resolvedPackage == nil then

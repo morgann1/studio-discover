@@ -77,9 +77,6 @@ local function PackageScreen()
 			return
 		end
 
-		-- Honor `options.version` when a dependency click pins a specific
-		-- version; fall back to latest if the requested version doesn't exist
-		-- (e.g. yanked since the dependent was published).
 		if requestedVersion ~= "" then
 			for _, entry in state.data.versions do
 				if entry.package.version == requestedVersion then
@@ -173,8 +170,6 @@ local function PackageScreen()
 			end)
 		end
 
-		-- Disk is the source of truth for "installed"; the atom only drives
-		-- the transient running/error states for the active operation.
 		local target = installerState.target
 		local isForThisPackage = target ~= nil
 			and target.scope == scope

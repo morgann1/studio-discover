@@ -87,8 +87,6 @@ local function Hero(props: Props)
 		LayoutOrder = nextTitleOrder(),
 	})
 
-	-- Both the Progress bar and the Button fill the container so swapping
-	-- between them doesn't change the surrounding column's width.
 	local installSlot: React.ReactNode
 	if isRunning then
 		installSlot = e(Progress, {

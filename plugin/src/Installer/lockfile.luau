@@ -16,9 +16,6 @@ type ResolvedPackage = types.ResolvedPackage
 
 local LOCKFILE_NAME = "WallyLock"
 
--- Loads the per-project lockfile if present. The lockfile is a ModuleScript
--- in ServerStorage so it persists with the place (no filesystem access from
--- plugin security). Returns an empty table if absent or unreadable.
 local function load(): { [string]: LockEntry }
 	local lockModule = ServerStorage:FindFirstChild(LOCKFILE_NAME)
 	if lockModule == nil or not lockModule:IsA("ModuleScript") then

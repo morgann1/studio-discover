@@ -29,8 +29,6 @@ export type UpdatesState = {
 
 local EMPTY: UpdatesState = { updates = {}, loading = false }
 
--- Fetches are sequential so the 1-RPS Wally rate limiter isn't starved;
--- `getPackageMetadataAsync` caches, so repeat renders don't re-hit the API.
 local function useUpdates(): UpdatesState
 	local installedState = useInstalledRoots()
 	local installedRoots = installedState.roots

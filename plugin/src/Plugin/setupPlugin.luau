@@ -26,7 +26,6 @@ local function setupPlugin(plugin: Plugin): ()
 		return
 	end
 
-	-- Wally attributes API usage to a real account; skip init without one.
 	if StudioService:GetUserId() == 0 then
 		logger.warn("Studio is not signed in (GetUserId == 0); Discover will not initialize")
 		return
@@ -34,8 +33,6 @@ local function setupPlugin(plugin: Plugin): ()
 
 	plugin.Name = "Discover"
 
-	-- Must run before anything reads from SettingsStore (which resolves the
-	-- plugin through PluginStore on first access).
 	PluginStore.get().setPlugin(plugin)
 
 	local toolbar = plugin:CreateToolbar("Discover")

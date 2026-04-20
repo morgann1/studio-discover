@@ -94,7 +94,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		target = target,
 	})
 
-	-- Per-package override wins over the naming-convention formatter.
 	local settings = SettingsStore.get().getStorage()
 	local override: string? = nil
 	for _, rule in settings.displayNames do
@@ -122,8 +121,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		alias = formattedAlias,
 	}
 
-	-- Merge with prior roots so this install doesn't wipe them; replace when
-	-- (realm, scope, name) matches so a re-install swaps version or alias.
 	local priorRoots = snapshotRoots()
 	local roots: { RootRequest } = {}
 	for _, prior in priorRoots do
@@ -137,9 +134,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		end
 	end
 
-	-- Disambiguate a different package that formats to the same alias by
-	-- appending a numeric suffix, otherwise the second install would clobber
-	-- the first's top-level link under the same realm.
 	local baseAlias = newRoot.alias
 	local suffix = 2
 	while true do
@@ -202,7 +196,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 
 	logger.info(`resolve complete: {countPairs(resolved)} package(s) activated`)
 
-	-- Cancel the undo waypoint if the root package itself failed to apply.
 	local rootFailureMarker = `{scope}/{name}@{version}:`
 	local decideCommit = function(applyFailures: { string }): boolean
 		for _, failure in applyFailures do

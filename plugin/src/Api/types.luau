@@ -42,8 +42,6 @@ export type WallyPackageVersion = {
 	["dev-dependencies"]: WallyDependencyMap,
 }
 
--- The `/package-metadata/{scope}/{name}` endpoint returns every published
--- version in `versions`, latest first.
 export type WallyPackageMetadata = {
 	versions: { WallyPackageVersion },
 }

@@ -21,9 +21,6 @@ type Entry = {
 	latestVersion: string?,
 }
 
--- Hardcoded 1:1 from the Wally `/package-metadata` response so the home page
--- renders instantly instead of waiting on per-package fetches serialized
--- through the 1-RPS rate limiter. Refresh when cutting a release.
 local FEATURED: { Entry } = table.freeze({
 	{
 		scope = "jsdotlua",

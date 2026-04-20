@@ -2,11 +2,6 @@
 
 export type FileClass = "Script" | "LocalScript" | "ModuleScript" | "skip"
 
--- Suffix-based classification matches Rojo's naming convention:
---   *.server.luau → Script (server context)
---   *.client.luau → LocalScript (client context)
---   *.luau       → ModuleScript (plain require target)
--- Non-script files are skipped; the installer only materializes Luau source.
 local function classifyFile(path: string): FileClass
 	if string.match(path, "%.server%.luau?$") ~= nil then
 		return "Script"

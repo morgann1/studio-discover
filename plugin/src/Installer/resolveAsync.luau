@@ -42,11 +42,6 @@ type DependencyRequest = {
 	alias: string,
 }
 
--- Walks the Wally metadata graph breadth-first from a set of root requests
--- and produces a fully-resolved package map. Mirrors Wally's resolver: reuse
--- already-activated versions that satisfy the constraint, semver-compatibility
--- conflicts bail out, realm promotion climbs toward `shared`, and candidates
--- are sorted with lockfile-known versions first.
 local function resolveAsync(
 	roots: { RootRequest },
 	lockfile: { [string]: LockEntry },
@@ -176,7 +171,6 @@ local function resolveAsync(
 			`visit {fullName}@{request.constraints} (requestedBy={request.requestedBy}, realm={request.requestRealm})`
 		)
 
-		-- Reuse an already-activated match, promoting its realm if needed.
 		local existingMatches = activatedByName[fullName]
 		local reused = false
 		if existingMatches ~= nil then
@@ -222,8 +216,6 @@ local function resolveAsync(
 			continue
 		end
 
-		-- Filter to candidates matching the constraint, then sort lockfile-
-		-- known first and descending by version.
 		local candidates = {}
 		for _, versionData in meta.versions do
 			if satisfies(versionData.package.version) then

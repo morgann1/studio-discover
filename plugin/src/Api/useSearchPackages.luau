@@ -37,9 +37,6 @@ local function briefsFromWally(wallyResults: { types.WallyPackageBrief }): { typ
 	return briefs
 end
 
--- Merged so exact `scope/name` matches across registries sit adjacent and a
--- Wally result wins the tie (surfaced first) since Wally has broader coverage
--- today.
 local function sortBriefs(briefs: { types.PackageBrief })
 	table.sort(briefs, function(a, b)
 		local aKey = `{a.scope}/{a.name}`
@@ -51,8 +48,6 @@ local function sortBriefs(briefs: { types.PackageBrief })
 	end)
 end
 
--- Runs the Wally and pesde search calls in parallel; each yields inside its
--- own task so the slower registry can't hold the faster one hostage.
 local function useSearchPackages(query: string): SearchState
 	local state: SearchState, setState = React.useState(EMPTY)
 

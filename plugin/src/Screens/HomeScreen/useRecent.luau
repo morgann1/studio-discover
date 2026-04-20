@@ -17,8 +17,6 @@ export type RecentState = {
 
 local EMPTY: RecentState = { loading = true, packages = {}, error = nil }
 
--- pesde's `/search` returns newest-first when no query is supplied; we slice
--- the first N so the home page stays scannable.
 local function useRecent(): RecentState
 	local state: RecentState, setState = React.useState(EMPTY)
 

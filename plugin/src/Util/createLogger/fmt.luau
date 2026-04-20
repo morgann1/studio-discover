@@ -1,25 +1,5 @@
 --!strict
 
---[[
-	This library describes a formatting mechanism akin to Rust's std::fmt.
-
-	It has a couple building blocks:
-
-	* A new syntax for formatting strings, taken verbatim from Rust. It'd also
-	  be possible to use printf-style formatting specifiers to integrate with
-	  the existing string.format utility.
-
-	* An equivalent to Rust's `Display` trait. We're mapping the semantics of
-	  tostring and the __tostring metamethod onto this trait. A lot of types
-	  should already have __tostring implementations, too!
-
-	* An equivalent to Rust's `Debug` trait. This library Lua-ifies that idea by
-	  inventing a new metamethod, `__fmtDebug`. We pass along the "extended
-	  form" attribute which is the equivalent of the "alternate mode" in Rust's
-	  Debug trait since it's the author's opinion that treating it as a
-	  verbosity flag is semantically accurate.
-]]
-
 export type Buffer = {
 	write: (self: Buffer, template: string, ...any) -> (),
 	writeLine: (self: Buffer, template: string, ...any) -> (),
@@ -33,8 +13,6 @@ export type Buffer = {
 
 export type FmtDebug<T> = (value: T, buffer: Buffer, extended: boolean) -> ()
 
--- Metatable-boundary cast target: Luau cannot type user-defined metamethods,
--- so we narrow to the subset we care about once and let call sites stay clean.
 type FmtDebugMeta = { __fmtDebug: FmtDebug<any>? }?
 
 local function defaultTableDebug(buffer: Buffer, input: { [any]: any })

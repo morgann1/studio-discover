@@ -37,8 +37,6 @@ local function findMatch(updates: { UpdateRequest }, root: RootRequest): UpdateR
 	return nil
 end
 
--- Runs one resolve+apply for the whole batch so the Wally round-trips and
--- undo waypoint collapse to a single unit of work.
 local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 	if #updates == 0 then
 		return { ok = true, error = nil, failures = {} }

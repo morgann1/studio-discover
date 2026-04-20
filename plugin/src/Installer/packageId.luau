@@ -1,8 +1,5 @@
 --!strict
 
--- Package IDs use the `{scope}_{name}@{version}` shape, matching Wally's
--- `package_id_file_name` convention. Used as `_Index` folder names.
-
 local function format(scope: string, name: string, version: string): string
 	return `{scope}_{name}@{version}`
 end

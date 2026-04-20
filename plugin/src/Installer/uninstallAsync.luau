@@ -20,8 +20,6 @@ export type UninstallResult = {
 	error: string?,
 }
 
--- Re-resolves without the target root; the pipeline drops any `_Index`
--- entries no longer reached by an active root, including orphaned deps.
 local function uninstallAsync(scope: string, name: string, realm: Realm): UninstallResult
 	if busyAtom() then
 		logger.warn(`uninstall rejected: another installer operation is in progress`)

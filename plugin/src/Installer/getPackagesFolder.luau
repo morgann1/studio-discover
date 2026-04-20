@@ -9,8 +9,6 @@ local types = require(StudioDiscover.Source.Installer.types)
 
 type Realm = types.Realm
 
--- Returns (and creates if missing) the top-level packages folder for a realm.
--- Shared packages live in ReplicatedStorage, server packages in ServerStorage.
 local function getPackagesFolder(realm: Realm): Folder
 	if realm == "server" then
 		local folder = ServerStorage:FindFirstChild("ServerPackages")

@@ -20,11 +20,6 @@ local function getInstanceName(filename: string): string
 	return instanceName
 end
 
--- Walks a flat list of path/content entries and builds a Folder/ModuleScript
--- tree. An `init.luau` inside a folder promotes that folder to a ModuleScript
--- whose children are the folder's other contents — matches Rojo's init-rule.
--- Returns either a Folder or a ModuleScript depending on whether the root
--- itself had an `init` file.
 local function buildTree(entries: { Entry }, packageName: string): Instance
 	logger.debug(`building tree for "{packageName}" ({#entries} entries)`)
 	local root: any = Instance.new("Folder")
@@ -34,8 +29,6 @@ local function buildTree(entries: { Entry }, packageName: string): Instance
 	local moduleCount = 0
 	local initPromotions = 0
 
-	-- Process non-init entries first so subsequent init promotions have
-	-- siblings to move.
 	table.sort(entries, function(a, b)
 		local aIsInit = a.path:match("init%.luau?$") ~= nil
 		local bIsInit = b.path:match("init%.luau?$") ~= nil

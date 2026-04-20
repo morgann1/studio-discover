@@ -51,9 +51,6 @@ local get = Charm.computed(function()
 	return createPluginSettingsStore("DiscoverSettings", DEFAULTS, VALIDATORS)
 end)
 
--- Keep the module-level logger verbose flag in sync with the persisted
--- `verboseLogging` setting. Retained in a module-level local so Charm's weak
--- listener table doesn't garbage-collect the effect.
 local _disposeVerboseSync = Charm.effect(function()
 	local store = get()
 	if store.getIsLoading() then

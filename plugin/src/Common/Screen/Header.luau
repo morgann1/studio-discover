@@ -23,8 +23,6 @@ type Props = {
 	LayoutOrder: number?,
 }
 
--- Mirrors the Sidebar's top section so the header divider aligns horizontally
--- with the sidebar's search/nav divider.
 local function Header(props: Props)
 	local nextOrder = createNextOrder()
 

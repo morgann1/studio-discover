@@ -12,8 +12,6 @@ local logger = createLogger.createLogger("api.pesdeSearch")
 
 local API_BASE = "https://registry.Pesde.daimond113.com/v1"
 
--- Studio can't run Lune/Luau-only packages, so non-Roblox targets are
--- filtered out before any result leaves this module.
 local function hasRobloxTarget(targets: any): boolean
 	if typeof(targets) ~= "table" then
 		return false

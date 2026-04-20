@@ -7,8 +7,6 @@ local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
 
 type Semver = parseSemver.Semver
 
--- Two versions are "compatible" under Wally's rules (same major if major > 0,
--- otherwise same minor). Used to detect resolve-time conflicts.
 local function compatible(a: Semver, b: Semver): boolean
 	if a.major == b.major and a.minor == b.minor and a.patch == b.patch then
 		return true
@@ -19,8 +17,6 @@ local function compatible(a: Semver, b: Semver): boolean
 	return a.major == b.major
 end
 
--- Upper bound for a caret (bare) constraint: `^1.2.3` → `< 2.0.0`,
--- `^0.2.3` → `< 0.3.0`, `^0.0.3` → `< 0.0.4`.
 local function caretUpperBound(sv: Semver): Semver
 	if sv.major ~= 0 then
 		return { major = sv.major + 1, minor = 0, patch = 0 }
@@ -36,9 +32,6 @@ type Check = {
 	version: Semver,
 }
 
--- Builds a predicate that tests whether a concrete version satisfies a
--- comma-separated constraint string. Bare versions become `^` implicitly,
--- matching Wally. Supports `>=`, `>`, `<=`, `<`, `=`.
 local function buildSatisfies(constraints: string): (string) -> boolean
 	local checks: { Check } = {}
 	for raw in constraints:gmatch("[^,]+") do

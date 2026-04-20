@@ -18,8 +18,6 @@ local function extractPackageIdFromLink(source: string): string?
 	return source:match('%["([^"]+@[^"]+)"%]%["[^"]+"%]')
 end
 
--- Fresh projects have no packages folders yet, so missing/malformed links
--- are skipped silently rather than treated as errors.
 local function snapshotRoots(): { RootRequest }
 	local roots: { RootRequest } = {}
 

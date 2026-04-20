@@ -20,8 +20,6 @@ local EMPTY: MetadataState = table.freeze({
 	error = nil,
 })
 
--- Registries share a normalized Wally-shaped result so the Package screen
--- doesn't need to branch per source.
 local function fetchAsync(registry: types.Registry, scope: string, name: string): (types.WallyPackageMetadata?, string?)
 	if registry == "pesde" then
 		return getPesdeMetadataAsync(scope, name)

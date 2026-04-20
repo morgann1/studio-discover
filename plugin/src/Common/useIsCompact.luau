@@ -6,8 +6,6 @@ local React = require(StudioDiscover.Packages.React)
 
 local COMPACT_THRESHOLD = 600
 
--- AbsoluteSize fires every frame during a resize drag; a ref gate ensures
--- React's setState queue is only touched on an actual threshold crossing.
 local function useIsCompact(instance: GuiBase2d?): boolean
 	local isCompact, setIsCompact = React.useState(true)
 	local isCompactRef = React.useRef(true)

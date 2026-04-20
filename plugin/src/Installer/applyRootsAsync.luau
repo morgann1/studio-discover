@@ -21,8 +21,6 @@ export type ApplyRootsResult = {
 	failures: { string },
 }
 
--- `decideCommit` can veto the waypoint after inspecting per-package failures;
--- returning false cancels the ChangeHistory recording and skips the refresh.
 local function applyRootsAsync(
 	resolved: { [string]: ResolvedPackage },
 	rootAliases: { [string]: string },

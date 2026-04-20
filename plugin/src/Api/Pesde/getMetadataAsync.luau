@@ -15,9 +15,6 @@ local API_BASE = "https://registry.Pesde.daimond113.com/v1"
 
 type Realm = "shared" | "server"
 
--- `roblox` and `roblox_server` are the only targets Studio can consume;
--- prefer `roblox` (shared realm) so a version published for both surfaces
--- as the more broadly usable variant.
 local function selectRobloxTarget(targets: any): (string?, any)
 	if typeof(targets) ~= "table" then
 		return nil, nil
@@ -43,8 +40,7 @@ local function toWallyShape(rawName: string, rawVersions: any): types.WallyPacka
 	for versionKey in rawVersions do
 		table.insert(versionKeys, versionKey)
 	end
-	-- pesde returns versions as a map; sort newest-first so the dropdown
-	-- behaves the same as Wally's array ordering.
+
 	table.sort(versionKeys, function(a, b)
 		return a > b
 	end)

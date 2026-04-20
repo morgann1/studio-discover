@@ -49,8 +49,6 @@ local function matchesAnyGlob(path: string, globs: { string }): boolean
 	return false
 end
 
--- wally.toml exposes `include` / `exclude` arrays. We parse them out with a
--- narrow regex rather than importing a full TOML parser.
 local function parseTomlStringArray(toml: string, key: string): { string }?
 	local contents = string.match(toml, key .. "%s*=%s*%[([^%]]*)%]")
 	if contents == nil then
@@ -63,9 +61,6 @@ local function parseTomlStringArray(toml: string, key: string): { string }?
 	return items
 end
 
--- Returns a predicate for paths relative to the package root: true to keep.
--- If `include` is set in wally.toml, only matching paths are kept. Otherwise
--- the default exclude list plus any user `exclude` patterns filter things out.
 local function buildFileFilter(wallyToml: string?): (string) -> boolean
 	local include: { string }? = nil
 	local exclude = table.clone(DEFAULT_EXCLUDE)
