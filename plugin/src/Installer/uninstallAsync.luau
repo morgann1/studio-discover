@@ -9,10 +9,12 @@ local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
 local resolveAsync = require(StudioDiscover.Source.Installer.Wally.resolveAsync)
 local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
+local uninstallPesdeAsync = require(StudioDiscover.Source.Installer.uninstallPesdeAsync)
 
 local logger = createLogger.createLogger("installer.uninstall")
 
 type Realm = "shared" | "server"
+type Registry = types.Registry
 type RootRequest = types.RootRequest
 
 export type UninstallResult = {
@@ -20,7 +22,10 @@ export type UninstallResult = {
 	error: string?,
 }
 
-local function uninstallAsync(scope: string, name: string, realm: Realm): UninstallResult
+local function uninstallAsync(scope: string, name: string, realm: Realm, registry: Registry?): UninstallResult
+	if registry == "pesde" then
+		return uninstallPesdeAsync(scope, name, realm)
+	end
 	if busyAtom() then
 		logger.warn(`uninstall rejected: another installer operation is in progress`)
 		return {
