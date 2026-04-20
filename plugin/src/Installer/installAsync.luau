@@ -8,6 +8,7 @@ local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
 local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
+local installPesdeAsync = require(StudioDiscover.Source.Installer.installPesdeAsync)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
 local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
 local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
@@ -26,6 +27,7 @@ local function countPairs(t: { [any]: any }): number
 end
 
 type Realm = "shared" | "server"
+type Registry = types.Registry
 type RootRequest = types.RootRequest
 type InstallerState = types.InstallerState
 type InstallerTarget = types.InstallerTarget
@@ -36,7 +38,17 @@ export type InstallResult = {
 	failures: { string },
 }
 
-local function installAsync(scope: string, name: string, version: string, alias: string, realm: Realm?): InstallResult
+local function installAsync(
+	scope: string,
+	name: string,
+	version: string,
+	alias: string,
+	realm: Realm?,
+	registry: Registry?
+): InstallResult
+	if registry == "pesde" then
+		return installPesdeAsync(scope, name, version, alias, realm)
+	end
 	if busyAtom() then
 		logger.warn(`install rejected: another installer operation is in progress`)
 		return {

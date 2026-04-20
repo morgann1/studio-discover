@@ -2,6 +2,8 @@
 
 export type Realm = "shared" | "server"
 
+export type Registry = "wally" | "pesde"
+
 export type Dependency = {
 	alias: string,
 	packageId: string,
@@ -31,6 +33,7 @@ export type InstalledRoot = {
 	version: string,
 	realm: Realm,
 	alias: string,
+	registry: Registry,
 }
 
 export type LockDependency = {
