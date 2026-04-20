@@ -8,7 +8,7 @@ local React = require(StudioDiscover.Packages.React)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
 local PackageCard = require(script.Parent.PackageCard)
-local useFeatured = require(script.Parent.useFeatured)
+local useRecent = require(script.Parent.useRecent)
 
 local Loading = Foundation.Loading
 local Text = Foundation.Text
@@ -20,15 +20,15 @@ type Props = {
 	LayoutOrder: number?,
 }
 
-local function Featured(props: Props)
-	local state = useFeatured()
+local function Recent(props: Props)
+	local state = useRecent()
 	local nextOrder = createNextOrder()
 
 	local children: { [string]: any } = {}
 
 	children.Heading = e(Text, {
 		tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left",
-		Text = "Featured",
+		Text = "Recently published",
 		LayoutOrder = nextOrder(),
 	})
 
@@ -39,16 +39,16 @@ local function Featured(props: Props)
 		}, {
 			Inner = e(Loading, {}),
 		})
-	elseif #state.packages == 0 then
+	elseif state.error ~= nil or #state.packages == 0 then
 		children.Empty = e(Text, {
 			tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left",
-			Text = "Couldn't load featured packages.",
+			Text = state.error or "No recent pesde packages available.",
 			LayoutOrder = nextOrder(),
 		})
 	else
 		for _, pkg in state.packages do
-			children[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
-				registry = "wally",
+			children[`{pkg.registry}::{pkg.scope}/{pkg.name}`] = e(PackageCard, {
+				registry = pkg.registry,
 				scope = pkg.scope,
 				name = pkg.name,
 				description = pkg.description,
@@ -64,4 +64,4 @@ local function Featured(props: Props)
 	}, children)
 end
 
-return Featured
+return Recent
