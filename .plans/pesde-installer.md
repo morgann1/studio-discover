@@ -48,9 +48,9 @@ Target version: **pesde v0.7.3** (released, what users actually run). NOT the in
 
 ### Phase 2 — download + extract
 
-- [ ] `plugin/src/Api/Pesde/downloadAsync.luau` — issues the archive GET, returns raw bytes. Uses rate-limiter. Cache on `{scope}/{name}@{version}/{target}`.
-- [ ] `plugin/src/Installer/Pesde/downloadAndExtractAsync.luau` — gunzip (zzlib) → tarAsync → filter ignored names → emit `{ path, content }` entries → buildTree. Reuse `Installer/Wally/buildTree` + `classifyFile` unless they make wally-specific assumptions (verify).
-- [ ] Smoke-test against a real pesde package (e.g., `alicesaidhi/conch`).
+- [x] `plugin/src/Api/Pesde/downloadAsync.luau` — issues the archive GET, returns raw bytes. Uses rate-limiter. Cache on `pesde:archive:{scope}/{name}@{version}/{target}`.
+- [x] `plugin/src/Installer/Pesde/downloadAndExtractAsync.luau` — gunzip (zzlib) → tarAsync → filter ignored names + `.git/` paths → prefix each path with `{packageName}/` → buildTree. Reuses `Installer/Wally/buildTree` + `classifyFile` as-is.
+- [x] Smoke-test against conch (12 .luau files classified as ModuleScript, `pesde.toml` + `src/index.d.ts` skipped, init-promotion will produce root ModuleScript from `src/init.luau`).
 
 ### Phase 3 — link generation
 
