@@ -4,9 +4,9 @@ local ChangeHistoryService = game:GetService("ChangeHistoryService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local applyAsync = require(StudioDiscover.Source.Installer.applyAsync)
+local applyAsync = require(StudioDiscover.Source.Installer.Wally.applyAsync)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
-local lockfile = require(StudioDiscover.Source.Installer.lockfile)
+local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 

@@ -3,8 +3,8 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
-local foldersModule = require(StudioDiscover.Source.Installer.getPackagesFolder)
-local packageId = require(StudioDiscover.Source.Installer.packageId)
+local foldersModule = require(StudioDiscover.Source.Installer.Wally.getPackagesFolder)
+local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("installer.snapshot")

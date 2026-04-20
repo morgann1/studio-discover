@@ -4,10 +4,10 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local getPackageMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
 
-local isDependencyValid = require(StudioDiscover.Source.Installer.isDependencyValid)
-local packageId = require(StudioDiscover.Source.Installer.packageId)
-local promoteRealm = require(StudioDiscover.Source.Installer.promoteRealm)
-local semver = require(StudioDiscover.Source.Installer.semver)
+local isDependencyValid = require(StudioDiscover.Source.Installer.Wally.isDependencyValid)
+local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
+local promoteRealm = require(StudioDiscover.Source.Installer.Wally.promoteRealm)
+local semver = require(StudioDiscover.Source.Installer.Wally.semver)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local compareSemver = require(StudioDiscover.Source.Util.compareSemver)

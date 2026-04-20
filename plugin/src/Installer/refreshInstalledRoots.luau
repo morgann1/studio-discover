@@ -3,7 +3,7 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
-local snapshotRoots = require(StudioDiscover.Source.Installer.snapshotRoots)
+local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 
 type InstalledRoot = types.InstalledRoot

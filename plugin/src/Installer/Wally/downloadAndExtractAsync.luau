@@ -10,8 +10,8 @@ local downloadPackageAsync = require(StudioDiscover.Source.Api.Wally.downloadAsy
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 
-local buildFileFilter = require(StudioDiscover.Source.Installer.fileFilter)
-local buildTree = require(StudioDiscover.Source.Installer.buildTree)
+local buildFileFilter = require(StudioDiscover.Source.Installer.Wally.fileFilter)
+local buildTree = require(StudioDiscover.Source.Installer.Wally.buildTree)
 
 local logger = createLogger.createLogger("installer.download")
 

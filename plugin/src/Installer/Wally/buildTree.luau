@@ -2,7 +2,7 @@
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local classifyFile = require(StudioDiscover.Source.Installer.classifyFile)
+local classifyFile = require(StudioDiscover.Source.Installer.Wally.classifyFile)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 
 local logger = createLogger.createLogger("installer.buildTree")

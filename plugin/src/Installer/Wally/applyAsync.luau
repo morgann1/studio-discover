@@ -3,10 +3,10 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
-local downloadAndExtractAsync = require(StudioDiscover.Source.Installer.downloadAndExtractAsync)
-local foldersModule = require(StudioDiscover.Source.Installer.getPackagesFolder)
-local linkModule = require(StudioDiscover.Source.Installer.buildPackageLink)
-local processPackageTypes = require(StudioDiscover.Source.Installer.processPackageTypes)
+local downloadAndExtractAsync = require(StudioDiscover.Source.Installer.Wally.downloadAndExtractAsync)
+local foldersModule = require(StudioDiscover.Source.Installer.Wally.getPackagesFolder)
+local linkModule = require(StudioDiscover.Source.Installer.Wally.buildPackageLink)
+local processPackageTypes = require(StudioDiscover.Source.Installer.Wally.processPackageTypes)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("installer.apply")
