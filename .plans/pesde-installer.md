@@ -54,8 +54,9 @@ Target version: **pesde v0.7.3** (released, what users actually run). NOT the in
 
 ### Phase 3 — link generation
 
-- [ ] `plugin/src/Installer/Pesde/buildPackageLink.luau` — emits `ModuleScript.Source` for alias linker modules. Four variants to consider: direct-dep-shared, direct-dep-server, transitive-in-same-package, transitive-cross-target. Output = `FindFirstChild`-chain requires, never require-by-string.
-- [ ] `plugin/src/Installer/Pesde/getPackagesFolder.luau` — produce `PesdePackages` Folder in ReplicatedStorage (matching Wally installer's convention of root-level folder per realm). Decide: one folder or two (shared/server)? Pick one → document.
+- [x] `plugin/src/Installer/Pesde/getPackagesFolder.luau` — two folders: `ReplicatedStorage.PesdePackages` (shared) and `ServerStorage.PesdeServerPackages` (server), mirroring Wally's convention. `.pesde` subfolder name matches pesde CLI.
+- [x] `plugin/src/Installer/Pesde/buildPackageLink.luau` — `buildSameRealmLink(alias, scope, name, version, libPath, kind)` emits a `ModuleScript` whose `Source` is `return require(script.Parent:FindFirstChild(".pesde"):FindFirstChild(...)…)`. `libPath → Instance chain` translation drops `.luau`/`.lua` leaves and removes `init.luau`/`init.lua` leaves entirely (matches buildTree init-promotion). Covers same-realm case for pesde + wally kinds; cross-target deferred to v2.
+- [x] Unit-tested the lib-path → FindFirstChild chain translator (8 cases: init.luau, named leaves, nested dirs, nil, empty, .lua extension).
 
 ### Phase 4 — apply (DataModel mutations)
 
