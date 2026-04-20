@@ -11,7 +11,7 @@ local types = require(StudioDiscover.Source.Api.types)
 
 local logger = createLogger.createLogger("api.pesdeMetadata")
 
-local API_BASE = "https://registry.Pesde.daimond113.com/v1"
+local API_BASE = "https://registry.pesde.daimond113.com/v1"
 
 type Realm = "shared" | "server"
 

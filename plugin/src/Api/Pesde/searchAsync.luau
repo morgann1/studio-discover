@@ -10,7 +10,7 @@ local types = require(StudioDiscover.Source.Api.types)
 
 local logger = createLogger.createLogger("api.pesdeSearch")
 
-local API_BASE = "https://registry.Pesde.daimond113.com/v1"
+local API_BASE = "https://registry.pesde.daimond113.com/v1"
 
 local function hasRobloxTarget(targets: any): boolean
 	if typeof(targets) ~= "table" then
