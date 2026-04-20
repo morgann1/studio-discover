@@ -5,6 +5,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 
+local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
 local PackageCard = require(script.Parent.PackageCard)
@@ -74,31 +75,70 @@ type Props = {
 	LayoutOrder: number?,
 }
 
-local function Featured(props: Props)
-	local nextOrder = createNextOrder()
-
-	local children: { [string]: any } = {}
-	children.Heading = e(Text, {
-		tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left",
-		Text = "Featured",
-		LayoutOrder = nextOrder(),
+local function renderCard(pkg: Entry): any
+	return e(PackageCard, {
+		registry = "wally",
+		scope = pkg.scope,
+		name = pkg.name,
+		description = pkg.description,
+		latestVersion = pkg.latestVersion,
 	})
+end
 
-	for _, pkg in FEATURED do
-		children[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
-			registry = "wally",
-			scope = pkg.scope,
-			name = pkg.name,
-			description = pkg.description,
-			latestVersion = pkg.latestVersion,
-			LayoutOrder = nextOrder(),
-		})
+local function Featured(props: Props)
+	local compact = CompactContext.useCompact()
+
+	local cards: { [string]: any } = {}
+	if compact then
+		local cardOrder = createNextOrder()
+		for _, pkg in FEATURED do
+			cards[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
+				registry = "wally",
+				scope = pkg.scope,
+				name = pkg.name,
+				description = pkg.description,
+				latestVersion = pkg.latestVersion,
+				LayoutOrder = cardOrder(),
+			})
+		end
+	else
+		local rowOrder = createNextOrder()
+		for i = 1, #FEATURED, 2 do
+			local pkgA = FEATURED[i]
+			local pkgB = FEATURED[i + 1]
+			local cells: { [string]: any } = {
+				Left = e(View, {
+					tag = "grow auto-y",
+					LayoutOrder = 1,
+				}, {
+					Card = renderCard(pkgA),
+				}),
+				Right = e(View, {
+					tag = "grow auto-y",
+					LayoutOrder = 2,
+				}, if pkgB ~= nil then { Card = renderCard(pkgB) } else nil),
+			}
+			cards[`row_{i}`] = e(View, {
+				tag = "size-full-0 auto-y row align-y-top gap-medium",
+				LayoutOrder = rowOrder(),
+			}, cells)
+		end
 	end
 
 	return e(View, {
 		tag = "size-full-0 auto-y col gap-medium",
 		LayoutOrder = props.LayoutOrder,
-	}, children)
+	}, {
+		Heading = e(Text, {
+			tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left",
+			Text = "Featured",
+			LayoutOrder = 1,
+		}),
+		Cards = e(View, {
+			tag = "size-full-0 auto-y col gap-medium",
+			LayoutOrder = 2,
+		}, cards),
+	})
 end
 
 return Featured
