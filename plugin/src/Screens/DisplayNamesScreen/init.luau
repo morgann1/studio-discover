@@ -14,7 +14,6 @@ local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local Row = require(script.Row)
 
 local Button = Foundation.Button
-local Text = Foundation.Text
 local View = Foundation.View
 local ButtonVariant = Foundation.Enums.ButtonVariant
 local IconName = Foundation.Enums.IconName
@@ -23,10 +22,6 @@ local InputSize = Foundation.Enums.InputSize
 local e = React.createElement
 
 type DisplayNameRule = SettingsStore.DisplayNameRule
-
-local DESCRIPTION = "Override the alias used for a specific package name. "
-	.. "Matches by the package's name (scope-agnostic, so `goodsignal` covers every publisher of it) "
-	.. "and wins over the Naming Convention setting. Takes effect the next time the package is installed or updated."
 
 local function setRules(rules: { DisplayNameRule })
 	SettingsStore.setSetting("displayNames", rules)
@@ -74,12 +69,6 @@ local function DisplayNamesScreen()
 
 	local nextOrder = createNextOrder()
 	local children: { [string]: any } = {}
-
-	children.Description = e(Text, {
-		tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left text-wrap",
-		Text = DESCRIPTION,
-		LayoutOrder = nextOrder(),
-	})
 
 	for index, rule in rules do
 		local capturedIndex = index
