@@ -39,6 +39,8 @@ local function setupPlugin(plugin: Plugin): ()
 	local button =
 		toolbar:CreateButton("Discover", "Browse and install packages", if isDarkTheme() then DARK_ICON else LIGHT_ICON)
 
+	button.ClickableWhenViewportHidden = true
+
 	local widget = plugin:CreateDockWidgetPluginGuiAsync("DiscoverWidget", WIDGET_INFO)
 	widget.Title = "Discover"
 	widget.Name = "Discover"
