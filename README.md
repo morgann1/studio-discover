@@ -29,11 +29,9 @@
 
 ## 🚀 About
 
-[Wally](https://wally.run/) is the most popular package manager for Roblox, but it's a CLI tool that lives outside of Studio. If you're a game creator who works purely in Roblox Studio, that means setting up Rokit, Rojo, and a whole external toolchain just to pull in a package. Not everyone wants to make that switch.
+If you want to use a Luau package in Roblox Studio, the usual path is a bit of a trek. You install [Wally](https://wally.run/) or [pesde](https://pesde.dev/), set up Rokit, set up Rojo, wire it into your project, and only then can you actually `require` the thing. Great if you're already deep in that workflow. A lot of hassle if you just want to use a package.
 
-[studio-wally](https://github.com/fewkz/studio-wally) exists, but it hasn't been updated in over a year, [doesn't support the server realm](https://github.com/fewkz/studio-wally/issues/4), and depends on the [experimental Rojo headless API](https://github.com/rojo-rbx/rojo/pull/639).
-
-Studio Discover is a pure-Luau alternative. It talks directly to the Wally registry over HTTP, handles both `shared` and `server` realms, re-exports package types through link modules, and writes everything into the DataModel. No external tools required. It does what `wally install` and `wally-package-types` do, entirely from inside Roblox Studio.
+Studio Discover skips the setup. Browse Wally and pesde packages from inside Studio, hit install, and the package shows up in your place — dependencies, types, and all.
 
 ## 📸 Screenshots
 
