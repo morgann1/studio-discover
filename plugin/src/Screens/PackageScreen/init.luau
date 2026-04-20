@@ -72,6 +72,7 @@ local function PackageScreen()
 	local scope = (screen.options.scope :: string?) or ""
 	local name = (screen.options.name :: string?) or ""
 	local requestedVersion = (screen.options.version :: string?) or ""
+
 	local registries: { types.Registry }
 	local optionRegistries = screen.options.registries :: { types.Registry }?
 	if optionRegistries ~= nil and #optionRegistries > 0 then
@@ -164,21 +165,16 @@ local function PackageScreen()
 			})
 		end
 
-		local depSections: { [string]: any } = {}
-		local depOrder = createNextOrder()
-		local function addDepSection(label: string, deps: types.WallyDependencyMap, key: string)
-			if countEntries(deps) == 0 then
-				return
-			end
-			depSections[key] = e(Dependencies, {
-				label = label,
-				deps = deps,
-				LayoutOrder = depOrder(),
-			})
-		end
-		addDepSection("Shared", selected.dependencies, "Shared")
-		addDepSection("Server", selected["server-dependencies"], "Server")
-		addDepSection("Dev", selected["dev-dependencies"], "Dev")
+		type DepGroup = {
+			key: string,
+			title: string,
+			deps: types.WallyDependencyMap,
+		}
+		local depGroups: { DepGroup } = {
+			{ key = "Shared", title = "Shared dependencies", deps = selected.dependencies },
+			{ key = "Server", title = "Server dependencies", deps = selected["server-dependencies"] },
+			{ key = "Dev", title = "Dev dependencies", deps = selected["dev-dependencies"] },
+		}
 
 		local nextOrder = createNextOrder()
 
@@ -257,7 +253,7 @@ local function PackageScreen()
 			heroMessage = nil
 		end
 
-		body = e(Content, {}, {
+		local bodyChildren: { [string]: any } = {
 			Hero = e(Hero, {
 				scope = scope,
 				name = name,
@@ -272,19 +268,25 @@ local function PackageScreen()
 				onInstall = onInstall,
 				LayoutOrder = nextOrder(),
 			}),
-
 			About = e(Section, {
 				title = "About",
 				LayoutOrder = nextOrder(),
 			}, aboutChildren),
+		}
 
-			DependenciesSection = if next(depSections) ~= nil
-				then e(Section, {
-					title = "Dependencies",
-					LayoutOrder = nextOrder(),
-				}, depSections)
-				else nil,
-		})
+		for _, group in depGroups do
+			if countEntries(group.deps) == 0 then
+				continue
+			end
+			bodyChildren[group.key] = e(Section, {
+				title = group.title,
+				LayoutOrder = nextOrder(),
+			}, {
+				List = e(Dependencies, { deps = group.deps }),
+			})
+		end
+
+		body = e(Content, {}, bodyChildren)
 	end
 
 	return e(Screen, {
