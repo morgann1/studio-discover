@@ -41,10 +41,10 @@ Target version: **pesde v0.7.3** (released, what users actually run). NOT the in
 
 ### Phase 1 — utilities (unblocks everything)
 
-- [ ] `plugin/src/Installer/Pesde/packageId.luau` — format/parse `"scope/name@version target"` (verified display format).
-- [ ] `plugin/src/Installer/Pesde/containerName.luau` — escape scope/name for the `.pesde/` subfolder. Native: `scope+name`. Wally-proxied: `scope_name@version`.
-- [ ] `plugin/src/Installer/Pesde/tarAsync.luau` — pure-Luau ustar reader. Walks the tar stream, yields `{ name, size, data, typeflag }`. Handle `0` (file), `5` (dir), skip pax extended headers (`x`, `g`) but consume their data. ~100 LoC.
-- [ ] Smoke-test tar reader with a synthetic input (new `_tar_test.luau` + `lune run`, then delete).
+- [x] `plugin/src/Installer/Pesde/packageId.luau` — format/parse `"scope/name@version target"` (verified display format).
+- [x] `plugin/src/Installer/Pesde/containerName.luau` — escape scope/name for the `.pesde/` subfolder. Native: `scope+name`. Wally-proxied: `scope_name@version`.
+- [x] `plugin/src/Installer/Pesde/tarAsync.luau` — pure-Luau ustar reader. Walks the tar stream, yields `{ path, kind, content }`. Dispatches by `typeflag` with trailing-`/` fallback (GNU tar uses space for files in ustar).
+- [x] Smoke-test tar reader with a synthetic input and a real pesde archive (conch 0.4.0-rc.6 — 14 entries, pesde.toml recovered with correct content).
 
 ### Phase 2 — download + extract
 
