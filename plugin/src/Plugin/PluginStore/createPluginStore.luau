@@ -9,9 +9,6 @@ export type PluginStore = {
 	setPlugin: (Plugin?) -> (),
 }
 
--- `plugin` is only defined in top-level plugin scripts; it has to be passed by
--- reference into this store once the bootstrap captures it, so ModuleScripts
--- lower in the tree can reach it via `PluginStore.get().getPlugin()`.
 local function createPluginStore(): PluginStore
 	local pluginAtom = Charm.atom(nil :: Plugin?)
 

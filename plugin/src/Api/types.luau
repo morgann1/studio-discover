@@ -1,5 +1,15 @@
 --!strict
 
+export type Registry = "wally" | "pesde"
+
+export type PackageBrief = {
+	registries: { Registry },
+	scope: string,
+	name: string,
+	description: string?,
+	latestVersion: string?,
+}
+
 export type WallyPackageBrief = {
 	scope: string,
 	name: string,
@@ -32,8 +42,6 @@ export type WallyPackageVersion = {
 	["dev-dependencies"]: WallyDependencyMap,
 }
 
--- The `/package-metadata/{scope}/{name}` endpoint returns every published
--- version in `versions`, latest first.
 export type WallyPackageMetadata = {
 	versions: { WallyPackageVersion },
 }

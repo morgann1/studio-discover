@@ -4,9 +4,6 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local capitalize = require(StudioDiscover.Source.Util.capitalize)
 
--- Splits on `-` / `_` and lowercase→uppercase boundaries, then lowercases.
--- "react-roblox" → { "react", "roblox" }
--- "MyPackageV2" → { "my", "package", "v2" }
 local function tokenize(name: string): { string }
 	local tokens: { string } = {}
 

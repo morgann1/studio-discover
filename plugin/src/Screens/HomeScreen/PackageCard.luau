@@ -6,7 +6,10 @@ local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
+local types = require(StudioDiscover.Source.Api.types)
+
 local Navigation = require(StudioDiscover.Source.Navigation)
+local RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local formatName = require(StudioDiscover.Source.Util.formatName)
@@ -16,7 +19,10 @@ local View = Foundation.View
 
 local e = React.createElement
 
+type Registry = types.Registry
+
 type Props = {
+	registries: { Registry },
 	scope: string,
 	name: string,
 	description: string?,
@@ -37,6 +43,7 @@ local function PackageCard(props: Props)
 
 	local onView = function()
 		Navigation.pushScreen("Package", {
+			registries = props.registries,
 			scope = props.scope,
 			name = props.name,
 		})
@@ -44,6 +51,15 @@ local function PackageCard(props: Props)
 
 	local nextCardOrder = createNextOrder()
 	local nextHeadingOrder = createNextOrder()
+	local nextBadgeOrder = createNextOrder()
+
+	local badges: { [string]: any } = {}
+	for _, registry: Registry in props.registries do
+		badges[registry] = e(RegistryLogo, {
+			registry = registry,
+			LayoutOrder = nextBadgeOrder(),
+		})
+	end
 
 	return e(View, {
 		tag = "size-full-0 auto-y col gap-small padding-medium bg-surface-200 radius-medium",
@@ -64,6 +80,10 @@ local function PackageCard(props: Props)
 				Text = `v{props.latestVersion}`,
 				LayoutOrder = nextHeadingOrder(),
 			}),
+			Badges = e(View, {
+				tag = "auto-xy row align-y-center gap-xsmall",
+				LayoutOrder = nextHeadingOrder(),
+			}, badges),
 		}),
 		Description = e(Text, {
 			tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left text-wrap",

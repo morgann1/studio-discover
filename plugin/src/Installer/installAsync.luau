@@ -8,11 +8,12 @@ local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
 local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
+local installPesdeAsync = require(StudioDiscover.Source.Installer.installPesdeAsync)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
-local lockfile = require(StudioDiscover.Source.Installer.lockfile)
-local packageId = require(StudioDiscover.Source.Installer.packageId)
-local resolveAsync = require(StudioDiscover.Source.Installer.resolveAsync)
-local snapshotRoots = require(StudioDiscover.Source.Installer.snapshotRoots)
+local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
+local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
+local resolveAsync = require(StudioDiscover.Source.Installer.Wally.resolveAsync)
+local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("installer.install")
@@ -26,6 +27,7 @@ local function countPairs(t: { [any]: any }): number
 end
 
 type Realm = "shared" | "server"
+type Registry = types.Registry
 type RootRequest = types.RootRequest
 type InstallerState = types.InstallerState
 type InstallerTarget = types.InstallerTarget
@@ -36,7 +38,17 @@ export type InstallResult = {
 	failures: { string },
 }
 
-local function installAsync(scope: string, name: string, version: string, alias: string, realm: Realm?): InstallResult
+local function installAsync(
+	scope: string,
+	name: string,
+	version: string,
+	alias: string,
+	realm: Realm?,
+	registry: Registry?
+): InstallResult
+	if registry == "pesde" then
+		return installPesdeAsync(scope, name, version, alias, realm)
+	end
 	if busyAtom() then
 		logger.warn(`install rejected: another installer operation is in progress`)
 		return {
@@ -94,7 +106,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		target = target,
 	})
 
-	-- Per-package override wins over the naming-convention formatter.
 	local settings = SettingsStore.get().getStorage()
 	local override: string? = nil
 	for _, rule in settings.displayNames do
@@ -122,8 +133,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		alias = formattedAlias,
 	}
 
-	-- Merge with prior roots so this install doesn't wipe them; replace when
-	-- (realm, scope, name) matches so a re-install swaps version or alias.
 	local priorRoots = snapshotRoots()
 	local roots: { RootRequest } = {}
 	for _, prior in priorRoots do
@@ -137,9 +146,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 		end
 	end
 
-	-- Disambiguate a different package that formats to the same alias by
-	-- appending a numeric suffix, otherwise the second install would clobber
-	-- the first's top-level link under the same realm.
 	local baseAlias = newRoot.alias
 	local suffix = 2
 	while true do
@@ -202,7 +208,6 @@ local function installAsync(scope: string, name: string, version: string, alias:
 
 	logger.info(`resolve complete: {countPairs(resolved)} package(s) activated`)
 
-	-- Cancel the undo waypoint if the root package itself failed to apply.
 	local rootFailureMarker = `{scope}/{name}@{version}:`
 	local decideCommit = function(applyFailures: { string }): boolean
 		for _, failure in applyFailures do

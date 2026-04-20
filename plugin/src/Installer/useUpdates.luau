@@ -4,20 +4,24 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
-local getPackageMetadataAsync = require(StudioDiscover.Source.Api.getPackageMetadataAsync)
+local getPesdeMetadataAsync = require(StudioDiscover.Source.Api.Pesde.getMetadataAsync)
+local getWallyMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
 
 local compareSemver = require(StudioDiscover.Source.Util.compareSemver)
 local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
 
+local installerTypes = require(StudioDiscover.Source.Installer.types)
 local useInstalledRoots = require(StudioDiscover.Source.Installer.useInstalledRoots)
 
-type Realm = "shared" | "server"
+type Realm = installerTypes.Realm
+type Registry = installerTypes.Registry
 
 export type UpdateInfo = {
 	scope: string,
 	name: string,
 	realm: Realm,
 	alias: string,
+	registry: Registry,
 	installedVersion: string,
 	latestVersion: string,
 }
@@ -29,8 +33,6 @@ export type UpdatesState = {
 
 local EMPTY: UpdatesState = { updates = {}, loading = false }
 
--- Fetches are sequential so the 1-RPS Wally rate limiter isn't starved;
--- `getPackageMetadataAsync` caches, so repeat renders don't re-hit the API.
 local function useUpdates(): UpdatesState
 	local installedState = useInstalledRoots()
 	local installedRoots = installedState.roots
@@ -55,7 +57,9 @@ local function useUpdates(): UpdatesState
 				if cancelled then
 					return
 				end
-				local metadata = getPackageMetadataAsync(root.scope, root.name)
+				local metadata = if root.registry == "pesde"
+					then getPesdeMetadataAsync(root.scope, root.name)
+					else getWallyMetadataAsync(root.scope, root.name)
 				if metadata == nil or metadata.versions == nil or #metadata.versions == 0 then
 					continue
 				end
@@ -71,6 +75,7 @@ local function useUpdates(): UpdatesState
 						name = root.name,
 						realm = root.realm,
 						alias = root.alias,
+						registry = root.registry,
 						installedVersion = root.version,
 						latestVersion = latest,
 					})

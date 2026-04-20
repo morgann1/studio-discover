@@ -19,7 +19,7 @@ For React-specific patterns and idioms, see [react-patterns.md](react-patterns.m
 - **Implementations can be messy if consumers stay clean** (e.g. wrapping `table.move` behind a readable `slice`).
 - **In modules, assign to a named variable and return it** — easier to grep, easier to read. Exception: stories and spec files.
 - **One file per library function**, not giant `TableUtil` catch-alls. Better testing, fewer cycles, auto-require picks them up.
-- **Comments describe now or the future, never yesterday.** No historical comments, no changelogs in source, no commented-out code. Git is the history.
+- **No comments.** Code is the source of truth. Don't leave `--` line comments, `--[[ ]]` block comments, docstrings, section banners, or commented-out code. If a reader would need a comment to understand something, rename the identifier, extract a helper, or restructure the code until the intent is obvious from reading it. The only permitted `--` prefixes are Luau directives — `--!strict`, `--!native`, `--!optimize`, `--!nolint`. Everything else gets deleted.
 - **Suffix yielding functions with `Async`.** Surprise yields break React and confuse callers.
 - **Shallow copy, never deep copy.** With immutability you only need to clone the path you're changing.
 

@@ -18,9 +18,16 @@ local usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
 local Dependencies = require(script.Dependencies)
 local Hero = require(script.Hero)
 
+local Chip = Foundation.Chip
 local Loading = Foundation.Loading
 local Text = Foundation.Text
 local View = Foundation.View
+local ChipSize = Foundation.Enums.ChipSize
+
+local REGISTRY_LABELS: { [types.Registry]: string } = {
+	wally = "Wally",
+	pesde = "pesde",
+}
 
 local e = React.createElement
 
@@ -66,7 +73,29 @@ local function PackageScreen()
 	local name = (screen.options.name :: string?) or ""
 	local requestedVersion = (screen.options.version :: string?) or ""
 
-	local state = usePackageMetadata(scope, name)
+	local registries: { types.Registry }
+	local optionRegistries = screen.options.registries :: { types.Registry }?
+	if optionRegistries ~= nil and #optionRegistries > 0 then
+		registries = optionRegistries
+	else
+		registries = { (screen.options.registry :: types.Registry?) or "wally" }
+	end
+
+	local selectedRegistry: types.Registry, setSelectedRegistry = React.useState(registries[1])
+	React.useEffect(function()
+		local stillValid = false
+		for _, r in registries do
+			if r == selectedRegistry then
+				stillValid = true
+				break
+			end
+		end
+		if not stillValid then
+			setSelectedRegistry(registries[1])
+		end
+	end, { registries } :: { any })
+
+	local state = usePackageMetadata(scope, name, selectedRegistry)
 	local installerState = Installer.useInstaller()
 	local installedRoots = Installer.useInstalledRoots().roots
 	local selectedVersion, setSelectedVersion = React.useState("")
@@ -76,9 +105,6 @@ local function PackageScreen()
 			return
 		end
 
-		-- Honor `options.version` when a dependency click pins a specific
-		-- version; fall back to latest if the requested version doesn't exist
-		-- (e.g. yanked since the dependent was published).
 		if requestedVersion ~= "" then
 			for _, entry in state.data.versions do
 				if entry.package.version == requestedVersion then
@@ -139,21 +165,16 @@ local function PackageScreen()
 			})
 		end
 
-		local depSections: { [string]: any } = {}
-		local depOrder = createNextOrder()
-		local function addDepSection(label: string, deps: types.WallyDependencyMap, key: string)
-			if countEntries(deps) == 0 then
-				return
-			end
-			depSections[key] = e(Dependencies, {
-				label = label,
-				deps = deps,
-				LayoutOrder = depOrder(),
-			})
-		end
-		addDepSection("Shared", selected.dependencies, "Shared")
-		addDepSection("Server", selected["server-dependencies"], "Server")
-		addDepSection("Dev", selected["dev-dependencies"], "Dev")
+		type DepGroup = {
+			key: string,
+			title: string,
+			deps: types.WallyDependencyMap,
+		}
+		local depGroups: { DepGroup } = {
+			{ key = "Shared", title = "Shared dependencies", deps = selected.dependencies },
+			{ key = "Server", title = "Server dependencies", deps = selected["server-dependencies"] },
+			{ key = "Dev", title = "Dev dependencies", deps = selected["dev-dependencies"] },
+		}
 
 		local nextOrder = createNextOrder()
 
@@ -164,16 +185,46 @@ local function PackageScreen()
 			Versions = aboutRow("Versions", tostring(#metadata.versions), aboutOrder()),
 		}
 
+		if #registries > 1 then
+			local chipOrder = createNextOrder()
+			local chips: { [string]: any } = {}
+			for _, registry: types.Registry in registries do
+				local registryLabel = REGISTRY_LABELS[registry] or (registry :: any)
+				local active = selectedRegistry == registry
+				chips[registry] = e(Chip, {
+					text = registryLabel,
+					size = ChipSize.Small,
+					isChecked = active,
+					onActivated = function()
+						setSelectedRegistry(registry)
+					end,
+					LayoutOrder = chipOrder(),
+				})
+			end
+			aboutChildren.Registry = e(View, {
+				tag = "size-full-0 auto-y row align-y-center gap-medium",
+				LayoutOrder = aboutOrder(),
+			}, {
+				Label = e(Text, {
+					tag = "auto-xy text-body-small content-muted",
+					Text = "Registry:",
+					LayoutOrder = 1,
+				}),
+				Chips = e(View, {
+					tag = "grow auto-y row align-y-center gap-xsmall",
+					LayoutOrder = 2,
+				}, chips),
+			})
+		end
+
 		local installRealm: "shared" | "server" = if pkg.realm == "server" then "server" else "shared"
 		local activeVersion = if selectedVersion ~= "" then selectedVersion else pkg.version
 		local onInstall = function()
 			task.spawn(function()
-				Installer.installAsync(scope, name, activeVersion, name, installRealm)
+				Installer.installAsync(scope, name, activeVersion, name, installRealm, selectedRegistry)
 			end)
 		end
 
-		-- Disk is the source of truth for "installed"; the atom only drives
-		-- the transient running/error states for the active operation.
 		local target = installerState.target
 		local isForThisPackage = target ~= nil
 			and target.scope == scope
@@ -181,7 +232,12 @@ local function PackageScreen()
 			and target.version == activeVersion
 		local isPersistedInstalled = false
 		for _, root in installedRoots do
-			if root.scope == scope and root.name == name and root.version == activeVersion then
+			if
+				root.scope == scope
+				and root.name == name
+				and root.version == activeVersion
+				and root.registry == selectedRegistry
+			then
 				isPersistedInstalled = true
 				break
 			end
@@ -202,7 +258,7 @@ local function PackageScreen()
 			heroMessage = nil
 		end
 
-		body = e(Content, {}, {
+		local bodyChildren: { [string]: any } = {
 			Hero = e(Hero, {
 				scope = scope,
 				name = name,
@@ -217,19 +273,25 @@ local function PackageScreen()
 				onInstall = onInstall,
 				LayoutOrder = nextOrder(),
 			}),
-
 			About = e(Section, {
 				title = "About",
 				LayoutOrder = nextOrder(),
 			}, aboutChildren),
+		}
 
-			DependenciesSection = if next(depSections) ~= nil
-				then e(Section, {
-					title = "Dependencies",
-					LayoutOrder = nextOrder(),
-				}, depSections)
-				else nil,
-		})
+		for _, group in depGroups do
+			if countEntries(group.deps) == 0 then
+				continue
+			end
+			bodyChildren[group.key] = e(Section, {
+				title = group.title,
+				LayoutOrder = nextOrder(),
+			}, {
+				List = e(Dependencies, { deps = group.deps }),
+			})
+		end
+
+		body = e(Content, {}, bodyChildren)
 	end
 
 	return e(Screen, {

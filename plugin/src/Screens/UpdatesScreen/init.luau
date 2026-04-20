@@ -46,6 +46,7 @@ local function UpdatesScreen()
 				name = entry.name,
 				realm = entry.realm,
 				version = entry.latestVersion,
+				registry = entry.registry,
 			})
 		end
 		setIsUpdatingAll(true)
@@ -107,11 +108,12 @@ local function UpdatesScreen()
 		end
 
 		for _, entry in state.updates do
-			local key = `{entry.realm}::{entry.scope}/{entry.name}`
+			local key = `{entry.registry}::{entry.realm}::{entry.scope}/{entry.name}`
 			children[key] = e(Row, {
 				scope = entry.scope,
 				name = entry.name,
 				realm = entry.realm,
+				registry = entry.registry,
 				installedVersion = entry.installedVersion,
 				latestVersion = entry.latestVersion,
 				LayoutOrder = nextOrder(),

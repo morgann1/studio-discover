@@ -7,11 +7,9 @@ local React = require(StudioDiscover.Packages.React)
 
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Badge = Foundation.Badge
 local Icon = Foundation.Icon
 local Text = Foundation.Text
 local View = Foundation.View
-local BadgeVariant = Foundation.Enums.BadgeVariant
 local IconSize = Foundation.Enums.IconSize
 local useTokens = Foundation.Hooks.useTokens
 
@@ -42,27 +40,56 @@ local function Item(props: Props)
 	local badgeCount = props.badge
 	local hasBadge = badgeCount ~= nil and badgeCount > 0
 
+	local iconSlot: React.ReactNode
+	if compact and hasBadge then
+		iconSlot = e(View, {
+			Size = UDim2.fromOffset(28, 28),
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder(),
+			ClipsDescendants = false,
+		}, {
+			Icon = e(Icon, {
+				name = props.icon,
+				size = IconSize.Medium,
+				style = foregroundStyle,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+			}),
+			Dot = e("Frame", {
+				Size = UDim2.fromOffset(8, 8),
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.fromScale(1, 0),
+				BackgroundColor3 = tokens.Color.Content.Emphasis.Color3,
+				BackgroundTransparency = tokens.Color.Content.Emphasis.Transparency,
+				BorderSizePixel = 0,
+				ZIndex = 2,
+			}, {
+				Corner = e("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			}),
+		})
+	else
+		iconSlot = e(Icon, {
+			name = props.icon,
+			size = IconSize.Medium,
+			style = foregroundStyle,
+			LayoutOrder = nextOrder(),
+		})
+	end
+
+	local labelText = if hasBadge then `{props.text} ({badgeCount})` else props.text
+
 	return e(View, {
 		tag = tag,
 		LayoutOrder = props.LayoutOrder,
 		onActivated = props.onActivated,
 		backgroundStyle = backgroundStyle,
+		ClipsDescendants = false,
 	}, {
-		Icon = e(Icon, {
-			name = props.icon,
-			size = IconSize.Medium,
-			style = foregroundStyle,
-			LayoutOrder = nextOrder(),
-		}),
+		IconSlot = iconSlot,
 		Label = not compact and e(Text, {
 			tag = "grow auto-y text-align-x-left text-title-medium",
-			Text = props.text,
+			Text = labelText,
 			textStyle = foregroundStyle,
-			LayoutOrder = nextOrder(),
-		}),
-		Badge = hasBadge and e(Badge, {
-			text = tostring(badgeCount),
-			variant = BadgeVariant.Contrast,
 			LayoutOrder = nextOrder(),
 		}),
 	})

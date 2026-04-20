@@ -19,10 +19,6 @@ type Props = {
 	LayoutOrder: number?,
 }
 
--- Native TextBox (not Foundation.Text) so users can select and Ctrl+C the
--- URL. Plugins can't open browsers and `CopyToClipboard` is built-in only.
--- `Typography.*.Font` is either an EnumItem, a FontFaceTable, or a Font
--- binding. TextBox.FontFace only accepts a Font, so we normalize here.
 local function resolveFont(fontProp: any): Font
 	if typeof(fontProp) == "EnumItem" then
 		return Font.fromEnum(fontProp :: Enum.Font)

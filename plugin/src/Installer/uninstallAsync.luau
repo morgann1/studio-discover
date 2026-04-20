@@ -5,14 +5,16 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
 local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
-local lockfile = require(StudioDiscover.Source.Installer.lockfile)
-local resolveAsync = require(StudioDiscover.Source.Installer.resolveAsync)
-local snapshotRoots = require(StudioDiscover.Source.Installer.snapshotRoots)
+local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
+local resolveAsync = require(StudioDiscover.Source.Installer.Wally.resolveAsync)
+local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
+local uninstallPesdeAsync = require(StudioDiscover.Source.Installer.uninstallPesdeAsync)
 
 local logger = createLogger.createLogger("installer.uninstall")
 
 type Realm = "shared" | "server"
+type Registry = types.Registry
 type RootRequest = types.RootRequest
 
 export type UninstallResult = {
@@ -20,9 +22,10 @@ export type UninstallResult = {
 	error: string?,
 }
 
--- Re-resolves without the target root; the pipeline drops any `_Index`
--- entries no longer reached by an active root, including orphaned deps.
-local function uninstallAsync(scope: string, name: string, realm: Realm): UninstallResult
+local function uninstallAsync(scope: string, name: string, realm: Realm, registry: Registry?): UninstallResult
+	if registry == "pesde" then
+		return uninstallPesdeAsync(scope, name, realm)
+	end
 	if busyAtom() then
 		logger.warn(`uninstall rejected: another installer operation is in progress`)
 		return {
