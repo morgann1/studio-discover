@@ -41,13 +41,14 @@ local function ManageScreen()
 		local nextOrder = createNextOrder()
 		local rows: { [string]: any } = {}
 		for _, root in installedRoots do
-			local key = `{root.realm}::{root.scope}/{root.name}`
+			local key = `{root.registry}::{root.realm}::{root.scope}/{root.name}`
 			rows[key] = e(Row, {
 				scope = root.scope,
 				name = root.name,
 				version = root.version,
 				alias = root.alias,
 				realm = root.realm,
+				registry = root.registry,
 				LayoutOrder = nextOrder(),
 			})
 		end

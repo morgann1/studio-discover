@@ -53,6 +53,9 @@ local function useUpdates(): UpdatesState
 				if cancelled then
 					return
 				end
+				if root.registry ~= "wally" then
+					continue
+				end
 				local metadata = getPackageMetadataAsync(root.scope, root.name)
 				if metadata == nil or metadata.versions == nil or #metadata.versions == 0 then
 					continue

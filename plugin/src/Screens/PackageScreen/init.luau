@@ -221,7 +221,7 @@ local function PackageScreen()
 		local activeVersion = if selectedVersion ~= "" then selectedVersion else pkg.version
 		local onInstall = function()
 			task.spawn(function()
-				Installer.installAsync(scope, name, activeVersion, name, installRealm)
+				Installer.installAsync(scope, name, activeVersion, name, installRealm, selectedRegistry)
 			end)
 		end
 
@@ -232,7 +232,12 @@ local function PackageScreen()
 			and target.version == activeVersion
 		local isPersistedInstalled = false
 		for _, root in installedRoots do
-			if root.scope == scope and root.name == name and root.version == activeVersion then
+			if
+				root.scope == scope
+				and root.name == name
+				and root.version == activeVersion
+				and root.registry == selectedRegistry
+			then
 				isPersistedInstalled = true
 				break
 			end
@@ -264,7 +269,7 @@ local function PackageScreen()
 				onVersionChanged = setSelectedVersion,
 				installStatus = heroStatus,
 				installMessage = heroMessage,
-				isInstallBlocked = pkg.realm == "dev" or selectedRegistry == "pesde",
+				isInstallBlocked = pkg.realm == "dev",
 				onInstall = onInstall,
 				LayoutOrder = nextOrder(),
 			}),

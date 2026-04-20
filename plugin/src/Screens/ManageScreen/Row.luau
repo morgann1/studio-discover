@@ -22,6 +22,7 @@ local ProgressSize = Foundation.Enums.ProgressSize
 local e = React.createElement
 
 type Realm = "shared" | "server"
+type Registry = "wally" | "pesde"
 
 type Props = {
 	scope: string,
@@ -29,6 +30,7 @@ type Props = {
 	version: string,
 	alias: string,
 	realm: Realm,
+	registry: Registry,
 	LayoutOrder: number?,
 }
 
@@ -48,8 +50,9 @@ local function Row(props: Props)
 		Navigation.pushScreen("Package", {
 			scope = props.scope,
 			name = props.name,
+			registry = props.registry,
 		})
-	end, { props.scope, props.name } :: { any })
+	end, { props.scope, props.name, props.registry } :: { any })
 
 	local onRemove = React.useCallback(function()
 		setIsRemoving(true)
@@ -81,7 +84,7 @@ local function Row(props: Props)
 			text = "Remove",
 			variant = ButtonVariant.Alert,
 			size = InputSize.Small,
-			isDisabled = isBusy,
+			isDisabled = isBusy or props.registry ~= "wally",
 			onActivated = onRemove,
 			LayoutOrder = nextOrder(),
 		})
@@ -108,7 +111,9 @@ local function Row(props: Props)
 				}),
 				Meta = e(Text, {
 					tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left",
-					Text = `v{props.version} · {capitalize(props.realm)} · {props.alias}`,
+					Text = `v{props.version} · {capitalize(props.realm)} · {props.alias} · {capitalize(
+						props.registry
+					)}`,
 				}),
 			}),
 			Action = actionSlot,
