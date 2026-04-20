@@ -31,6 +31,52 @@ local function selectRobloxTarget(targets: any): (string?, any)
 	return nil, nil
 end
 
+local function formatDepValue(info: any): string?
+	if typeof(info) ~= "table" then
+		return nil
+	end
+	local version = info.version
+	if typeof(version) ~= "string" then
+		return nil
+	end
+	local path: string? = if typeof(info.name) == "string"
+		then info.name
+		elseif typeof(info.wally) == "string" then info.wally
+		else nil
+	if path == nil then
+		return nil
+	end
+	return `{path}@{version}`
+end
+
+local function extractDeps(rawDeps: any): (types.WallyDependencyMap, types.WallyDependencyMap, types.WallyDependencyMap)
+	local standard: types.WallyDependencyMap = {}
+	local peer: types.WallyDependencyMap = {}
+	local dev: types.WallyDependencyMap = {}
+	if typeof(rawDeps) ~= "table" then
+		return standard, peer, dev
+	end
+	for alias, entry in rawDeps do
+		if typeof(entry) ~= "table" then
+			continue
+		end
+		local info = entry[1]
+		local kind = entry[2]
+		local formatted = formatDepValue(info)
+		if formatted == nil then
+			continue
+		end
+		if kind == "dev" then
+			dev[alias] = formatted
+		elseif kind == "peer" then
+			peer[alias] = formatted
+		else
+			standard[alias] = formatted
+		end
+	end
+	return standard, peer, dev
+end
+
 local function toWallyShape(rawName: string, rawVersions: any): types.WallyPackageMetadata?
 	local _, name = rawName:match("^(.+)/(.+)$")
 	if name == nil then
@@ -55,6 +101,15 @@ local function toWallyShape(rawName: string, rawVersions: any): types.WallyPacka
 		end
 
 		local realm: Realm = if targetKind == "roblox_server" then "server" else "shared"
+		local standard, peer, dev = extractDeps(target.dependencies)
+		for alias, value in peer do
+			if standard[alias] == nil then
+				standard[alias] = value
+			end
+		end
+
+		local sharedDeps: types.WallyDependencyMap = if realm == "shared" then standard else {}
+		local serverDeps: types.WallyDependencyMap = if realm == "server" then standard else {}
 
 		table.insert(versions, {
 			package = {
@@ -72,9 +127,9 @@ local function toWallyShape(rawName: string, rawVersions: any): types.WallyPacka
 				["shared-packages"] = nil,
 				["server-packages"] = nil,
 			},
-			dependencies = {},
-			["server-dependencies"] = {},
-			["dev-dependencies"] = {},
+			dependencies = sharedDeps,
+			["server-dependencies"] = serverDeps,
+			["dev-dependencies"] = dev,
 		})
 	end
 
