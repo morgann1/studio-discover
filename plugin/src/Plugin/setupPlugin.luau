@@ -6,20 +6,18 @@ local StudioService = game:GetService("StudioService")
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
+local SharedToolbar = require(StudioDiscover.Packages.SharedToolbar)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 
 local logger = createLogger.createLogger("plugin.bootstrap")
 
-local LIGHT_ICON = "rbxassetid://122071679257586"
-local DARK_ICON = "rbxassetid://125842588490194"
-
-local studio = settings().Studio
+local ICON = "rbxassetid://125842588490194"
+local MEDIUM_NAME = "  22:43 Plugin Suite"
+local TOOLBAR_TITLE = "22:43"
+local BUTTON_ID = "discover"
+local PEER_ID = "morgann1/studio-discover"
 
 local WIDGET_INFO = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 936, 702, 306, 306)
-
-local function isDarkTheme(): boolean
-	return studio.Theme:GetColor(Enum.StudioStyleGuideColor.MainBackground).R < 0.5
-end
 
 local function setupPlugin(plugin: Plugin): ()
 	if RunService:IsRunning() then
@@ -35,18 +33,11 @@ local function setupPlugin(plugin: Plugin): ()
 
 	PluginStore.get().setPlugin(plugin)
 
-	local toolbar = plugin:CreateToolbar("Discover")
-	local button =
-		toolbar:CreateButton("Discover", "Browse and install packages", if isDarkTheme() then DARK_ICON else LIGHT_ICON)
-
-	button.ClickableWhenViewportHidden = true
-
 	local widget = plugin:CreateDockWidgetPluginGuiAsync("DiscoverWidget", WIDGET_INFO)
 	widget.Title = "Discover"
 	widget.Name = "Discover"
 	widget.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	local connections: { RBXScriptConnection } = table.create(3)
 	local destroyApp: (() -> ())? = nil
 
 	local function mount()
@@ -57,41 +48,40 @@ local function setupPlugin(plugin: Plugin): ()
 		destroyApp = mountApp(plugin, widget)
 	end
 
-	table.insert(
-		connections,
-		studio.ThemeChanged:Connect(function()
-			button.Icon = if isDarkTheme() then DARK_ICON else LIGHT_ICON
-		end)
-	)
+	local handle = SharedToolbar.register({
+		plugin = plugin,
+		mediumName = MEDIUM_NAME,
+		toolbarTitle = TOOLBAR_TITLE,
+		peerId = PEER_ID,
+		buttons = {
+			{
+				id = BUTTON_ID,
+				title = "Discover",
+				tooltip = "Browse and install Luau packages",
+				iconId = ICON,
+				clickableWhenViewportHidden = true,
+				onClick = function()
+					widget.Enabled = not widget.Enabled
+				end,
+			},
+		},
+	})
 
-	table.insert(
-		connections,
-		button.Click:Connect(function()
-			widget.Enabled = not widget.Enabled
-		end)
-	)
-
-	table.insert(
-		connections,
-		widget:GetPropertyChangedSignal("Enabled"):Connect(function()
-			button:SetActive(widget.Enabled)
-			if widget.Enabled then
-				mount()
-			end
-		end)
-	)
+	local enabledConn = widget:GetPropertyChangedSignal("Enabled"):Connect(function()
+		handle:setActive(BUTTON_ID, widget.Enabled)
+		if widget.Enabled then
+			mount()
+		end
+	end)
 
 	if widget.Enabled then
-		button:SetActive(true)
+		handle:setActive(BUTTON_ID, true)
 		mount()
 	end
 
 	plugin.Unloading:Connect(function()
-		for _, connection in connections do
-			connection:Disconnect()
-		end
-		table.clear(connections)
-
+		enabledConn:Disconnect()
+		handle:destroy()
 		if destroyApp ~= nil then
 			destroyApp()
 			destroyApp = nil

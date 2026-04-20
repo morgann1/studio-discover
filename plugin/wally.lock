@@ -108,9 +108,14 @@ version = "1.1.0"
 dependencies = []
 
 [[package]]
+name = "morgann1/shared-toolbar"
+version = "0.1.0"
+dependencies = []
+
+[[package]]
 name = "morgann1/studio-discover"
 version = "3.6.0"
-dependencies = [["Charm", "littensy/charm@0.10.0"], ["Cryo", "morgann1/cryo@1.1.0"], ["Promise", "evaera/promise@4.0.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactCharm", "littensy/react-charm@0.3.0"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["t", "osyrisrblx/t@3.1.1"], ["zzlib", "morgann1/zzlib@0.1.0"]]
+dependencies = [["Charm", "littensy/charm@0.10.0"], ["Cryo", "morgann1/cryo@1.1.0"], ["Promise", "evaera/promise@4.0.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactCharm", "littensy/react-charm@0.3.0"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["SharedToolbar", "morgann1/shared-toolbar@0.1.0"], ["t", "osyrisrblx/t@3.1.1"], ["zzlib", "morgann1/zzlib@0.1.0"]]
 
 [[package]]
 name = "morgann1/zzlib"
