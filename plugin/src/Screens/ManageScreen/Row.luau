@@ -7,6 +7,7 @@ local React = require(StudioDiscover.Packages.React)
 
 local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
+local RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)
 local capitalize = require(StudioDiscover.Source.Util.capitalize)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
@@ -58,7 +59,7 @@ local function Row(props: Props)
 		setIsRemoving(true)
 		setErrorText(nil)
 		task.spawn(function()
-			local result = Installer.uninstallAsync(props.scope, props.name, props.realm)
+			local result = Installer.uninstallAsync(props.scope, props.name, props.realm, props.registry)
 			if not mountedRef.current then
 				return
 			end
@@ -67,7 +68,7 @@ local function Row(props: Props)
 				setIsRemoving(false)
 			end
 		end)
-	end, { props.scope, props.name, props.realm } :: { any })
+	end, { props.scope, props.name, props.realm, props.registry } :: { any })
 
 	local nextOrder = createNextOrder()
 
@@ -76,20 +77,20 @@ local function Row(props: Props)
 		actionSlot = e(Progress, {
 			shape = ProgressShape.Bar,
 			size = ProgressSize.Small,
-			width = UDim.new(0, 120),
-			LayoutOrder = nextOrder(),
+			width = UDim.new(0, 96),
 		})
 	else
 		actionSlot = e(Button, {
 			text = "Remove",
 			variant = ButtonVariant.Alert,
 			size = InputSize.Small,
-			isDisabled = isBusy or props.registry ~= "wally",
+			isDisabled = isBusy,
 			onActivated = onRemove,
-			LayoutOrder = nextOrder(),
 		})
 	end
 
+	local nextInfoOrder = createNextOrder()
+	local nextSideOrder = createNextOrder()
 	local nextRootOrder = createNextOrder()
 
 	return e(View, {
@@ -106,17 +107,31 @@ local function Row(props: Props)
 				LayoutOrder = nextOrder(),
 			}, {
 				Title = e(Text, {
-					tag = "size-full-0 auto-y text-title-small content-emphasis text-align-x-left text-wrap",
+					tag = "size-full-0 auto-y text-title-medium content-emphasis text-align-x-left text-wrap",
 					Text = `{props.scope}/{props.name}`,
+					LayoutOrder = nextInfoOrder(),
 				}),
 				Meta = e(Text, {
 					tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left",
-					Text = `v{props.version} · {capitalize(props.realm)} · {props.alias} · {capitalize(
-						props.registry
-					)}`,
+					Text = `v{props.version} · {capitalize(props.realm)} · {props.alias}`,
+					LayoutOrder = nextInfoOrder(),
 				}),
 			}),
-			Action = actionSlot,
+			Side = e(View, {
+				tag = "auto-xy row align-y-center gap-small",
+				LayoutOrder = nextOrder(),
+			}, {
+				Registry = e(RegistryLogo, {
+					registry = props.registry,
+					LayoutOrder = nextSideOrder(),
+				}),
+				Action = e(View, {
+					tag = "auto-xy row align-y-center",
+					LayoutOrder = nextSideOrder(),
+				}, {
+					Slot = actionSlot,
+				}),
+			}),
 		}),
 		Error = if errorText ~= nil
 			then e(Text, {

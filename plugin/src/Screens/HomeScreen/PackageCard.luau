@@ -9,11 +9,11 @@ local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 local types = require(StudioDiscover.Source.Api.types)
 
 local Navigation = require(StudioDiscover.Source.Navigation)
+local RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local formatName = require(StudioDiscover.Source.Util.formatName)
 
-local Image = Foundation.Image
 local Text = Foundation.Text
 local View = Foundation.View
 
@@ -28,11 +28,6 @@ type Props = {
 	description: string?,
 	latestVersion: string?,
 	LayoutOrder: number?,
-}
-
-local REGISTRY_LOGOS: { [Registry]: string } = {
-	wally = "rbxassetid://87427394631506",
-	pesde = "rbxassetid://125159874176259",
 }
 
 local function PackageCard(props: Props)
@@ -60,10 +55,8 @@ local function PackageCard(props: Props)
 
 	local badges: { [string]: any } = {}
 	for _, registry: Registry in props.registries do
-		badges[registry] = e(Image, {
-			Image = REGISTRY_LOGOS[registry],
-			ScaleType = Enum.ScaleType.Fit,
-			Size = UDim2.fromOffset(56, 22),
+		badges[registry] = e(RegistryLogo, {
+			registry = registry,
 			LayoutOrder = nextBadgeOrder(),
 		})
 	end

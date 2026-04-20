@@ -7,6 +7,8 @@ local React = require(StudioDiscover.Packages.React)
 
 local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
+local RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)
+local capitalize = require(StudioDiscover.Source.Util.capitalize)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
 local Button = Foundation.Button
@@ -21,11 +23,13 @@ local ProgressSize = Foundation.Enums.ProgressSize
 local e = React.createElement
 
 type Realm = "shared" | "server"
+type Registry = "wally" | "pesde"
 
 type Props = {
 	scope: string,
 	name: string,
 	realm: Realm,
+	registry: Registry,
 	installedVersion: string,
 	latestVersion: string,
 	LayoutOrder: number?,
@@ -47,8 +51,9 @@ local function Row(props: Props)
 		Navigation.pushScreen("Package", {
 			scope = props.scope,
 			name = props.name,
+			registry = props.registry,
 		})
-	end, { props.scope, props.name } :: { any })
+	end, { props.scope, props.name, props.registry } :: { any })
 
 	local onUpdate = React.useCallback(function()
 		setIsUpdating(true)
@@ -60,6 +65,7 @@ local function Row(props: Props)
 					name = props.name,
 					realm = props.realm,
 					version = props.latestVersion,
+					registry = props.registry,
 				},
 			})
 			if not mountedRef.current then
@@ -70,7 +76,7 @@ local function Row(props: Props)
 				setIsUpdating(false)
 			end
 		end)
-	end, { props.scope, props.name, props.realm, props.latestVersion } :: { any })
+	end, { props.scope, props.name, props.realm, props.registry, props.latestVersion } :: { any })
 
 	local nextOrder = createNextOrder()
 
@@ -79,8 +85,7 @@ local function Row(props: Props)
 		actionSlot = e(Progress, {
 			shape = ProgressShape.Bar,
 			size = ProgressSize.Small,
-			width = UDim.new(0, 120),
-			LayoutOrder = nextOrder(),
+			width = UDim.new(0, 96),
 		})
 	else
 		actionSlot = e(Button, {
@@ -89,10 +94,11 @@ local function Row(props: Props)
 			size = InputSize.Small,
 			isDisabled = isBusy,
 			onActivated = onUpdate,
-			LayoutOrder = nextOrder(),
 		})
 	end
 
+	local nextInfoOrder = createNextOrder()
+	local nextSideOrder = createNextOrder()
 	local nextRootOrder = createNextOrder()
 
 	return e(View, {
@@ -109,15 +115,31 @@ local function Row(props: Props)
 				LayoutOrder = nextOrder(),
 			}, {
 				Title = e(Text, {
-					tag = "size-full-0 auto-y text-title-small content-emphasis text-align-x-left text-wrap",
+					tag = "size-full-0 auto-y text-title-medium content-emphasis text-align-x-left text-wrap",
 					Text = `{props.scope}/{props.name}`,
+					LayoutOrder = nextInfoOrder(),
 				}),
-				Delta = e(Text, {
+				Meta = e(Text, {
 					tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left",
-					Text = `v{props.installedVersion}  →  v{props.latestVersion}`,
+					Text = `v{props.installedVersion}  →  v{props.latestVersion} · {capitalize(props.realm)}`,
+					LayoutOrder = nextInfoOrder(),
 				}),
 			}),
-			Action = actionSlot,
+			Side = e(View, {
+				tag = "auto-xy row align-y-center gap-small",
+				LayoutOrder = nextOrder(),
+			}, {
+				Registry = e(RegistryLogo, {
+					registry = props.registry,
+					LayoutOrder = nextSideOrder(),
+				}),
+				Action = e(View, {
+					tag = "auto-xy row align-y-center",
+					LayoutOrder = nextSideOrder(),
+				}, {
+					Slot = actionSlot,
+				}),
+			}),
 		}),
 		Error = if errorText ~= nil
 			then e(Text, {
