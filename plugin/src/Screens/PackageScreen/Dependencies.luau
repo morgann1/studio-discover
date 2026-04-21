@@ -19,6 +19,7 @@ local e = React.createElement
 
 type Props = {
 	deps: types.WallyDependencyMap,
+	registry: types.Registry,
 	LayoutOrder: number?,
 }
 
@@ -52,6 +53,7 @@ local function Dependencies(props: Props)
 					scope = scope,
 					name = name,
 					version = version,
+					registry = props.registry,
 				})
 			end
 		else

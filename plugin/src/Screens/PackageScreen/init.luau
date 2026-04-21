@@ -287,7 +287,7 @@ local function PackageScreen()
 				title = group.title,
 				LayoutOrder = nextOrder(),
 			}, {
-				List = e(Dependencies, { deps = group.deps }),
+				List = e(Dependencies, { deps = group.deps, registry = selectedRegistry }),
 			})
 		end
 
