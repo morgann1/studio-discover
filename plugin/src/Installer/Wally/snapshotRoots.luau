@@ -9,7 +9,7 @@ local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("installer.snapshot")
 
-local getPackagesFolder = foldersModule.getPackagesFolder
+local findPackagesFolder = foldersModule.findPackagesFolder
 
 type Realm = types.Realm
 type RootRequest = types.RootRequest
@@ -22,7 +22,10 @@ local function snapshotRoots(): { RootRequest }
 	local roots: { RootRequest } = {}
 
 	for _, realm: Realm in { "shared", "server" } :: { Realm } do
-		local packagesFolder = getPackagesFolder(realm)
+		local packagesFolder = findPackagesFolder(realm)
+		if packagesFolder == nil then
+			continue
+		end
 		for _, child in packagesFolder:GetChildren() do
 			if not child:IsA("ModuleScript") then
 				continue

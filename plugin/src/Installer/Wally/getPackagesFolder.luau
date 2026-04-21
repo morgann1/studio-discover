@@ -9,24 +9,27 @@ local types = require(StudioDiscover.Source.Installer.types)
 
 type Realm = types.Realm
 
-local function getPackagesFolder(realm: Realm): Folder
-	if realm == "server" then
-		local folder = ServerStorage:FindFirstChild("ServerPackages")
-		if folder == nil then
-			folder = Instance.new("Folder");
-			(folder :: Folder).Name = "ServerPackages"
-			(folder :: Folder).Parent = ServerStorage
-		end
-		return folder :: Folder
-	end
-
-	local folder = ReplicatedStorage:FindFirstChild("Packages")
-	if folder == nil then
-		folder = Instance.new("Folder");
-		(folder :: Folder).Name = "Packages"
-		(folder :: Folder).Parent = ReplicatedStorage
+local function findPackagesFolder(realm: Realm): Folder?
+	local parent = if realm == "server" then ServerStorage else ReplicatedStorage
+	local name = if realm == "server" then "ServerPackages" else "Packages"
+	local folder = parent:FindFirstChild(name)
+	if folder == nil or not folder:IsA("Folder") then
+		return nil
 	end
 	return folder :: Folder
+end
+
+local function getPackagesFolder(realm: Realm): Folder
+	local existing = findPackagesFolder(realm)
+	if existing ~= nil then
+		return existing
+	end
+	local parent = if realm == "server" then ServerStorage else ReplicatedStorage
+	local name = if realm == "server" then "ServerPackages" else "Packages"
+	local folder = Instance.new("Folder")
+	folder.Name = name
+	folder.Parent = parent
+	return folder
 end
 
 local function getOrCreateIndex(packagesFolder: Folder): Folder
@@ -40,6 +43,7 @@ local function getOrCreateIndex(packagesFolder: Folder): Folder
 end
 
 return table.freeze({
+	findPackagesFolder = findPackagesFolder,
 	getPackagesFolder = getPackagesFolder,
 	getOrCreateIndex = getOrCreateIndex,
 })

@@ -8,7 +8,7 @@ local types = require(StudioDiscover.Source.Installer.Pesde.types)
 
 local logger = createLogger.createLogger("installer.pesdeSnapshot")
 
-local getPackagesFolder = foldersModule.getPackagesFolder
+local findPackagesFolder = foldersModule.findPackagesFolder
 
 type Realm = types.Realm
 type Kind = types.Kind
@@ -63,7 +63,10 @@ local function snapshotRoots(): { PesdeRootSnapshot }
 	local snapshots: { PesdeRootSnapshot } = {}
 
 	for _, realm: Realm in { "shared", "server" } :: { Realm } do
-		local packagesFolder = getPackagesFolder(realm)
+		local packagesFolder = findPackagesFolder(realm)
+		if packagesFolder == nil then
+			continue
+		end
 		for _, child in packagesFolder:GetChildren() do
 			if not child:IsA("ModuleScript") then
 				continue

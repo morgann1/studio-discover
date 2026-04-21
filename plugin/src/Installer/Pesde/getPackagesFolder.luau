@@ -11,24 +11,27 @@ type Realm = types.Realm
 
 local PACKAGES_CONTAINER_NAME = ".pesde"
 
-local function getPackagesFolder(realm: Realm): Folder
-	if realm == "server" then
-		local folder = ServerStorage:FindFirstChild("PesdeServerPackages")
-		if folder == nil then
-			folder = Instance.new("Folder");
-			(folder :: Folder).Name = "PesdeServerPackages"
-			(folder :: Folder).Parent = ServerStorage
-		end
-		return folder :: Folder
-	end
-
-	local folder = ReplicatedStorage:FindFirstChild("PesdePackages")
-	if folder == nil then
-		folder = Instance.new("Folder");
-		(folder :: Folder).Name = "PesdePackages"
-		(folder :: Folder).Parent = ReplicatedStorage
+local function findPackagesFolder(realm: Realm): Folder?
+	local parent = if realm == "server" then ServerStorage else ReplicatedStorage
+	local name = if realm == "server" then "PesdeServerPackages" else "PesdePackages"
+	local folder = parent:FindFirstChild(name)
+	if folder == nil or not folder:IsA("Folder") then
+		return nil
 	end
 	return folder :: Folder
+end
+
+local function getPackagesFolder(realm: Realm): Folder
+	local existing = findPackagesFolder(realm)
+	if existing ~= nil then
+		return existing
+	end
+	local parent = if realm == "server" then ServerStorage else ReplicatedStorage
+	local name = if realm == "server" then "PesdeServerPackages" else "PesdePackages"
+	local folder = Instance.new("Folder")
+	folder.Name = name
+	folder.Parent = parent
+	return folder
 end
 
 local function getOrCreateContainer(packagesFolder: Folder): Folder
@@ -43,6 +46,7 @@ local function getOrCreateContainer(packagesFolder: Folder): Folder
 end
 
 return table.freeze({
+	findPackagesFolder = findPackagesFolder,
 	getPackagesFolder = getPackagesFolder,
 	getOrCreateContainer = getOrCreateContainer,
 	PACKAGES_CONTAINER_NAME = PACKAGES_CONTAINER_NAME,
