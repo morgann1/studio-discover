@@ -5,7 +5,7 @@
 	and generates the sourcemap.
 ]]
 
-local fs = require("@lune/fs")
+local fs = require("@lute/fs")
 
 local color = require("../utils/color")
 local rojo = require("../lib/project/rojo")
@@ -15,7 +15,7 @@ local codegen = {}
 -- Metadata for help command
 codegen.name = "codegen"
 codegen.description = "Runs all code generation (sourcemap only for now)"
-codegen.usage = "lune run codegen"
+codegen.usage = "lute run codegen"
 
 -- Argument definitions for CLI parsing
 codegen.arguments = {}
@@ -25,6 +25,10 @@ export type Options = {
 	production: boolean?,
 	generateSourcemap: boolean?,
 }
+
+local function isDir(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "dir"
+end
 
 --[[
 	Runs all code generation tasks.
@@ -37,8 +41,8 @@ function codegen.run(options_: Options?): boolean
 	local quiet = if options.quiet ~= nil then options.quiet else false
 
 	if options.generateSourcemap then
-		if not fs.isDir("plugin/generated") then
-			fs.writeDir("plugin/generated")
+		if not isDir("plugin/generated") then
+			fs.mkdir("plugin/generated")
 		end
 
 		-- Generate sourcemap

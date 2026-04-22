@@ -7,8 +7,8 @@
 	  2. Second run: Generates the patch from your changes and cleans up
 ]]
 
-local fs = require("@lune/fs")
-local process = require("@lune/process")
+local fs = require("@lute/fs")
+local process = require("@lute/process")
 
 local color = require("../utils/color")
 
@@ -17,7 +17,7 @@ local patch = {}
 -- Metadata for help command
 patch.name = "patch"
 patch.description = "Creates or updates a patch for a Wally package"
-patch.usage = "lune run patch <package-path>"
+patch.usage = "lute run patch <package-path>"
 
 -- Argument definitions for CLI parsing
 patch.arguments = {
@@ -37,6 +37,22 @@ local PACKAGES_INDEX = "Packages/_Index/"
 export type Options = {
 	packagePath: string,
 }
+
+local function isDir(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "dir"
+end
+
+local function removeDirRecursive(path: string)
+	for _, entry in fs.listdir(path) do
+		local child = `{path}/{entry.name}`
+		if entry.type == "dir" then
+			removeDirRecursive(child)
+		else
+			fs.remove(child)
+		end
+	end
+	fs.rmdir(path)
+end
 
 --[[
 	Extracts the package directory name from a path.
@@ -64,21 +80,21 @@ end
 local function setupForPatching(packagePath: string): boolean
 	print(color.dim("Initializing package for patching..."))
 
-	local initResult = process.exec("git", { "init" }, { cwd = packagePath })
+	local initResult = process.run({ "git", "init" }, { cwd = packagePath })
 	if not initResult.ok then
 		print(color.bold(color.red("Failed to initialize git repo")))
 		print(color.red(initResult.stderr))
 		return false
 	end
 
-	local addResult = process.exec("git", { "add", "-A" }, { cwd = packagePath })
+	local addResult = process.run({ "git", "add", "-A" }, { cwd = packagePath })
 	if not addResult.ok then
 		print(color.bold(color.red("Failed to stage files")))
 		print(color.red(addResult.stderr))
 		return false
 	end
 
-	local commitResult = process.exec("git", { "commit", "-m", "original" }, { cwd = packagePath })
+	local commitResult = process.run({ "git", "commit", "-m", "original" }, { cwd = packagePath })
 	if not commitResult.ok then
 		print(color.bold(color.red("Failed to commit original state")))
 		print(color.red(commitResult.stderr))
@@ -99,7 +115,7 @@ local function generatePatch(packagePath: string, packageDirName: string): boole
 	print(color.dim("Generating patch..."))
 
 	-- Stage all changes (including new/deleted files)
-	local addResult = process.exec("git", { "add", "-A" }, { cwd = packagePath })
+	local addResult = process.run({ "git", "add", "-A" }, { cwd = packagePath })
 	if not addResult.ok then
 		print(color.bold(color.red("Failed to stage changes")))
 		print(color.red(addResult.stderr))
@@ -107,7 +123,7 @@ local function generatePatch(packagePath: string, packageDirName: string): boole
 	end
 
 	-- Generate the diff
-	local diffResult = process.exec("git", { "diff", "--cached" }, { cwd = packagePath })
+	local diffResult = process.run({ "git", "diff", "--cached" }, { cwd = packagePath })
 	if not diffResult.ok then
 		print(color.bold(color.red("Failed to generate diff")))
 		print(color.red(diffResult.stderr))
@@ -117,7 +133,7 @@ local function generatePatch(packagePath: string, packageDirName: string): boole
 	local diff = diffResult.stdout
 
 	-- Clean up the git repo before potentially returning early
-	fs.removeDir(`{packagePath}/.git`)
+	removeDirRecursive(`{packagePath}/.git`)
 
 	if diff == "" or diff == "\n" then
 		print(color.yellow("No changes detected. Nothing to patch."))
@@ -125,19 +141,21 @@ local function generatePatch(packagePath: string, packageDirName: string): boole
 	end
 
 	-- Ensure patches directory exists
-	if not fs.isDir(PATCHES_DIR) then
-		fs.writeDir(PATCHES_DIR)
+	if not isDir(PATCHES_DIR) then
+		fs.mkdir(PATCHES_DIR)
 	end
 
 	-- Write the patch file
 	local patchFilePath = `{PATCHES_DIR}/{packageDirName}.patch`
-	fs.writeFile(patchFilePath, diff)
+	local handle = fs.open(patchFilePath, "w")
+	fs.write(handle, diff)
+	fs.close(handle)
 
 	print()
 	print(color.bold(color.green("Patch created successfully!")))
 	print(color.dim(`  {patchFilePath}`))
 	print()
-	print(color.dim("Run 'lune run install' to verify the patch applies cleanly."))
+	print(color.dim("Run 'lute run install' to verify the patch applies cleanly."))
 
 	return true
 end
@@ -151,7 +169,7 @@ end
 function patch.run(options: Options): boolean
 	local packagePath = options.packagePath
 
-	if not fs.isDir(packagePath) then
+	if not isDir(packagePath) then
 		print(color.bold(color.red(`Package directory not found: {packagePath}`)))
 		return false
 	end
@@ -164,7 +182,7 @@ function patch.run(options: Options): boolean
 	local packageDirName = getPackageDirName(packagePath)
 
 	-- Detect which phase we're in
-	local hasGit = fs.isDir(`{packagePath}/.git`)
+	local hasGit = isDir(`{packagePath}/.git`)
 
 	if hasGit then
 		return generatePatch(packagePath, packageDirName)

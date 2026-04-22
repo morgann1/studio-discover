@@ -1,18 +1,18 @@
 --[[
-	Dev Entry Point
+	Codegen Entry Point
 	
-	Starts a development session with Rojo serve.
+	Runs all code generation tasks.
 ]]
 
-local process = require("@lune/process")
+local process = require("@lute/process")
 
 local cli = require("./lib/cli/parser")
-local command = require("./commands/dev")
+local command = require("./commands/codegen")
 
 local function main()
 	local parser = cli.parser()
 	parser:setDescription(command.description)
-	parser:setCommandName(`lune run {command.name}`)
+	parser:setCommandName(`lute run {command.name}`)
 
 	for _, arg: any in command.arguments do
 		parser:add(arg.name, arg.kind, arg.options)
@@ -21,7 +21,9 @@ local function main()
 	parser:parse(process.args)
 
 	command.run({
-		projectName = parser:get("project") :: string,
+		quiet = parser:has("quiet"),
+		generateSourcemap = true,
+		generateProtos = parser:has("protos"),
 	})
 end
 

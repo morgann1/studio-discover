@@ -1,10 +1,10 @@
 --[[
 	Rojo Operations
-	
+
 	Provides common Rojo-related operations used across multiple commands.
 ]]
 
-local process = require("@lune/process")
+local process = require("@lute/process")
 
 local rojo = {}
 
@@ -14,7 +14,7 @@ export type BuildOptions = {
 	plugin: string?,
 	quiet: boolean?,
 	watch: boolean?,
-	stdio: process.ExecStdioKind?,
+	stdio: process.StdioKind?,
 }
 
 export type BuildResult = {
@@ -25,12 +25,12 @@ export type BuildResult = {
 
 --[[
 	Builds a Rojo project to a place file.
-	
+
 	@param options Build options
 	@return Build result with success status and any error info
 ]]
 function rojo.build(options: BuildOptions): BuildResult
-	local args = { "build" }
+	local args = { "rojo", "build" }
 
 	if options.projectFile then
 		table.insert(args, options.projectFile)
@@ -50,13 +50,13 @@ function rojo.build(options: BuildOptions): BuildResult
 		table.insert(args, "--watch")
 	end
 
-	local result = process.exec("rojo", args, {
+	local result = process.run(args, {
 		stdio = options.stdio,
 	})
 
 	return {
 		ok = result.ok,
-		code = result.code,
+		code = result.exitcode,
 		stderr = if result.ok then nil else result.stderr,
 	}
 end
@@ -67,21 +67,22 @@ export type ServeOptions = {
 
 --[[
 	Starts a Rojo serve session.
-	
+
 	@param options Serve options
 	@return Serve result with success status and exit code
 ]]
 function rojo.serve(options: ServeOptions): BuildResult
-	local result = process.exec("rojo", {
+	local result = process.run({
+		"rojo",
 		"serve",
 		options.projectFile,
 	}, {
-		stdio = "forward",
+		stdio = "inherit",
 	})
 
 	return {
 		ok = result.ok,
-		code = result.code,
+		code = result.exitcode,
 		stderr = if result.ok then nil else result.stderr,
 	}
 end
@@ -95,7 +96,7 @@ export type SourcemapOptions = {
 
 --[[
 	Generates a Rojo sourcemap.
-	
+
 	@param options Sourcemap options
 	@return success, error message
 ]]
@@ -107,6 +108,7 @@ function rojo.sourcemap(options_: SourcemapOptions?): (boolean, string)
 	local absolute = if options.absolute ~= nil then options.absolute else true
 
 	local args = {
+		"rojo",
 		"sourcemap",
 		projectFile,
 		"--output",
@@ -121,7 +123,7 @@ function rojo.sourcemap(options_: SourcemapOptions?): (boolean, string)
 		table.insert(args, "--absolute")
 	end
 
-	local result = process.exec("rojo", args)
+	local result = process.run(args)
 	if not result.ok then
 		return false, result.stderr
 	end

@@ -18,7 +18,7 @@
 ]]
 
 local errors = require("./errors")
-local process = require("@lune/process")
+local process = require("@lute/process")
 
 local cli = {}
 cli.__index = cli

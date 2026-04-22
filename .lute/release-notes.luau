@@ -1,18 +1,18 @@
 --[[
-	Patch Entry Point
+	Release Notes Entry Point
 
-	Creates or updates a patch for a Wally package.
+	Extracts the CHANGELOG.md section for a given tag and prints it to stdout.
 ]]
 
-local process = require("@lune/process")
+local process = require("@lute/process")
 
 local cli = require("./lib/cli/parser")
-local command = require("./commands/patch")
+local command = require("./commands/release-notes")
 
 local function main()
 	local parser = cli.parser()
 	parser:setDescription(command.description)
-	parser:setCommandName(`lune run {command.name}`)
+	parser:setCommandName(`lute run {command.name}`)
 
 	for _, arg: any in command.arguments do
 		parser:add(arg.name, arg.kind, arg.options)
@@ -21,7 +21,7 @@ local function main()
 	parser:parse(process.args)
 
 	command.run({
-		packagePath = parser:get("package-path") :: string,
+		tag = parser:get("tag") :: string?,
 	})
 end
 

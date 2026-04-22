@@ -14,7 +14,7 @@ local build = {}
 -- Metadata for help command
 build.name = "build"
 build.description = "Builds the plugin to a production .rbxm"
-build.usage = "lune run build [--output <path>]"
+build.usage = "lute run build [--output <path>]"
 
 -- Argument definitions for CLI parsing
 build.arguments = {

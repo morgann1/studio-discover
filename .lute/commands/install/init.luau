@@ -4,9 +4,9 @@
 	Installs all packages: Wally packages, package types, and Foundation.
 ]]
 
-local fs = require("@lune/fs")
-local process = require("@lune/process")
-local stdio = require("@lune/stdio")
+local fs = require("@lute/fs")
+local io = require("@lute/io")
+local process = require("@lute/process")
 
 local applyPatches = require("./install/patches")
 local color = require("../utils/color")
@@ -19,7 +19,7 @@ local install = {}
 -- Metadata for help command
 install.name = "install"
 install.description = "Installs all packages (Wally, package types, Foundation)"
-install.usage = "lune run install [--quiet]"
+install.usage = "lute run install [--quiet]"
 
 -- Argument definitions for CLI parsing
 install.arguments = {
@@ -51,8 +51,12 @@ local ROBLOX_PACKAGES = {
 	"Motion",
 }
 
+local function isDir(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "dir"
+end
+
 local function runWallyInstall(): (boolean, string)
-	local result = process.exec("wally", { "install" }, {
+	local result = process.run({ "wally", "install" }, {
 		cwd = "plugin",
 	})
 	if not result.ok then
@@ -62,7 +66,8 @@ local function runWallyInstall(): (boolean, string)
 end
 
 local function runPackageTypes(dirPath: string, sourcemapPath: string): (boolean, string)
-	local result = process.exec("wally-package-types", {
+	local result = process.run({
+		"wally-package-types",
 		"--sourcemap",
 		`../{sourcemapPath}`,
 		dirPath,
@@ -98,13 +103,13 @@ function install.run(options_: Options?): boolean
 	if not installResult then
 		if not quiet then
 			print(color.bold(color.red("Failed to install packages")))
-			stdio.write(installStdout)
+			io.write(installStdout)
 		end
 		return false
 	end
 
-	if not fs.isDir("plugin/generated") then
-		fs.writeDir("plugin/generated")
+	if not isDir("plugin/generated") then
+		fs.mkdir("plugin/generated")
 	end
 
 	local sourcemapResult, sourcemapStdout = rojo.sourcemap({
@@ -115,7 +120,7 @@ function install.run(options_: Options?): boolean
 	if not sourcemapResult then
 		if not quiet then
 			print(color.bold(color.red("Failed to generate project sourcemap")))
-			stdio.write(sourcemapStdout)
+			io.write(sourcemapStdout)
 		end
 		return false
 	end
@@ -125,7 +130,7 @@ function install.run(options_: Options?): boolean
 		if not result then
 			if not quiet then
 				print(color.bold(color.red("Failed to generate package types for " .. dir)))
-				stdio.write(stdout)
+				io.write(stdout)
 			end
 			return false
 		end

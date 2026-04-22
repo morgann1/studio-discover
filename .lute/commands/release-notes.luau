@@ -5,15 +5,14 @@
 	release workflow can feed it straight into the GitHub release body.
 ]]
 
-local fs = require("@lune/fs")
-local process = require("@lune/process")
-local stdio = require("@lune/stdio")
+local fs = require("@lute/fs")
+local process = require("@lute/process")
 
 local releaseNotes = {}
 
 releaseNotes.name = "release-notes"
 releaseNotes.description = "Prints the CHANGELOG.md section for a given tag"
-releaseNotes.usage = "lune run release-notes --tag vX.Y.Z"
+releaseNotes.usage = "lute run release-notes --tag vX.Y.Z"
 
 releaseNotes.arguments = {
 	{
@@ -79,13 +78,15 @@ function releaseNotes.run(options_: Options?)
 	local options: Options = options_ or {}
 	local tag = options.tag
 	if tag == nil or tag == "" then
-		stdio.ewrite("release-notes: missing --tag argument\n")
+		print("release-notes: missing --tag argument")
 		process.exit(1)
 		return
 	end
 
 	local version = stripLeadingV(tag)
-	local changelog = fs.readFile("CHANGELOG.md")
+	local handle = fs.open("CHANGELOG.md", "r")
+	local changelog = fs.read(handle)
+	fs.close(handle)
 	local section = extractSection(changelog, version)
 
 	if section == nil then

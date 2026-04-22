@@ -5,17 +5,46 @@
 	Patches React references to point to the Wally-installed React package.
 ]]
 
-local fs = require("@lune/fs")
+local fs = require("@lute/fs")
 
 local TEMP_DIR = "tmp"
 
-local function withTempDir(callback: (path: string) -> ())
-	if fs.isDir(TEMP_DIR) then
-		fs.removeDir(TEMP_DIR)
+local function isDir(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "dir"
+end
+
+local function readFile(path: string): string
+	local handle = fs.open(path, "r")
+	local contents = fs.read(handle)
+	fs.close(handle)
+	return contents
+end
+
+local function writeFile(path: string, contents: string)
+	local handle = fs.open(path, "w")
+	fs.write(handle, contents)
+	fs.close(handle)
+end
+
+local function removeDirRecursive(path: string)
+	for _, entry in fs.listdir(path) do
+		local child = `{path}/{entry.name}`
+		if entry.type == "dir" then
+			removeDirRecursive(child)
+		else
+			fs.remove(child)
+		end
 	end
-	fs.writeDir(TEMP_DIR)
+	fs.rmdir(path)
+end
+
+local function withTempDir(callback: (path: string) -> ())
+	if isDir(TEMP_DIR) then
+		removeDirRecursive(TEMP_DIR)
+	end
+	fs.mkdir(TEMP_DIR)
 	local success, result = pcall(callback :: any, TEMP_DIR)
-	fs.removeDir(TEMP_DIR)
+	removeDirRecursive(TEMP_DIR)
 
 	if not success then
 		error(result)
@@ -23,30 +52,30 @@ local function withTempDir(callback: (path: string) -> ())
 end
 
 local function copyDir(src: string, dest: string)
-	if not fs.isDir(dest) then
-		fs.writeDir(dest)
+	if not isDir(dest) then
+		fs.mkdir(dest)
 	end
-	for _, entry in fs.readDir(src) do
-		local srcPath = `{src}/{entry}`
-		local destPath = `{dest}/{entry}`
-		if fs.isDir(srcPath) then
+	for _, entry in fs.listdir(src) do
+		local srcPath = `{src}/{entry.name}`
+		local destPath = `{dest}/{entry.name}`
+		if entry.type == "dir" then
 			copyDir(srcPath, destPath)
 		else
-			fs.writeFile(destPath, fs.readFile(srcPath))
+			writeFile(destPath, readFile(srcPath))
 		end
 	end
 end
 
 local function findFiles(root: string, name: string, results: { string }?): { string }
 	local out = results or {}
-	if not fs.isDir(root) then
+	if not isDir(root) then
 		return out
 	end
-	for _, entry in fs.readDir(root) do
-		local path = `{root}/{entry}`
-		if fs.isDir(path) then
+	for _, entry in fs.listdir(root) do
+		local path = `{root}/{entry.name}`
+		if entry.type == "dir" then
 			findFiles(path, name, out)
-		elseif entry == name then
+		elseif entry.name == name then
 			table.insert(out, path)
 		end
 	end
@@ -54,9 +83,9 @@ local function findFiles(root: string, name: string, results: { string }?): { st
 end
 
 local function findAndReplace(filePath: string, match: string, replacement: string)
-	local content = fs.readFile(filePath)
+	local content = readFile(filePath)
 	content = content:gsub(match, replacement)
-	fs.writeFile(filePath, content)
+	writeFile(filePath, content)
 end
 
 local function patchReact(packagesPath: string)
@@ -75,15 +104,15 @@ end
 ]]
 local function installFoundation(upstreamPath: string, dest: string, _quiet: boolean?)
 	withTempDir(function(tempDir)
-		assert(fs.isDir(upstreamPath), `Could not find upstream packages at {upstreamPath}`)
+		assert(isDir(upstreamPath), `Could not find upstream packages at {upstreamPath}`)
 
 		local packagesPath = `{tempDir}/Packages`
 		copyDir(upstreamPath, packagesPath)
 
 		patchReact(packagesPath)
 
-		if not fs.isDir(dest) then
-			fs.writeDir(dest)
+		if not isDir(dest) then
+			fs.mkdir(dest)
 		end
 		copyDir(packagesPath, dest)
 	end)

@@ -5,9 +5,9 @@
 	and type checking (luau-lsp).
 ]]
 
-local fs = require("@lune/fs")
-local net = require("@lune/net")
-local process = require("@lune/process")
+local fs = require("@lute/fs")
+local net = require("@lute/net/client")
+local process = require("@lute/process")
 
 local codegen = require("./codegen")
 local color = require("../utils/color")
@@ -17,7 +17,7 @@ local ci = {}
 -- Metadata for help command
 ci.name = "ci"
 ci.description = "Runs static analysis (lint, format check, type check)"
-ci.usage = "lune run ci [--fix]"
+ci.usage = "lute run ci [--fix]"
 
 -- Argument definitions for CLI parsing
 ci.arguments = {
@@ -36,10 +36,18 @@ export type Options = {
 }
 
 -- Paths to analyze
-local ANALYZE_PATHS = { ".lune", "plugin/bin", "plugin/src" }
+local ANALYZE_PATHS = { ".lute", "plugin/bin", "plugin/src" }
 
 -- Patterns to ignore in luau-lsp
-local IGNORE_PATTERNS = { "plugin/Packages/**" }
+local IGNORE_PATTERNS = { "plugin/Packages/**", "**/.lute/typedefs/**" }
+
+local function isDir(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "dir"
+end
+
+local function isFile(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "file"
+end
 
 --[[
 	Runs a command and returns whether it succeeded.
@@ -52,9 +60,13 @@ local IGNORE_PATTERNS = { "plugin/Packages/**" }
 local function runStep(program: string, args: { string }, description: string): boolean
 	print(color.cyan(`→ {description}`))
 
-	local result = process.exec(program, args, {
+	local argv = { program }
+	for _, arg in args do
+		table.insert(argv, arg)
+	end
+
+	local result = process.run(argv, {
 		stdio = "inherit",
-		shell = true,
 	})
 
 	if result.ok then
@@ -74,28 +86,30 @@ end
 local function fetchGlobalTypes(): boolean
 	local typesFile = "plugin/generated/globalTypes.d.luau"
 
-	if not fs.isDir("plugin/generated") then
-		fs.writeDir("plugin/generated")
+	if not isDir("plugin/generated") then
+		fs.mkdir("plugin/generated")
 	end
 
-	if fs.isFile(typesFile) then
+	if isFile(typesFile) then
 		print(color.dim(`  Skipping download, {typesFile} already exists`))
 		return true
 	end
 
 	print(color.cyan("→ Fetching Luau global types"))
 
-	local response = net.request({
-		url = "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/master/scripts/globalTypes.d.luau",
-		method = "GET",
-	})
+	local response =
+		net.request("https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/master/scripts/globalTypes.d.luau", {
+			method = "GET",
+		})
 
 	if not response.ok then
-		print(color.red(`  ✗ Failed to fetch global types: {response.statusCode}`))
+		print(color.red(`  ✗ Failed to fetch global types: {response.status}`))
 		return false
 	end
 
-	fs.writeFile(typesFile, response.body)
+	local handle = fs.open(typesFile, "w")
+	fs.write(handle, response.body)
+	fs.close(handle)
 	print(color.green(`  ✓ Downloaded {typesFile}`))
 	return true
 end

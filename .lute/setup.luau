@@ -1,18 +1,18 @@
 --[[
-	CI Entry Point
-
-	Runs static analysis checks for continuous integration.
+	Setup Entry Point
+	
+	Sets up the project for development or CI.
 ]]
 
-local process = require("@lune/process")
+local process = require("@lute/process")
 
 local cli = require("./lib/cli/parser")
-local command = require("./commands/ci")
+local command = require("./commands/setup")
 
 local function main()
 	local parser = cli.parser()
 	parser:setDescription(command.description)
-	parser:setCommandName(`lune run {command.name}`)
+	parser:setCommandName(`lute run {command.name}`)
 
 	for _, arg: any in command.arguments do
 		parser:add(arg.name, arg.kind, arg.options)
@@ -21,7 +21,7 @@ local function main()
 	parser:parse(process.args)
 
 	command.run({
-		fix = parser:has("fix"),
+		quiet = parser:has("quiet"),
 	})
 end
 

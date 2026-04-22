@@ -5,13 +5,17 @@
 	to the corresponding packages in plugin/Packages/_Index/.
 ]]
 
-local fs = require("@lune/fs")
-local process = require("@lune/process")
+local fs = require("@lute/fs")
+local process = require("@lute/process")
 
 local color = require("../../utils/color")
 
 local PATCHES_DIR = "plugin/patches"
 local PACKAGES_INDEX_DIR = "plugin/Packages/_Index"
+
+local function isDir(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "dir"
+end
 
 --[[
 	Applies all patches from plugin/patches/ to installed Wally packages.
@@ -24,14 +28,14 @@ local PACKAGES_INDEX_DIR = "plugin/Packages/_Index"
 	@return True if all patches applied successfully, false otherwise
 ]]
 local function applyPatches(quiet: boolean?): boolean
-	if not fs.isDir(PATCHES_DIR) then
+	if not isDir(PATCHES_DIR) then
 		return true
 	end
 
 	local patchFiles: { string } = {}
-	for _, filename in fs.readDir(PATCHES_DIR) do
-		if filename:match("%.patch$") then
-			table.insert(patchFiles, filename)
+	for _, entry in fs.listdir(PATCHES_DIR) do
+		if entry.name:match("%.patch$") then
+			table.insert(patchFiles, entry.name)
 		end
 	end
 
@@ -45,7 +49,7 @@ local function applyPatches(quiet: boolean?): boolean
 		local targetDirName = patchFile:gsub("%.patch$", "")
 		local targetPath = `{PACKAGES_INDEX_DIR}/{targetDirName}`
 
-		if not fs.isDir(targetPath) then
+		if not isDir(targetPath) then
 			if not quiet then
 				print(color.yellow(`  Warning: Package directory not found for patch: {patchFile}`))
 				print(color.yellow(`  Expected: {targetPath}`))
@@ -58,7 +62,8 @@ local function applyPatches(quiet: boolean?): boolean
 		end
 
 		local patchFilePath = `{PATCHES_DIR}/{patchFile}`
-		local result = process.exec("git", {
+		local result = process.run({
+			"git",
 			"apply",
 			"--directory",
 			targetPath,

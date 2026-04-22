@@ -113,24 +113,24 @@ cd studio-discover
 rokit install
 
 # Install wally packages, patch in the `Foundation` package.
-lune run install
+lute run install
 
 # Build the plugin
-lune run build
+lute run build
 ```
 
 Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click the **Discover** folder in the Explorer, and pick **Save / Export > Save as Local Plugin**. A **Discover** button will appear in your toolbar.
 
-> `lune run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
+> `lute run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
 
-> If you plan to fork this or contribute, also run `lune run setup`. Without it, luau-lsp won't resolve things out of the box.
+> If you plan to fork this or contribute, also run `lute run setup`. Without it, luau-lsp won't resolve things out of the box.
 
 ## 🤝 Feedback and Contributions
 
 Issues and pull requests are welcome.
 
 - **Bugs and feature requests**: open an issue at [GitHub Issues](https://github.com/morgann1/studio-discover/issues).
-- **Pull requests**: before opening one, please file an issue describing the change so we can agree on direction. Run `lune run ci` locally before pushing. It mirrors what CI checks.
+- **Pull requests**: before opening one, please file an issue describing the change so we can agree on direction. Run `lute run ci` locally before pushing. It mirrors what CI checks.
 - **Scope**: contributions that fit the project's goals (see [About](#-about)) are the easiest to land. Studio Discover is a solo project, so response times vary.
 
 ## 📃 License

@@ -1,12 +1,12 @@
 --[[
 	Setup Command
-	
+
 	Sets up the project for development or CI. Runs code generation and installs packages.
 ]]
 
 local codegen = require("./codegen")
 local color = require("../utils/color")
-local fs = require("@lune/fs")
+local fs = require("@lute/fs")
 local install = require("./install")
 
 local setup = {}
@@ -14,7 +14,7 @@ local setup = {}
 -- Metadata for help command
 setup.name = "setup"
 setup.description = "Sets up the project (codegen + install packages)"
-setup.usage = "lune run setup [--quiet]"
+setup.usage = "lute run setup [--quiet]"
 
 -- Argument definitions for CLI parsing
 setup.arguments = {
@@ -32,9 +32,13 @@ export type Options = {
 	quiet: boolean?,
 }
 
+local function isDir(path: string): boolean
+	return fs.exists(path) and fs.type(path) == "dir"
+end
+
 --[[
 	Sets up the project by running codegen and installing packages.
-	
+
 	@param options Configuration options
 	@return True if successful, false otherwise
 ]]
@@ -46,8 +50,8 @@ function setup.run(options_: Options?): boolean
 		print(color.bold(color.white("Setting up project...\n")))
 	end
 
-	if not fs.isDir("plugin/generated") then
-		fs.writeDir("plugin/generated")
+	if not isDir("plugin/generated") then
+		fs.mkdir("plugin/generated")
 	end
 
 	-- Run code generation

@@ -5,7 +5,7 @@
 ]]
 
 local color = require("../../utils/color")
-local process = require("@lune/process")
+local process = require("@lute/process")
 
 --[[
 	Reports a validation error and exits.

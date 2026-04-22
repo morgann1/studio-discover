@@ -29,7 +29,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📦 Install packages
-        run: lune run install
+        run: lute run install
 
       - name: 🏗️ Build StudioDiscover.rbxm
         run: rojo build plugin/default.project.json -o StudioDiscover.rbxm
@@ -46,7 +46,7 @@ jobs:
             URL="${{ github.server_url }}/${{ github.repository }}/commits/$TAG"
           fi
 
-          SECTION=$(lune run release-notes --tag "$TAG")
+          SECTION=$(lute run release-notes --tag "$TAG")
 
           {
             echo "body<<RELEASE_EOF"
