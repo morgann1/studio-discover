@@ -19,7 +19,7 @@
 - [📝 How to Build](#-how-to-build)
   - [Prerequisites](#prerequisites)
   - [Build](#build)
-  - [Releasing to the Creator Store](#releasing-to-the-creator-store)
+  - [Releasing](#releasing)
 - [🤝 Feedback and Contributions](#-feedback-and-contributions)
 - [📃 License](#-license)
 
@@ -120,16 +120,11 @@ Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click th
 
 > To test changes alongside the creator store version without collisions, run `lute run build --dev`. This produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and plugin settings namespace.
 
-### Releasing to the Creator Store
+### Releasing
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the plugin, creates a GitHub release, and updates the Creator Store listing via the [Open Cloud Update Asset API](https://create.roblox.com/docs/cloud/reference/Asset).
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds `StudioDiscover.rbxm` and creates a GitHub release with the notes drawn from `CHANGELOG.md`.
 
-One-time setup before the first release:
-
-1. Upload `StudioDiscover.rbxm` as a **Model** asset once — in Studio, insert the `.rbxm`, right-click the `Discover` folder, and pick **Save to Roblox**. The asset must be a Model (not a Plugin); Open Cloud doesn't yet support updating Plugin-type assets, so avoid the **Publish as Plugin** menu item. Roblox still recognizes a Model containing a top-level `*.plugin` script as installable from the Creator Store.
-2. From the Creator Dashboard, configure the new Model's Creator Store page (category: Plugin, distribution: free) and copy its asset ID from the store URL.
-3. Put the asset ID in `rbxasset.lock` under `[assets.production].assetId`.
-4. Add repo secret `ROBLOX_API_KEY` — an Open Cloud API key with the `Assets:Write` scope for the creator account that owns the listing.
+**The Creator Store listing is updated manually**: Open Cloud does not yet support updating Plugin-type assets, so after the GitHub release lands, download the release `.rbxm`, insert it in Studio, right-click the `Discover` folder, and pick **Publish as Plugin → Update Existing**.
 
 ## 🤝 Feedback and Contributions
 
