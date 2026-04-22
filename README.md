@@ -15,7 +15,7 @@
 - [🚀 About](#-about)
 - [📸 Screenshots](#-screenshots)
 - [✨ What's New](#-whats-new)
-  - [Version 3.6 (Latest)](#version-36-latest)
+  - [Version 3.7 (Latest)](#version-37-latest)
 - [📝 How to Build](#-how-to-build)
   - [Prerequisites](#prerequisites)
   - [Build](#build)
@@ -62,27 +62,24 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 
 ## ✨ What's New
 
-### Version 3.6 (Latest)
+### Version 3.7 (Latest)
 
 ✨ **New**
-- **Installed page**: lists every top-level package with a Remove action that also drops orphaned dependencies.
-- **Updates page**: lists packages with a newer release and offers per-row and "Update All" actions.
-- **Home page**: opens on a curated Featured list instead of a blank placeholder.
-- **Display Names setting**: override the auto-formatted alias per package name (scope-agnostic).
-- **About page**: version, license, links, credits, and an optional release-check row.
-- **Progress-bar buttons**: Install, Remove, and Update morph into an indeterminate progress bar while the operation runs.
+- **Creator Store distribution**: releases now auto-publish to the [Creator Store listing](https://create.roblox.com/store/asset/91442200339606), so Studio keeps the plugin up to date for you.
+- **pesde registry**: browse and install packages from [pesde](https://pesde.dev) alongside Wally.
+- **Dev build variant**: `lute run build --dev` produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and settings namespace for side-by-side testing against the Creator Store version.
+- **Versioned widget title**: the dock widget now includes the plugin version (matching Rojo's convention).
 
 ✏️ **Improvements**
-- **Concurrent-op mutex**: install, uninstall, and update can no longer race on the `_Index` or the lockfile.
-- **Prior roots preserved**: a new install merges with your existing packages instead of wiping them. Re-installing the same `(realm, scope, name)` swaps version or alias in place, and formatted-alias collisions disambiguate with a numeric suffix.
-- **Install state persists**: the Install button reads the packages folder, not just the transient installer atom, so a package you already installed still shows as Installed after reopening Studio.
-- **Studio user id in requests**: `X-Real-User-Agent` now identifies the signed-in Studio user, and the plugin skips init entirely when no user is signed in.
+- **Shared toolbar slot**: the button registers under the `22:43 Plugin Suite` toolbar via SharedToolbar.
+- **Less Explorer noise**: installer no longer creates empty `Packages`/`DevPackages`/`ServerPackages` folders during snapshot.
 
 🛠 **Fixes**
-- Root-package apply failures cancel the ChangeHistory waypoint so a botched install doesn't land on the undo stack.
-- Wally `/package-contents` requests now send the `Wally-Version` header required by the registry.
-- Uninstall and update surface errors inline and reset the row action instead of sticking in a progress state.
-- Long search-result titles and descriptions wrap instead of overflowing the dock widget.
+- **Clearer permission errors**: script injection denials explain what happened and tell you to retry so Studio shows the actual permission dialog.
+- **Dependency navigation registry**: opening a dependency from the Package screen now keeps the source registry instead of defaulting back to Wally.
+
+🗑 **Removed**
+- GitHub-release self-update check and the Check for Updates setting — the Creator Store handles plugin updates now.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
