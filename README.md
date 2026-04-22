@@ -126,9 +126,10 @@ Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the plugin
 
 One-time setup before the first release:
 
-1. Publish the plugin to the Creator Store once through Studio (right-click the plugin folder → **Publish as Plugin**) and copy the asset ID from the store URL.
-2. Put the asset ID in `rbxasset.lock` under `[assets.production].assetId`.
-3. Add repo secret `ROBLOX_API_KEY` — an Open Cloud API key with the `Assets:Write` scope for the creator account that owns the listing.
+1. Upload `StudioDiscover.rbxm` as a **Model** asset once — in Studio, insert the `.rbxm`, right-click the `Discover` folder, and pick **Save to Roblox**. The asset must be a Model (not a Plugin); Open Cloud doesn't yet support updating Plugin-type assets, so avoid the **Publish as Plugin** menu item. Roblox still recognizes a Model containing a top-level `*.plugin` script as installable from the Creator Store.
+2. From the Creator Dashboard, configure the new Model's Creator Store page (category: Plugin, distribution: free) and copy its asset ID from the store URL.
+3. Put the asset ID in `rbxasset.lock` under `[assets.production].assetId`.
+4. Add repo secret `ROBLOX_API_KEY` — an Open Cloud API key with the `Assets:Write` scope for the creator account that owns the listing.
 
 ## 🤝 Feedback and Contributions
 
