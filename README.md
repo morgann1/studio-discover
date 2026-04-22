@@ -125,6 +125,8 @@ Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click th
 
 > If you plan to fork this or contribute, also run `lute run setup`. Without it, luau-lsp won't resolve things out of the box.
 
+> To test changes alongside the creator store version without collisions, run `lute run build --dev`. This produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and plugin settings namespace.
+
 ## 🤝 Feedback and Contributions
 
 Issues and pull requests are welcome.
