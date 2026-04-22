@@ -27,34 +27,40 @@ export type Options = {
 }
 
 local BUILD_CONFIG_PATH = "plugin/generated/buildConfig.luau"
+local WALLY_TOML_PATH = "plugin/wally.toml"
 
-local RELEASE_CONFIG = {
-	pluginName = "Discover",
-	widgetId = "DiscoverWidget",
-	widgetTitle = "Discover",
-	widgetName = "Discover",
-	buttonId = "discover",
-	buttonTitle = "Discover",
-	buttonTooltip = "Browse and install Luau packages",
-	peerId = "morgann1/studio-discover",
-	toolbarTitle = "22:43",
-	mediumName = "  22:43 Plugin Suite",
-	icon = "rbxassetid://125842588490194",
-}
+local function readPluginVersion(): string
+	local handle = fs.open(WALLY_TOML_PATH, "r")
+	local contents = fs.read(handle)
+	fs.close(handle)
 
-local DEV_CONFIG = {
-	pluginName = "Discover (Dev)",
-	widgetId = "DiscoverDevWidget",
-	widgetTitle = "Discover (Dev)",
-	widgetName = "DiscoverDev",
-	buttonId = "discover-dev",
-	buttonTitle = "Discover (Dev)",
-	buttonTooltip = "Browse and install Luau packages (dev build)",
-	peerId = "morgann1/studio-discover-dev",
-	toolbarTitle = "22:43 (Dev)",
-	mediumName = "  22:43 Plugin Suite (Dev)",
-	icon = "rbxassetid://132814924850541",
-}
+	local version = contents:match('version%s*=%s*"([^"]+)"')
+	assert(version, `Could not parse version from {WALLY_TOML_PATH}`)
+	return version
+end
+
+local function buildConfig(dev: boolean, version: string): { [string]: string }
+	-- Embed the version in widget titles so dock state persists per version,
+	-- matching Rojo's convention (e.g. `widget.Title = "Rojo x.y.z"`).
+	local suffix = if dev then " (Dev)" else ""
+	local widgetTitle = `Discover {version}{suffix}`
+
+	return {
+		pluginName = `Discover{suffix}`,
+		widgetId = widgetTitle,
+		widgetTitle = widgetTitle,
+		widgetName = widgetTitle,
+		buttonId = if dev then "discover-dev" else "discover",
+		buttonTitle = `Discover{suffix}`,
+		buttonTooltip = if dev
+			then "Browse and install Luau packages (dev build)"
+			else "Browse and install Luau packages",
+		peerId = if dev then "morgann1/studio-discover-dev" else "morgann1/studio-discover",
+		toolbarTitle = if dev then "22:43 (Dev)" else "22:43",
+		mediumName = if dev then "  22:43 Plugin Suite (Dev)" else "  22:43 Plugin Suite",
+		icon = if dev then "rbxassetid://132814924850541" else "rbxassetid://125842588490194",
+	}
+end
 
 local function isDir(path: string): boolean
 	return fs.exists(path) and fs.type(path) == "dir"
@@ -104,7 +110,8 @@ local function writeBuildConfig(dev: boolean)
 		fs.mkdir("plugin/generated")
 	end
 
-	local config = if dev then DEV_CONFIG else RELEASE_CONFIG
+	local version = readPluginVersion()
+	local config = buildConfig(dev, version)
 	local source = serializeConfig(config, dev)
 
 	local handle = fs.open(BUILD_CONFIG_PATH, "w")
