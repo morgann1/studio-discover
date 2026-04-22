@@ -116,13 +116,20 @@ jobs:
           fi
           echo "Publishing ${TAG} to Creator Store asset ${ASSET_ID}"
 
-          response=$(curl --fail-with-body -sS \
+          http_status=0
+          response=$(curl -sS -w '\n%{http_code}' \
             -X PATCH "https://apis.roblox.com/assets/v1/assets/${ASSET_ID}" \
             -H "x-api-key: ${ROBLOX_API_KEY}" \
-            -F 'request={"assetType":"Model"}' \
+            -F "request={\"assetId\":\"${ASSET_ID}\"}" \
             -F 'fileContent=@StudioDiscover.rbxm;type=application/octet-stream')
+          http_status=$(tail -n1 <<<"$response")
+          body=$(sed '$d' <<<"$response")
+          if [ "$http_status" != "200" ]; then
+            echo "::error::Open Cloud PATCH returned $http_status: $body"
+            exit 1
+          fi
 
-          operation_id=$(jq -r '.operationId // (.path | capture("operations/(?<id>.+)").id // empty)' <<<"$response")
+          operation_id=$(jq -r '.operationId // (.path | capture("operations/(?<id>.+)").id // empty)' <<<"$body")
           if [ -z "$operation_id" ] || [ "$operation_id" = "null" ]; then
             echo "::error::Unexpected response from Open Cloud: $response"
             exit 1
