@@ -127,6 +127,16 @@ Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click th
 
 > To test changes alongside the creator store version without collisions, run `lute run build --dev`. This produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and plugin settings namespace.
 
+### Releasing to the Creator Store
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the plugin, creates a GitHub release, and updates the Creator Store listing via [`rbxasset`](https://github.com/Roblox/rbxasset).
+
+One-time setup before the first release:
+
+1. Fill in `rbxasset.toml` with the creator and experience IDs (required by rbxasset's schema even when only updating an existing asset).
+2. Fill in `rbxasset.lock` with the existing plugin's asset ID — create the listing once through Studio, then copy the ID from its Creator Store URL. Leave it unset only if you want rbxasset to create the listing on the first run.
+3. Add repo secret `ROBLOX_API_KEY` — an Open Cloud API key with the `Assets:Write` scope for the creator account that owns the listing.
+
 ## 🤝 Feedback and Contributions
 
 Issues and pull requests are welcome.
