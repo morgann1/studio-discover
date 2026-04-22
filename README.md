@@ -1,8 +1,5 @@
 <a name="top"></a>
 ![Studio Discover](./.github/assets/banner.jpg)
-
-<div align="center">
-
 [![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/91442200339606)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
@@ -12,8 +9,6 @@
 
 [![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
 [![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
-
-</div>
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
