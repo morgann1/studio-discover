@@ -1,11 +1,18 @@
 <a name="top"></a>
+
+<div align="center">
+
 ![Studio Discover](./.github/assets/banner.jpg)
+
 [![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/91442200339606)
-[![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
+[![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
+
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
 [![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
 [![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
+
+</div>
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
