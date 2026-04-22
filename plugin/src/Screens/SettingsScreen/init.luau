@@ -33,10 +33,6 @@ local function SettingsScreen()
 		SettingsStore.setSetting("namingConvention", value)
 	end, {})
 
-	local onCheckForUpdatesChange = React.useCallback(function(value: any)
-		SettingsStore.setSetting("checkForUpdates", value)
-	end, {})
-
 	local onReduceMotionChange = React.useCallback(function(value: any)
 		SettingsStore.setSetting("reduceMotion", value)
 	end, {})
@@ -66,14 +62,6 @@ local function SettingsScreen()
 			SettingsList = e(View, {
 				tag = "size-full-0 auto-y col",
 			}, {
-				CheckForUpdates = e(Setting, {
-					name = "Check for Updates",
-					description = "Notify about newer Discover releases",
-					value = state.checkForUpdates,
-					onChange = onCheckForUpdatesChange,
-					LayoutOrder = nextOrder(),
-				}),
-
 				DisplayNames = e(Setting, {
 					name = "Display Names",
 					description = "Customize how specific packages are labeled across the plugin",
