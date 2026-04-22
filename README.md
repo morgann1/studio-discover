@@ -7,9 +7,6 @@
 [![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
 [![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
 
-[![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
-[![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
-
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [🚀 About](#-about)
@@ -141,5 +138,8 @@ Studio Discover's own source is intended to be freely redistributable. Read it, 
 The one thing to watch out for is [Foundation](https://github.com/Roblox/foundation), Roblox's UI library. The built `StudioDiscover.rbxm` bundles it at build time, and Foundation is not open source, so redistributing the *built artifact* is subject to Roblox's terms for Foundation, not this repo's license. A proper `LICENSE` will be added once Foundation is either swapped out or its redistribution terms are confirmed.
 
 For now: do whatever you want with the source in this repo, but check Foundation's terms before redistributing the build.
+
+[![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
+[![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
 
 [Back to top](#top)
