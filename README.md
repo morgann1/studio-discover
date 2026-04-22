@@ -3,7 +3,7 @@
 
 <div align="center">
 
-[![Download](./.github/assets/badges/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/StudioDiscover.rbxm)
+[![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/91442200339606)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
@@ -24,6 +24,7 @@
 - [📝 How to Build](#-how-to-build)
   - [Prerequisites](#prerequisites)
   - [Build](#build)
+  - [Releasing to the Creator Store](#releasing-to-the-creator-store)
 - [🤝 Feedback and Contributions](#-feedback-and-contributions)
 - [📃 License](#-license)
 
