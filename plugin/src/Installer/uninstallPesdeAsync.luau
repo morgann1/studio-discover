@@ -6,6 +6,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 
 local pesdeApplyAsync = require(StudioDiscover.Source.Installer.Pesde.applyAsync)
@@ -86,7 +87,7 @@ local function uninstallPesdeAsync(scope: string, name: string, realm: Realm): U
 		busyAtom(false)
 		return {
 			ok = false,
-			error = tostring(applyOutcome),
+			error = permissionError.describe(applyOutcome),
 		}
 	end
 
