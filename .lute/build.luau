@@ -22,6 +22,7 @@ local function main()
 
 	command.run({
 		output = parser:get("output") :: string?,
+		dev = parser:has("dev"),
 	})
 end
 

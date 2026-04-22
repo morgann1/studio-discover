@@ -32,7 +32,7 @@ jobs:
         run: lute run install
 
       - name: 🏗️ Build StudioDiscover.rbxm
-        run: rojo build plugin/default.project.json -o StudioDiscover.rbxm
+        run: lute run build
 
       - name: 📝 Build release notes
         id: notes
