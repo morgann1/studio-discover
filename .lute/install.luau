@@ -20,9 +20,12 @@ local function main()
 
 	parser:parse(process.args)
 
-	command.run({
+	local ok = command.run({
 		quiet = parser:has("quiet"),
 	})
+	if not ok then
+		process.exit(1)
+	end
 end
 
 main()

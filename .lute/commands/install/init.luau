@@ -9,6 +9,7 @@ local io = require("@lute/io")
 local process = require("@lute/process")
 
 local applyPatches = require("./install/patches")
+local codegen = require("./codegen")
 local color = require("../utils/color")
 local exec = require("../lib/process/exec")
 local installFoundation = require("./install/foundation")
@@ -101,15 +102,20 @@ function install.run(options_: Options?): boolean
 
 	local installResult, installStdout = runWallyInstall()
 	if not installResult then
-		if not quiet then
-			print(color.bold(color.red("Failed to install packages")))
-			io.write(installStdout)
-		end
+		print(color.bold(color.red("Failed to install packages")))
+		io.write(installStdout)
 		return false
 	end
 
 	if not isDir("plugin/generated") then
 		fs.mkdir("plugin/generated")
+	end
+
+	-- Seed the generated buildConfig module before the sourcemap runs so rojo
+	-- can resolve its $path entry in default.project.json.
+	local codegenSuccess = codegen.run({ quiet = quiet, generateSourcemap = false })
+	if not codegenSuccess then
+		return false
 	end
 
 	local sourcemapResult, sourcemapStdout = rojo.sourcemap({
@@ -118,20 +124,16 @@ function install.run(options_: Options?): boolean
 		includeNonScripts = true,
 	})
 	if not sourcemapResult then
-		if not quiet then
-			print(color.bold(color.red("Failed to generate project sourcemap")))
-			io.write(sourcemapStdout)
-		end
+		print(color.bold(color.red("Failed to generate project sourcemap")))
+		io.write(sourcemapStdout)
 		return false
 	end
 
 	for _, dir in PACKAGE_DIRS do
 		local result, stdout = runPackageTypes(dir, SOURCEMAP_PATH)
 		if not result then
-			if not quiet then
-				print(color.bold(color.red("Failed to generate package types for " .. dir)))
-				io.write(stdout)
-			end
+			print(color.bold(color.red("Failed to generate package types for " .. dir)))
+			io.write(stdout)
 			return false
 		end
 	end
@@ -173,9 +175,7 @@ function install.run(options_: Options?): boolean
 
 	local patchResult = applyPatches(quiet)
 	if not patchResult then
-		if not quiet then
-			print(color.bold(color.red("Failed to apply package patches")))
-		end
+		print(color.bold(color.red("Failed to apply package patches")))
 		return false
 	end
 
