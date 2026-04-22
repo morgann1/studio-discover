@@ -19,7 +19,6 @@ export type DisplayNameRule = {
 
 export type SettingsState = {
 	namingConvention: NamingConvention,
-	checkForUpdates: boolean,
 	displayNames: { DisplayNameRule },
 	reduceMotion: boolean,
 	sidebarMode: SidebarMode,
@@ -28,7 +27,6 @@ export type SettingsState = {
 
 local DEFAULTS: SettingsState = table.freeze({
 	namingConvention = "Original" :: NamingConvention,
-	checkForUpdates = true,
 	displayNames = table.freeze({}) :: { DisplayNameRule },
 	reduceMotion = false,
 	sidebarMode = "Auto" :: SidebarMode,
@@ -37,7 +35,6 @@ local DEFAULTS: SettingsState = table.freeze({
 
 local VALIDATORS = {
 	namingConvention = t.literal("Original", "PascalCase", "camelCase", "snake_case", "kebab-case"),
-	checkForUpdates = t.boolean,
 	displayNames = t.array(t.strictInterface({
 		name = t.string,
 		displayName = t.string,

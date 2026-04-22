@@ -10,6 +10,7 @@ local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
+local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 
 local pesdeApplyAsync = require(StudioDiscover.Source.Installer.Pesde.applyAsync)
@@ -193,16 +194,17 @@ local function installPesdeAsync(
 		if recordingId ~= nil then
 			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
 		end
+		local message = permissionError.describe(applyOutcome)
 		setState({
 			status = "error",
-			message = tostring(applyOutcome),
+			message = message,
 			errors = {},
 			target = target,
 		})
 		busyAtom(false)
 		return {
 			ok = false,
-			error = tostring(applyOutcome),
+			error = message,
 			failures = {},
 		}
 	end

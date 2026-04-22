@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-04-22
+
+### ✨ New
+- Browse and install packages from the [pesde](https://pesde.dev) registry alongside Wally.
+- Release workflow publishes to the [Creator Store listing](https://create.roblox.com/store/asset/91442200339606), so Studio auto-updates the plugin from there.
+- `lute run build --dev` produces a parallel `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and plugin settings namespace for side-by-side testing against the release version.
+- Plugin version is embedded in the dock widget title (matching Rojo's convention).
+
+### ✏️ Improvements
+- Plugin registers with the shared `22:43 Plugin Suite` toolbar via SharedToolbar 0.2.1.
+- Installer no longer creates empty `Packages`/`DevPackages`/`ServerPackages` folders it doesn't need during snapshot.
+- Dev tooling migrated from Lune to Lute (contributor-only change).
+
+### 🛠 Fixes
+- Script injection denials now surface a clear "retry so Studio prompts you to allow it" message instead of the raw Roblox error.
+- Navigating to a package's dependency from the Package screen preserves the source registry (previously defaulted back to Wally).
+
+### 🗑 Removed
+- GitHub-release self-update check and the Check for Updates setting — Creator Store handles plugin updates now.
+
 ## [3.6.0] - 2026-04-19
 
 ### ✨ New
@@ -105,7 +125,9 @@ Initial release.
 - Metadata-fetch `useEffect` now cleans up on unmount.
 - Partial-install error message wording.
 
-[Unreleased]: https://github.com/morgann1/studio-discover/compare/v3.5.0...HEAD
+[Unreleased]: https://github.com/morgann1/studio-discover/compare/v3.7.0...HEAD
+[3.7.0]: https://github.com/morgann1/studio-discover/compare/v3.6.0...v3.7.0
+[3.6.0]: https://github.com/morgann1/studio-discover/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/morgann1/studio-discover/compare/v2.6.0...v3.5.0
 [2.6.0]: https://github.com/morgann1/studio-discover/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/morgann1/studio-discover/compare/v2.4.2...v2.5.0

@@ -13,9 +13,16 @@ on:
 permissions:
   contents: write
 
+# rbxasset merged its Lute rewrite but hasn't cut a release yet, so we pin to
+# the merge commit. Bump when they publish a tagged version.
+env:
+  RBXASSET_REF: 604394e
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v6
@@ -28,16 +35,29 @@ jobs:
           cache: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 🏷️ Resolve tag
+        id: meta
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: 📦 Install packages
-        run: lune run install
+        run: lute run install
 
       - name: 🏗️ Build StudioDiscover.rbxm
-        run: rojo build plugin/default.project.json -o StudioDiscover.rbxm
+        run: lute run build
+
+      - name: ⬆️ Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-rbxm
+          path: StudioDiscover.rbxm
+          retention-days: 7
 
       - name: 📝 Build release notes
         id: notes
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG="${{ steps.meta.outputs.tag }}"
 
           PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
           if [ -n "$PREV" ]; then
@@ -46,7 +66,7 @@ jobs:
             URL="${{ github.server_url }}/${{ github.repository }}/commits/$TAG"
           fi
 
-          SECTION=$(lune run release-notes --tag "$TAG")
+          SECTION=$(lute run release-notes --tag "$TAG")
 
           {
             echo "body<<RELEASE_EOF"
@@ -61,6 +81,47 @@ jobs:
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.meta.outputs.tag }}
           files: StudioDiscover.rbxm
           body: ${{ steps.notes.outputs.body }}
+
+  publish-creator-store:
+    name: Publish to Creator Store
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency: creator-store-production
+    environment:
+      name: roblox-creator-store
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v6
+
+      - name: 🔧 Install Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          cache: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ⬇️ Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin-rbxm
+
+      - name: 🧰 Vendor rbxasset
+        run: |
+          git clone https://github.com/Roblox/rbxasset.git .github/scripts/rbxasset
+          cd .github/scripts/rbxasset
+          git checkout "$RBXASSET_REF"
+          lute run install
+
+      - name: ☁️ Publish to Creator Store
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ROBLOX_API_KEY}" ]; then
+            echo "::error::Required secret ROBLOX_API_KEY is not set"
+            exit 1
+          fi
+          lute run .github/scripts/publish production

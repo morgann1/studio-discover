@@ -1,0 +1,4 @@
+[assets.production]
+# Fill in the existing Creator Store asset ID before the first release, e.g.
+# `assetId = "8517129161"`. Leave unset to let rbxasset create a fresh asset.
+assetId = "91442200339606"

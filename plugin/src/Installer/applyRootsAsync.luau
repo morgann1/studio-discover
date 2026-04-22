@@ -7,6 +7,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local applyAsync = require(StudioDiscover.Source.Installer.Wally.applyAsync)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
+local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 
@@ -46,7 +47,7 @@ local function applyRootsAsync(
 		end
 		return {
 			ok = false,
-			error = tostring(applyOutcome),
+			error = permissionError.describe(applyOutcome),
 			failures = {},
 		}
 	end

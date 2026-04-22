@@ -10,6 +10,12 @@
     },
     "Packages": {
       "$path": "Packages/"
+    },
+    "Generated": {
+      "$className": "Folder",
+      "buildConfig": {
+        "$path": "generated/buildConfig.luau"
+      }
     }
   }
 }

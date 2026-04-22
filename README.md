@@ -1,9 +1,6 @@
 <a name="top"></a>
 ![Studio Discover](./.github/assets/banner.jpg)
-
-<div align="center">
-
-[![Download](./.github/assets/badges/link-download.svg)](https://github.com/morgann1/studio-discover/releases/latest/download/StudioDiscover.rbxm)
+[![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/91442200339606)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
@@ -13,17 +10,16 @@
 [![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
 [![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
 
-</div>
-
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [🚀 About](#-about)
 - [📸 Screenshots](#-screenshots)
 - [✨ What's New](#-whats-new)
-  - [Version 3.6 (Latest)](#version-36-latest)
+  - [Version 3.7 (Latest)](#version-37-latest)
 - [📝 How to Build](#-how-to-build)
   - [Prerequisites](#prerequisites)
   - [Build](#build)
+  - [Releasing to the Creator Store](#releasing-to-the-creator-store)
 - [🤝 Feedback and Contributions](#-feedback-and-contributions)
 - [📃 License](#-license)
 
@@ -66,27 +62,24 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 
 ## ✨ What's New
 
-### Version 3.6 (Latest)
+### Version 3.7 (Latest)
 
 ✨ **New**
-- **Installed page**: lists every top-level package with a Remove action that also drops orphaned dependencies.
-- **Updates page**: lists packages with a newer release and offers per-row and "Update All" actions.
-- **Home page**: opens on a curated Featured list instead of a blank placeholder.
-- **Display Names setting**: override the auto-formatted alias per package name (scope-agnostic).
-- **About page**: version, license, links, credits, and an optional release-check row.
-- **Progress-bar buttons**: Install, Remove, and Update morph into an indeterminate progress bar while the operation runs.
+- **Creator Store distribution**: releases now auto-publish to the [Creator Store listing](https://create.roblox.com/store/asset/91442200339606), so Studio keeps the plugin up to date for you.
+- **pesde registry**: browse and install packages from [pesde](https://pesde.dev) alongside Wally.
+- **Dev build variant**: `lute run build --dev` produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and settings namespace for side-by-side testing against the Creator Store version.
+- **Versioned widget title**: the dock widget now includes the plugin version (matching Rojo's convention).
 
 ✏️ **Improvements**
-- **Concurrent-op mutex**: install, uninstall, and update can no longer race on the `_Index` or the lockfile.
-- **Prior roots preserved**: a new install merges with your existing packages instead of wiping them. Re-installing the same `(realm, scope, name)` swaps version or alias in place, and formatted-alias collisions disambiguate with a numeric suffix.
-- **Install state persists**: the Install button reads the packages folder, not just the transient installer atom, so a package you already installed still shows as Installed after reopening Studio.
-- **Studio user id in requests**: `X-Real-User-Agent` now identifies the signed-in Studio user, and the plugin skips init entirely when no user is signed in.
+- **Shared toolbar slot**: the button registers under the `22:43 Plugin Suite` toolbar via SharedToolbar.
+- **Less Explorer noise**: installer no longer creates empty `Packages`/`DevPackages`/`ServerPackages` folders during snapshot.
 
 🛠 **Fixes**
-- Root-package apply failures cancel the ChangeHistory waypoint so a botched install doesn't land on the undo stack.
-- Wally `/package-contents` requests now send the `Wally-Version` header required by the registry.
-- Uninstall and update surface errors inline and reset the row action instead of sticking in a progress state.
-- Long search-result titles and descriptions wrap instead of overflowing the dock widget.
+- **Clearer permission errors**: script injection denials explain what happened and tell you to retry so Studio shows the actual permission dialog.
+- **Dependency navigation registry**: opening a dependency from the Package screen now keeps the source registry instead of defaulting back to Wally.
+
+🗑 **Removed**
+- GitHub-release self-update check and the Check for Updates setting — the Creator Store handles plugin updates now.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
@@ -113,24 +106,36 @@ cd studio-discover
 rokit install
 
 # Install wally packages, patch in the `Foundation` package.
-lune run install
+lute run install
 
 # Build the plugin
-lune run build
+lute run build
 ```
 
 Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click the **Discover** folder in the Explorer, and pick **Save / Export > Save as Local Plugin**. A **Discover** button will appear in your toolbar.
 
-> `lune run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
+> `lute run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
 
-> If you plan to fork this or contribute, also run `lune run setup`. Without it, luau-lsp won't resolve things out of the box.
+> If you plan to fork this or contribute, also run `lute run setup`. Without it, luau-lsp won't resolve things out of the box.
+
+> To test changes alongside the creator store version without collisions, run `lute run build --dev`. This produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and plugin settings namespace.
+
+### Releasing to the Creator Store
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the plugin, creates a GitHub release, and updates the Creator Store listing via [`rbxasset`](https://github.com/Roblox/rbxasset).
+
+One-time setup before the first release:
+
+1. Fill in `rbxasset.toml` with the creator and experience IDs (required by rbxasset's schema even when only updating an existing asset).
+2. Fill in `rbxasset.lock` with the existing plugin's asset ID — create the listing once through Studio, then copy the ID from its Creator Store URL. Leave it unset only if you want rbxasset to create the listing on the first run.
+3. Add repo secret `ROBLOX_API_KEY` — an Open Cloud API key with the `Assets:Write` scope for the creator account that owns the listing.
 
 ## 🤝 Feedback and Contributions
 
 Issues and pull requests are welcome.
 
 - **Bugs and feature requests**: open an issue at [GitHub Issues](https://github.com/morgann1/studio-discover/issues).
-- **Pull requests**: before opening one, please file an issue describing the change so we can agree on direction. Run `lune run ci` locally before pushing. It mirrors what CI checks.
+- **Pull requests**: before opening one, please file an issue describing the change so we can agree on direction. Run `lute run ci` locally before pushing. It mirrors what CI checks.
 - **Scope**: contributions that fit the project's goals (see [About](#-about)) are the easiest to land. Studio Discover is a solo project, so response times vary.
 
 ## 📃 License
