@@ -122,12 +122,12 @@ Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click th
 
 ### Releasing to the Creator Store
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the plugin, creates a GitHub release, and updates the Creator Store listing via [`rbxasset`](https://github.com/Roblox/rbxasset).
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the plugin, creates a GitHub release, and updates the Creator Store listing via the [Open Cloud Update Asset API](https://create.roblox.com/docs/cloud/reference/Asset).
 
 One-time setup before the first release:
 
-1. Fill in `rbxasset.toml` with the creator and experience IDs (required by rbxasset's schema even when only updating an existing asset).
-2. Fill in `rbxasset.lock` with the existing plugin's asset ID — create the listing once through Studio, then copy the ID from its Creator Store URL. Leave it unset only if you want rbxasset to create the listing on the first run.
+1. Publish the plugin to the Creator Store once through Studio (right-click the plugin folder → **Publish as Plugin**) and copy the asset ID from the store URL.
+2. Put the asset ID in `rbxasset.lock` under `[assets.production].assetId`.
 3. Add repo secret `ROBLOX_API_KEY` — an Open Cloud API key with the `Assets:Write` scope for the creator account that owns the listing.
 
 ## 🤝 Feedback and Contributions

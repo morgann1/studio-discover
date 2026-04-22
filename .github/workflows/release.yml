@@ -13,11 +13,6 @@ on:
 permissions:
   contents: write
 
-# rbxasset merged its Lute rewrite but hasn't cut a release yet, so we pin to
-# the merge commit. Bump when they publish a tagged version.
-env:
-  RBXASSET_REF: 604394e
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -97,31 +92,59 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v6
 
-      - name: 🔧 Install Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          cache: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: ⬇️ Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: plugin-rbxm
 
-      - name: 🧰 Vendor rbxasset
-        run: |
-          git clone https://github.com/Roblox/rbxasset.git .github/scripts/rbxasset
-          cd .github/scripts/rbxasset
-          git checkout "$RBXASSET_REF"
-          lute run install
-
       - name: ☁️ Publish to Creator Store
         env:
           ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          TAG: ${{ needs.release.outputs.tag }}
         run: |
           set -euo pipefail
+
           if [ -z "${ROBLOX_API_KEY}" ]; then
             echo "::error::Required secret ROBLOX_API_KEY is not set"
             exit 1
           fi
-          lute run .github/scripts/publish production
+
+          ASSET_ID=$(awk -F'"' '/^assetId/ { print $2; exit }' rbxasset.lock)
+          if [ -z "${ASSET_ID}" ] || [ "${ASSET_ID}" = "0" ]; then
+            echo "::error::assetId is not set in rbxasset.lock"
+            exit 1
+          fi
+          echo "Publishing ${TAG} to Creator Store asset ${ASSET_ID}"
+
+          response=$(curl --fail-with-body -sS \
+            -X PATCH "https://apis.roblox.com/assets/v1/assets/${ASSET_ID}" \
+            -H "x-api-key: ${ROBLOX_API_KEY}" \
+            -F 'request={"assetType":"Model"}' \
+            -F 'fileContent=@StudioDiscover.rbxm;type=application/octet-stream')
+
+          operation_id=$(jq -r '.operationId // (.path | capture("operations/(?<id>.+)").id // empty)' <<<"$response")
+          if [ -z "$operation_id" ] || [ "$operation_id" = "null" ]; then
+            echo "::error::Unexpected response from Open Cloud: $response"
+            exit 1
+          fi
+          echo "Operation started: $operation_id"
+
+          for attempt in $(seq 1 60); do
+            status=$(curl -sS -H "x-api-key: ${ROBLOX_API_KEY}" \
+              "https://apis.roblox.com/assets/v1/operations/${operation_id}")
+            done=$(jq -r '.done // false' <<<"$status")
+            if [ "$done" = "true" ]; then
+              err=$(jq -r '.error // empty' <<<"$status")
+              if [ -n "$err" ] && [ "$err" != "null" ]; then
+                echo "::error::Publish failed: $status"
+                exit 1
+              fi
+              echo "Publish complete"
+              jq <<<"$status"
+              exit 0
+            fi
+            sleep 3
+          done
+
+          echo "::error::Timed out waiting for publish operation to complete"
+          exit 1

@@ -16,6 +16,3 @@ plugin/Packages
 # Other
 ref/
 .claude/
-
-# rbxasset is cloned into this folder during the release workflow
-/.github/scripts/rbxasset/
