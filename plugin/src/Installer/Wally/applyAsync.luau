@@ -2,11 +2,13 @@
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
+local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local downloadAndExtractAsync = require(StudioDiscover.Source.Installer.Wally.downloadAndExtractAsync)
 local foldersModule = require(StudioDiscover.Source.Installer.Wally.getPackagesFolder)
 local linkModule = require(StudioDiscover.Source.Installer.Wally.buildPackageLink)
-local processPackageTypes = require(StudioDiscover.Source.Installer.Wally.processPackageTypes)
+local processPackageTypesParser = require(StudioDiscover.Source.Installer.Wally.processPackageTypesParser)
+local processPackageTypesRegex = require(StudioDiscover.Source.Installer.Wally.processPackageTypes)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("installer.apply")
@@ -141,6 +143,11 @@ local function applyAsync(
 		packageFolder.Parent = indexFolder
 	end
 
+	local settings = SettingsStore.get().getStorage()
+	local processLink = if settings.packageTypesMode == "Parser"
+		then processPackageTypesParser.processLink
+		else processPackageTypesRegex.processLink
+
 	for packageId, resolvedPackage in resolved do
 		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
 		local indexFolder = getOrCreateIndex(packagesFolder)
@@ -163,7 +170,10 @@ local function applyAsync(
 				depResolved.realm
 			)
 			link.Parent = packageFolder
-			processPackageTypes.processLink(link)
+			local ok, err = xpcall(processLink, debug.traceback, link)
+			if not ok then
+				logger.warn(`processLink failed for "{link.Name}" ({settings.packageTypesMode}): {err}`)
+			end
 		end
 	end
 
@@ -177,7 +187,10 @@ local function applyAsync(
 		local rootLink =
 			buildRootPackageLink(alias, packageId, moduleName, resolvedPackage.realm, resolvedPackage.realm)
 		rootLink.Parent = packagesFolder
-		processPackageTypes.processLink(rootLink)
+		local ok, err = xpcall(processLink, debug.traceback, rootLink)
+		if not ok then
+			logger.warn(`processLink failed for root "{rootLink.Name}" ({settings.packageTypesMode}): {err}`)
+		end
 	end
 
 	return failures

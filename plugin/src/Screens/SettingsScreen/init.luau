@@ -24,6 +24,7 @@ local e = React.createElement
 local NAMING_CONVENTIONS: { string } =
 	table.freeze({ "Original", "PascalCase", "camelCase", "snake_case", "kebab-case" })
 local SIDEBAR_MODES: { string } = table.freeze({ "Auto", "Expanded", "Compact" })
+local PACKAGE_TYPES_MODES: { string } = table.freeze({ "Parser", "Regex" })
 
 local function SettingsScreen()
 	local state = SettingsStore.useSettings()
@@ -43,6 +44,10 @@ local function SettingsScreen()
 
 	local onSidebarModeChange = React.useCallback(function(value: any)
 		SettingsStore.setSetting("sidebarMode", value)
+	end, {})
+
+	local onPackageTypesModeChange = React.useCallback(function(value: any)
+		SettingsStore.setSetting("packageTypesMode", value)
 	end, {})
 
 	local onVerboseLoggingChange = React.useCallback(function(value: any)
@@ -104,6 +109,15 @@ local function SettingsScreen()
 					value = state.sidebarMode,
 					onChange = onSidebarModeChange,
 					options = SIDEBAR_MODES,
+					LayoutOrder = nextOrder(),
+				}),
+
+				PackageTypesMode = e(Setting, {
+					name = "Wally Type Exports",
+					description = "Parser is stricter and handles unusual Luau source; Regex matches the wally-package-types behavior.",
+					value = state.packageTypesMode,
+					onChange = onPackageTypesModeChange,
+					options = PACKAGE_TYPES_MODES,
 					LayoutOrder = nextOrder(),
 				}),
 
