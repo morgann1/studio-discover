@@ -1,10 +1,10 @@
 ![Studio Discover](./.github/assets/banner.jpg)
 <a name="top"></a>
 
-[![Luau](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/luau.svg)](https://luau.org/)
-[![Creator Store](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/roblox_dev_creator_store.svg)](https://create.roblox.com/store/asset/91442200339606)
-[![GitHub Releases](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/github.svg)](https://github.com/morgann1/studio-discover/releases/latest)
-[![GitHub Repository](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/github_source.svg)](https://github.com/morgann1/studio-discover)
+[![Luau](./.github/assets/badges/link-luau.svg)](https://luau.org/)
+[![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/91442200339606)
+[![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
+[![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
 
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
 [![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
