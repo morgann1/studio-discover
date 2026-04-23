@@ -61,8 +61,6 @@ jobs:
             echo "---"
             echo ""
             echo "**Full changelog**: $URL"
-            echo ""
-            echo "> Creator Store update is published manually via Studio (right-click Discover → Publish as Plugin → Update Existing)."
             echo "RELEASE_EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -72,3 +70,10 @@ jobs:
           tag_name: ${{ steps.meta.outputs.tag }}
           files: StudioDiscover.rbxm
           body: ${{ steps.notes.outputs.body }}
+
+      - name: ☁️ Publish to Creator Store
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          ROBLOX_UNIVERSE_ID: ${{ vars.ROBLOX_UNIVERSE_ID }}
+          ROBLOX_PLACE_ID: ${{ vars.ROBLOX_PLACE_ID }}
+        run: lute run upload-plugin StudioDiscover.rbxm --tag "${{ steps.meta.outputs.tag }}"
