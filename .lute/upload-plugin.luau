@@ -19,7 +19,8 @@ local function main()
 		parser:add(arg.name, arg.kind, arg.options)
 	end
 
-	parser:parse(process.args)
+	local args = { table.unpack(process.args, 2) }
+	parser:parse(args)
 
 	local path = parser:get("path") :: string?
 	assert(path, "missing required argument: path")
