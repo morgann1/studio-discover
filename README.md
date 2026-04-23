@@ -1,18 +1,19 @@
+![Studio Discover](./.github/assets/banner.jpg)
 <a name="top"></a>
 
-<div align="center">
+[![Luau](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/luau.svg)](https://luau.org/)
+[![Creator Store](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/roblox_dev_creator_store.svg)](https://create.roblox.com/store/asset/91442200339606)
+[![GitHub Releases](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/github.svg)](https://github.com/morgann1/studio-discover/releases/latest)
+[![GitHub Repository](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/github_source.svg)](https://github.com/morgann1/studio-discover)
 
-![Studio Discover](./.github/assets/banner.jpg)
-
-[![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/91442200339606)
-[![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![Changelog](./.github/assets/badges/link-changelog.svg)](./CHANGELOG.md)
-
-[![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
 [![My Profile](./.github/assets/badges/link-my-profile.svg)](https://www.roblox.com/users/48044582/profile)
 [![Contributions Welcome](./.github/assets/badges/link-contributions.svg)](#-feedback-and-contributions)
 
-</div>
+[![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
+[![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/morgann1/studio-discover?display_name=tag&label=release)](https://github.com/morgann1/studio-discover/releases/latest)
+[![Stars](https://img.shields.io/github/stars/morgann1/studio-discover)](https://github.com/morgann1/studio-discover/stargazers)
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
@@ -132,6 +133,9 @@ Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds `StudioDis
 
 ## 🤝 Feedback and Contributions
 
+[![Open issues](https://img.shields.io/github/issues/morgann1/studio-discover)](https://github.com/morgann1/studio-discover/issues)
+[![Open pull requests](https://img.shields.io/github/issues-pr/morgann1/studio-discover)](https://github.com/morgann1/studio-discover/pulls)
+
 Issues and pull requests are welcome.
 
 - **Bugs and feature requests**: open an issue at [GitHub Issues](https://github.com/morgann1/studio-discover/issues).
@@ -145,8 +149,5 @@ Studio Discover's own source is intended to be freely redistributable. Read it, 
 The one thing to watch out for is [Foundation](https://github.com/Roblox/foundation), Roblox's UI library. The built `StudioDiscover.rbxm` bundles it at build time, and Foundation is not open source, so redistributing the *built artifact* is subject to Roblox's terms for Foundation, not this repo's license. A proper `LICENSE` will be added once Foundation is either swapped out or its redistribution terms are confirmed.
 
 For now: do whatever you want with the source in this repo, but check Foundation's terms before redistributing the build.
-
-[![CI](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/ci.yml)
-[![Release](https://github.com/morgann1/studio-discover/actions/workflows/release.yml/badge.svg)](https://github.com/morgann1/studio-discover/actions/workflows/release.yml)
 
 [Back to top](#top)
