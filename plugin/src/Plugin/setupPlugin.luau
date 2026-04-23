@@ -7,15 +7,10 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
 local SharedToolbar = require(StudioDiscover.Packages.SharedToolbar)
+local buildConfig = require(StudioDiscover.Generated.buildConfig)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 
 local logger = createLogger.createLogger("plugin.bootstrap")
-
-local ICON = "rbxassetid://125842588490194"
-local MEDIUM_NAME = "  22:43 Plugin Suite"
-local TOOLBAR_TITLE = "22:43"
-local BUTTON_ID = "discover"
-local PEER_ID = "morgann1/studio-discover"
 
 local WIDGET_INFO = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 936, 702, 306, 306)
 
@@ -29,13 +24,13 @@ local function setupPlugin(plugin: Plugin): ()
 		return
 	end
 
-	plugin.Name = "Discover"
+	plugin.Name = buildConfig.pluginName
 
 	PluginStore.get().setPlugin(plugin)
 
-	local widget = plugin:CreateDockWidgetPluginGuiAsync("DiscoverWidget", WIDGET_INFO)
-	widget.Title = "Discover"
-	widget.Name = "Discover"
+	local widget = plugin:CreateDockWidgetPluginGuiAsync(buildConfig.widgetId, WIDGET_INFO)
+	widget.Title = buildConfig.widgetTitle
+	widget.Name = buildConfig.widgetName
 	widget.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	local destroyApp: (() -> ())? = nil
@@ -50,15 +45,15 @@ local function setupPlugin(plugin: Plugin): ()
 
 	local handle = SharedToolbar.register({
 		plugin = plugin,
-		mediumName = MEDIUM_NAME,
-		toolbarTitle = TOOLBAR_TITLE,
-		peerId = PEER_ID,
+		mediumName = buildConfig.mediumName,
+		toolbarTitle = buildConfig.toolbarTitle,
+		peerId = buildConfig.peerId,
 		buttons = {
 			{
-				id = BUTTON_ID,
-				title = "Discover",
-				tooltip = "Browse and install Luau packages",
-				iconId = ICON,
+				id = buildConfig.buttonId,
+				title = buildConfig.buttonTitle,
+				tooltip = buildConfig.buttonTooltip,
+				iconId = buildConfig.icon,
 				clickableWhenViewportHidden = true,
 				onClick = function()
 					widget.Enabled = not widget.Enabled
@@ -68,14 +63,14 @@ local function setupPlugin(plugin: Plugin): ()
 	})
 
 	local enabledConn = widget:GetPropertyChangedSignal("Enabled"):Connect(function()
-		handle:setActive(BUTTON_ID, widget.Enabled)
+		handle:setActive(buildConfig.buttonId, widget.Enabled)
 		if widget.Enabled then
 			mount()
 		end
 	end)
 
 	if widget.Enabled then
-		handle:setActive(BUTTON_ID, true)
+		handle:setActive(buildConfig.buttonId, true)
 		mount()
 	end
 

@@ -5,6 +5,7 @@ local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 
 local pesdeApplyAsync = require(StudioDiscover.Source.Installer.Pesde.applyAsync)
@@ -118,7 +119,7 @@ local function updateAllPesdeAsync(updates: { PesdeUpdateRequest }): UpdateAllRe
 		end
 		return {
 			ok = false,
-			error = tostring(applyOutcome),
+			error = permissionError.describe(applyOutcome),
 			failures = resolutionFailures,
 		}
 	end

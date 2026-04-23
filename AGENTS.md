@@ -2,7 +2,7 @@
 
 ## Task Completion Requirements
 
-- `lune run ci` must pass before considering tasks completed.
+- `lute run ci` must pass before considering tasks completed.
 
 ## Project Snapshot
 

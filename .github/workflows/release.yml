@@ -28,16 +28,22 @@ jobs:
           cache: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 🏷️ Resolve tag
+        id: meta
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: 📦 Install packages
-        run: lune run install
+        run: lute run install
 
       - name: 🏗️ Build StudioDiscover.rbxm
-        run: rojo build plugin/default.project.json -o StudioDiscover.rbxm
+        run: lute run build
 
       - name: 📝 Build release notes
         id: notes
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG="${{ steps.meta.outputs.tag }}"
 
           PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
           if [ -n "$PREV" ]; then
@@ -46,7 +52,7 @@ jobs:
             URL="${{ github.server_url }}/${{ github.repository }}/commits/$TAG"
           fi
 
-          SECTION=$(lune run release-notes --tag "$TAG")
+          SECTION=$(lute run release-notes --tag "$TAG")
 
           {
             echo "body<<RELEASE_EOF"
@@ -55,12 +61,14 @@ jobs:
             echo "---"
             echo ""
             echo "**Full changelog**: $URL"
+            echo ""
+            echo "> Creator Store update is published manually via Studio (right-click Discover → Publish as Plugin → Update Existing)."
             echo "RELEASE_EOF"
           } >> "$GITHUB_OUTPUT"
 
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.meta.outputs.tag }}
           files: StudioDiscover.rbxm
           body: ${{ steps.notes.outputs.body }}
