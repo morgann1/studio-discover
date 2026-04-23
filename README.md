@@ -26,6 +26,7 @@
   - [Build](#build)
   - [Releasing](#releasing)
 - [🤝 Feedback and Contributions](#-feedback-and-contributions)
+- [🙏 Credits](#-credits)
 - [📃 License](#-license)
 
 ## 🚀 About
@@ -141,6 +142,20 @@ Issues and pull requests are welcome.
 - **Bugs and feature requests**: open an issue at [GitHub Issues](https://github.com/morgann1/studio-discover/issues).
 - **Pull requests**: before opening one, please file an issue describing the change so we can agree on direction. Run `lute run ci` locally before pushing. It mirrors what CI checks.
 - **Scope**: contributions that fit the project's goals (see [About](#-about)) are the easiest to land. Studio Discover is a solo project, so response times vary.
+
+## 🙏 Credits
+
+Studio Discover is built on top of work from a lot of other people. Thank you to:
+
+- [**cxmeel**](https://github.com/cxmeel) — the README buttons are from their [Markdown Buttons gist](https://gist.github.com/cxmeel/b3af232eba0ace022e2fba8b7b286520).
+- [**Roblox**](https://github.com/Roblox/foundation) — the **Foundation** UI library the plugin is built with.
+- [**UpliftGames**](https://wally.run) and [**daimond113**](https://pesde.dev) — for the **Wally** and **pesde** registries the plugin queries.
+- [**jsdotlua**](https://github.com/jsdotlua/react-lua) — the **React** port for Roblox.
+- [**littensy**](https://github.com/littensy/charm) — **Charm** and **ReactCharm** for reactivity.
+- [**Corecii**](https://github.com/Corecii/GreenTea) — **GreenTea** for runtime type checking.
+- [**evaera**](https://github.com/evaera/roblox-lua-promise) — the **Promise** implementation.
+- [**roblox-rbx**](https://github.com/rojo-rbx) — **Rojo** and **Rokit** for project sync and toolchain management.
+- The [**Luau**](https://luau.org/) team and the [**Lute**](https://github.com/luau-lang/lute) project — for the language and the standalone runtime that powers the build/CI scripts.
 
 ## 📃 License
 
