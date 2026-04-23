@@ -4,7 +4,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local Charm = require(StudioDiscover.Packages.Charm)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
-local t = require(StudioDiscover.Packages.t)
+local gt = require(StudioDiscover.Packages.GreenTea)
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local createPluginSettingsStore = require(StudioDiscover.Source.Plugin.createPluginSettingsStore)
@@ -33,15 +33,31 @@ local DEFAULTS: SettingsState = table.freeze({
 	verboseLogging = false,
 })
 
+local function check<T>(type_: T): (value: any) -> (boolean, any?)
+	local built = gt.build(type_)
+	return function(value)
+		return built:matches(value)
+	end
+end
+
 local VALIDATORS = {
-	namingConvention = t.literal("Original", "PascalCase", "camelCase", "snake_case", "kebab-case"),
-	displayNames = t.array(t.strictInterface({
-		name = t.string,
-		displayName = t.string,
-	})),
-	reduceMotion = t.boolean,
-	sidebarMode = t.literal("Auto", "Expanded", "Compact"),
-	verboseLogging = t.boolean,
+	namingConvention = check(
+		gt.union(
+			gt.literal("Original"),
+			gt.literal("PascalCase"),
+			gt.literal("camelCase"),
+			gt.literal("snake_case"),
+			gt.literal("kebab-case")
+		)
+	),
+	displayNames = check(gt.array(gt.table({
+		name = gt.string(),
+		displayName = gt.string(),
+		[gt.any()] = gt.never(),
+	}))),
+	reduceMotion = check(gt.boolean()),
+	sidebarMode = check(gt.union(gt.literal("Auto"), gt.literal("Expanded"), gt.literal("Compact"))),
+	verboseLogging = check(gt.boolean()),
 }
 
 local get = Charm.computed(function()

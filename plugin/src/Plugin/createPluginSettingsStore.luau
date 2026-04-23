@@ -23,7 +23,7 @@ export type PluginSettingsStore<T> = {
 	dispose: () -> (),
 }
 
-export type FieldValidator = (value: any) -> (boolean, string?)
+export type FieldValidator = (value: any) -> (boolean, any?)
 
 local function createPluginSettingsStore<T>(
 	storageKey: string,
