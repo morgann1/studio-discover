@@ -149,8 +149,7 @@ Studio Discover is built on top of work from a lot of other people. Thank you to
 
 - [**cxmeel**](https://github.com/cxmeel) — the Luau, Creator Store, GitHub Releases, and GitHub Repository badges are from their [Markdown Buttons gist](https://gist.github.com/cxmeel/b3af232eba0ace022e2fba8b7b286520).
 - [**maneetoo**](https://github.com/maneetoo/Roblox-OSS-Badges) — the Changelog and My Profile badges are from their Roblox OSS Badges collection.
-- [**Roblox**](https://create.roblox.com) — the Contributions Welcome badge is from Roblox's own assets.
-- [**Roblox**](https://github.com/Roblox/foundation) — the **Foundation** UI library the plugin is built with.
+- [**Roblox**](https://github.com/Roblox/foundation) — the **Foundation** UI library the plugin is built with, and the Contributions Welcome badge in this README is from Roblox's own assets.
 - [**UpliftGames**](https://wally.run) and [**daimond113**](https://pesde.dev) — for the **Wally** and **pesde** registries the plugin queries.
 - [**jsdotlua**](https://github.com/jsdotlua/react-lua) — the **React** port for Roblox.
 - [**littensy**](https://github.com/littensy/charm) — **Charm** and **ReactCharm** for reactivity.
@@ -159,7 +158,7 @@ Studio Discover is built on top of work from a lot of other people. Thank you to
 - [**roblox-rbx**](https://github.com/rojo-rbx) — **Rojo** and **Rokit** for project sync and toolchain management.
 - The [**Luau**](https://luau.org/) team and the [**Lute**](https://github.com/luau-lang/lute) project — for the language and the standalone runtime that powers the build/CI scripts.
 - [**grilme99**](https://github.com/grilme99) — the `.lute` build/CI scripts started as a port of their `.lune` scripts from [studio-activity](https://github.com/grilme99/studio-activity), reworked to be cross-platform and adapted for this project.
-- [**flipbook-labs**](https://github.com/flipbook-labs) — the [`roblox-packages`](https://github.com/flipbook-labs/roblox-packages) crate pulls Foundation into the build; without it the plugin likely wouldn't be on Foundation (or StudioComponents) at all.
+- [**flipbook-labs**](https://github.com/flipbook-labs) — the [`roblox-packages`](https://github.com/flipbook-labs/roblox-packages) crate pulls Foundation (Roblox's modern Studio UI components) into the build; without it the plugin would likely be sitting on [StudioComponents](https://github.com/sircfenner/StudioComponents) or a hand-rolled UI instead.
 
 ## 📃 License
 
