@@ -36,10 +36,11 @@ local function splitGenerics(generics: string): { string }
 	local current = ""
 	for i = 1, #inner do
 		local ch = inner:sub(i, i)
+		local prev = if i > 1 then inner:sub(i - 1, i - 1) else ""
 		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
 			depth += 1
 			current ..= ch
-		elseif ch == ">" or ch == ")" or ch == "}" or ch == "]" then
+		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
 			depth -= 1
 			current ..= ch
 		elseif ch == "," and depth == 0 then
@@ -63,9 +64,10 @@ local function extractDefaultType(param: string): string?
 	local depth = 0
 	for i = 1, #param do
 		local ch = param:sub(i, i)
+		local prev = if i > 1 then param:sub(i - 1, i - 1) else ""
 		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
 			depth += 1
-		elseif ch == ">" or ch == ")" or ch == "}" or ch == "]" then
+		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
 			depth -= 1
 		elseif ch == "=" and depth == 0 then
 			local rest = param:sub(i + 1)
@@ -179,15 +181,31 @@ local function isAtLogicalLineStart(source: string, idx: number): boolean
 end
 
 local function readBalancedAngleBrackets(source: string, start: number): number?
-	local depth = 0
+	local angleDepth = 0
+	local parenDepth = 0
+	local braceDepth = 0
+	local squareDepth = 0
 	local i = start
 	while i <= #source do
 		local ch = source:sub(i, i)
-		if ch == "<" then
-			depth += 1
-		elseif ch == ">" then
-			depth -= 1
-			if depth == 0 then
+		local prev = if i > 1 then source:sub(i - 1, i - 1) else ""
+		if ch == "(" then
+			parenDepth += 1
+		elseif ch == ")" then
+			parenDepth -= 1
+		elseif ch == "{" then
+			braceDepth += 1
+		elseif ch == "}" then
+			braceDepth -= 1
+		elseif ch == "[" then
+			squareDepth += 1
+		elseif ch == "]" then
+			squareDepth -= 1
+		elseif ch == "<" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 then
+			angleDepth += 1
+		elseif ch == ">" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 and prev ~= "-" then
+			angleDepth -= 1
+			if angleDepth == 0 then
 				return i
 			end
 		end
