@@ -13,7 +13,7 @@ local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local buildFileFilter = require(StudioDiscover.Source.Installer.Wally.fileFilter)
 local buildTree = require(StudioDiscover.Source.Installer.Wally.buildTree)
 
-local logger = createLogger.createLogger("installer.download")
+local logger = createLogger.createLogger("wally.installer.download")
 
 type Entry = buildTree.Entry
 type PendingSource = buildTree.PendingSource

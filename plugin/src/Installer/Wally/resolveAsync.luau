@@ -14,7 +14,7 @@ local compareSemver = require(StudioDiscover.Source.Util.compareSemver)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
 
-local logger = createLogger.createLogger("installer.resolve")
+local logger = createLogger.createLogger("wally.installer.resolve")
 
 type ResolvedPackage = types.ResolvedPackage
 type RootRequest = types.RootRequest

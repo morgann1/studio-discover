@@ -4,7 +4,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 
-local logger = createLogger.createLogger("installer.fileFilter")
+local logger = createLogger.createLogger("wally.installer.fileFilter")
 
 local DEFAULT_EXCLUDE: { string } = {
 	".*",

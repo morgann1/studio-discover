@@ -20,7 +20,7 @@ local pesdeSnapshotRoots = require(StudioDiscover.Source.Installer.Pesde.snapsho
 
 local sharedTypes = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.installPesde")
+local logger = createLogger.createLogger("pesde.installer.install")
 
 type Realm = sharedTypes.Realm
 type InstallerState = sharedTypes.InstallerState

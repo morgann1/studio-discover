@@ -12,7 +12,7 @@ local toml = require(StudioDiscover.Source.Util.toml)
 local buildTree = require(StudioDiscover.Source.Installer.Wally.buildTree)
 local tarAsync = require(StudioDiscover.Source.Installer.Pesde.tarAsync)
 
-local logger = createLogger.createLogger("installer.pesdeDownload")
+local logger = createLogger.createLogger("pesde.installer.download")
 
 type Entry = buildTree.Entry
 type PendingSource = buildTree.PendingSource

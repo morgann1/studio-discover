@@ -10,7 +10,7 @@ local processPackageTypes = require(StudioDiscover.Source.Installer.Wally.proces
 local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 local types = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.apply")
+local logger = createLogger.createLogger("wally.installer.apply")
 
 local buildSiblingPackageLink = linkModule.buildSiblingPackageLink
 local buildRootPackageLink = linkModule.buildRootPackageLink

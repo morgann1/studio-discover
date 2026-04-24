@@ -9,7 +9,7 @@ local packageId = require(StudioDiscover.Source.Installer.Pesde.packageId)
 local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 local types = require(StudioDiscover.Source.Installer.Pesde.types)
 
-local logger = createLogger.createLogger("installer.pesdeLockfile")
+local logger = createLogger.createLogger("pesde.installer.lockfile")
 
 type PesdeResolvedPackage = types.PesdeResolvedPackage
 type Realm = types.Realm

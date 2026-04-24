@@ -11,7 +11,7 @@ local packageId = require(StudioDiscover.Source.Installer.Pesde.packageId)
 local pesdeSemver = require(StudioDiscover.Source.Installer.Pesde.semver)
 local types = require(StudioDiscover.Source.Installer.Pesde.types)
 
-local logger = createLogger.createLogger("installer.pesdeResolve")
+local logger = createLogger.createLogger("pesde.installer.resolve")
 
 type Realm = types.Realm
 type Kind = types.Kind

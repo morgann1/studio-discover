@@ -12,7 +12,7 @@ local foldersModule = require(StudioDiscover.Source.Installer.Pesde.getPackagesF
 local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 local types = require(StudioDiscover.Source.Installer.Pesde.types)
 
-local logger = createLogger.createLogger("installer.pesdeApply")
+local logger = createLogger.createLogger("pesde.installer.apply")
 
 local getPackagesFolder = foldersModule.getPackagesFolder
 local getOrCreateContainer = foldersModule.getOrCreateContainer

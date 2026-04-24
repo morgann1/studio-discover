@@ -10,7 +10,7 @@ local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local rateLimiter = require(StudioDiscover.Source.Api.Pesde.rateLimiter)
 local types = require(StudioDiscover.Source.Api.types)
 
-local logger = createLogger.createLogger("api.pesdeMetadata")
+local logger = createLogger.createLogger("pesde.api.metadata")
 
 local API_BASE = "https://registry.pesde.daimond113.com/v1"
 

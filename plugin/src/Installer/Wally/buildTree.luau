@@ -5,7 +5,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local classifyFile = require(StudioDiscover.Source.Installer.Wally.classifyFile)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 
-local logger = createLogger.createLogger("installer.buildTree")
+local logger = createLogger.createLogger("wally.installer.buildTree")
 
 export type Entry = {
 	path: string,

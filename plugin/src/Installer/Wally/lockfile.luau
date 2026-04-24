@@ -10,7 +10,7 @@ local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
 local types = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.lockfile")
+local logger = createLogger.createLogger("wally.installer.lockfile")
 
 type LockEntry = types.LockEntry
 type ResolvedPackage = types.ResolvedPackage

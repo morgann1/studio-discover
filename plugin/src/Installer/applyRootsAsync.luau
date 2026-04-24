@@ -11,7 +11,7 @@ local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.applyRoots")
+local logger = createLogger.createLogger("wally.installer.applyRoots")
 
 type ResolvedPackage = types.ResolvedPackage
 type ProgressCallback = types.ProgressCallback

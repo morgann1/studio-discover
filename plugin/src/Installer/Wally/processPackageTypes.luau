@@ -5,7 +5,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 
-local logger = createLogger.createLogger("installer.processTypes")
+local logger = createLogger.createLogger("wally.installer.processTypes")
 
 local BUILTIN_TYPES: { [string]: boolean } = {
 	["any"] = true,

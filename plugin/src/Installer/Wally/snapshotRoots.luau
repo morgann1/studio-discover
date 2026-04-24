@@ -7,7 +7,7 @@ local foldersModule = require(StudioDiscover.Source.Installer.Wally.getPackagesF
 local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
 local types = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.snapshot")
+local logger = createLogger.createLogger("wally.installer.snapshot")
 
 local findPackagesFolder = foldersModule.findPackagesFolder
 

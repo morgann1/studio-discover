@@ -16,7 +16,7 @@ local resolveAsync = require(StudioDiscover.Source.Installer.Wally.resolveAsync)
 local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.install")
+local logger = createLogger.createLogger("wally.installer.install")
 
 local function countPairs(t: { [any]: any }): number
 	local count = 0

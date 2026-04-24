@@ -11,7 +11,7 @@ local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoot
 local types = require(StudioDiscover.Source.Installer.types)
 local uninstallPesdeAsync = require(StudioDiscover.Source.Installer.uninstallPesdeAsync)
 
-local logger = createLogger.createLogger("installer.uninstall")
+local logger = createLogger.createLogger("wally.installer.uninstall")
 
 type Realm = "shared" | "server"
 type Registry = types.Registry
