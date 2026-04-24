@@ -99,6 +99,19 @@ function test.run(options_: Options?): ()
 		return
 	end
 
+	if process.env.WSL_DISTRO_NAME ~= nil or process.env.WSL_INTEROP ~= nil then
+		print()
+		print(
+			color.yellow(
+				`  Detected WSL. run-in-roblox needs a native Roblox Studio install and does not work from WSL.`
+			)
+		)
+		print(color.dim(`  Build here (done), then from a Windows terminal run:`))
+		print(color.dim(`    lute run test`))
+		print(color.dim(`  or open {OUTPUT} in Studio and run {RUNNER_SCRIPT} from the command bar.`))
+		return
+	end
+
 	if not rokitDeclares("run-in-roblox") then
 		print()
 		print(color.yellow(`  run-in-roblox is not declared in rokit.toml.`))

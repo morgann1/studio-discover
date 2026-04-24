@@ -4,6 +4,7 @@
 
 - `lute run ci` and `lute run test` must pass before considering tasks completed.
 - If you touch logic under `plugin/src/`, add or update a Jest spec in `plugin/tests/` and verify it.
+- `lute run test` shells out to `run-in-roblox`, which needs a native Roblox Studio install. It does not work under WSL — build there if you like, but run the tests from a native Windows terminal (or open `plugin/tests/build/tests.rbxl` in Studio and run `runTests.server.luau` from the command bar). The command detects WSL and stops after the build with this guidance.
 
 ## Project Snapshot
 
