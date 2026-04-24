@@ -3,10 +3,10 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
-local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
 local resolveAsync = require(StudioDiscover.Source.Installer.Wally.resolveAsync)
+local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 local updateAllPesdeAsync = require(StudioDiscover.Source.Installer.updateAllPesdeAsync)
@@ -40,21 +40,7 @@ local function findMatch(updates: { UpdateRequest }, root: RootRequest): UpdateR
 	return nil
 end
 
-local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
-	if #updates == 0 then
-		return { ok = true, error = nil, failures = {} }
-	end
-
-	if busyAtom() then
-		logger.warn(`update rejected: another installer operation is in progress`)
-		return {
-			ok = false,
-			error = "Another installer operation is in progress.",
-			failures = {},
-		}
-	end
-	busyAtom(true)
-
+local function runUpdateAll(updates: { UpdateRequest }): UpdateAllResult
 	local wallyUpdates: { UpdateRequest } = {}
 	local pesdeUpdates: { updateAllPesdeAsync.PesdeUpdateRequest } = {}
 	for _, update in updates do
@@ -73,18 +59,25 @@ local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 	local combined: UpdateAllResult = { ok = true, error = nil, failures = {} }
 
 	if #pesdeUpdates > 0 then
-		local result = updateAllPesdeAsync(pesdeUpdates)
-		for _, f in result.failures do
-			table.insert(combined.failures, f)
-		end
-		if not result.ok then
+		local pesdeOk, pesdeOutcome = pcall(updateAllPesdeAsync, pesdeUpdates)
+		if pesdeOk then
+			local result = pesdeOutcome :: updateAllPesdeAsync.UpdateAllResult
+			for _, f in result.failures do
+				table.insert(combined.failures, f)
+			end
+			if not result.ok then
+				combined.ok = false
+				combined.error = result.error
+			end
+		else
+			logger.error(`pesde updates crashed: {pesdeOutcome}`)
 			combined.ok = false
-			combined.error = result.error
+			combined.error = `Pesde updates failed: {pesdeOutcome}`
+			table.insert(combined.failures, tostring(pesdeOutcome))
 		end
 	end
 
 	if #wallyUpdates == 0 then
-		busyAtom(false)
 		return combined
 	end
 
@@ -112,7 +105,6 @@ local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 
 	if appliedCount == 0 then
 		logger.warn("updateAll: no installed wally roots matched the requested updates")
-		busyAtom(false)
 		if not combined.ok or #combined.failures == 0 then
 			combined.ok = false
 			combined.error = combined.error or "No installed packages matched the update list"
@@ -136,13 +128,35 @@ local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
 	if not result.ok then
 		combined.ok = false
 		combined.error = result.error or "Update failed"
-		busyAtom(false)
 		return combined
 	end
 
 	logger.info(`updateAll succeeded ({appliedCount} wally package(s), {#combined.failures} warning(s))`)
-	busyAtom(false)
 	return combined
+end
+
+local function updateAllAsync(updates: { UpdateRequest }): UpdateAllResult
+	if #updates == 0 then
+		return { ok = true, error = nil, failures = {} }
+	end
+
+	return runWithBusyLock(function(): UpdateAllResult
+		logger.warn(`update rejected: another installer operation is in progress`)
+		return {
+			ok = false,
+			error = "Another installer operation is in progress.",
+			failures = {},
+		}
+	end, function(): UpdateAllResult
+		return runUpdateAll(updates)
+	end, function(err): UpdateAllResult
+		logger.error(`updateAll crashed: {err}`)
+		return {
+			ok = false,
+			error = `Update failed: {err}`,
+			failures = { err },
+		}
+	end)
 end
 
 return updateAllAsync

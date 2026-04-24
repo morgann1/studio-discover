@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🛠 Fixes
 - Installing a package with a file over Roblox's 200,000-char ModuleScript.Source limit no longer crashes the install. Every script source write in the installer is now routed through `ScriptEditorService:UpdateSourceAsync`, which bypasses the direct-assignment limit.
+- Installer entry points (install, uninstall, updateAll) no longer leave the plugin stuck in a "busy" state when an operation throws. The busy lock is now released and the installer state transitions to an error status even on uncaught failures.
 
 ## [3.7.0] - 2026-04-22
 

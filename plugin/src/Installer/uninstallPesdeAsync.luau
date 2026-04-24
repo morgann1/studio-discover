@@ -4,10 +4,10 @@ local ChangeHistoryService = game:GetService("ChangeHistoryService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
+local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 
 local pesdeApplyAsync = require(StudioDiscover.Source.Installer.Pesde.applyAsync)
 local pesdeLockfile = require(StudioDiscover.Source.Installer.Pesde.lockfile)
@@ -25,16 +25,7 @@ export type UninstallResult = {
 	error: string?,
 }
 
-local function uninstallPesdeAsync(scope: string, name: string, realm: Realm): UninstallResult
-	if busyAtom() then
-		logger.warn(`uninstall rejected: another installer operation is in progress`)
-		return {
-			ok = false,
-			error = "Another installer operation is in progress.",
-		}
-	end
-	busyAtom(true)
-
+local function runUninstall(scope: string, name: string, realm: Realm): UninstallResult
 	logger.info(`uninstall pesde {scope}/{name} realm={realm}`)
 
 	local priorSnapshots = pesdeSnapshotRoots()
@@ -57,7 +48,6 @@ local function uninstallPesdeAsync(scope: string, name: string, realm: Realm): U
 
 	if not didMatch then
 		logger.warn(`no matching pesde root for {scope}/{name} in {realm}`)
-		busyAtom(false)
 		return {
 			ok = false,
 			error = `No installed pesde root matched {scope}/{name}`,
@@ -84,7 +74,6 @@ local function uninstallPesdeAsync(scope: string, name: string, realm: Realm): U
 		if recordingId ~= nil then
 			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
 		end
-		busyAtom(false)
 		return {
 			ok = false,
 			error = permissionError.describe(applyOutcome),
@@ -98,11 +87,28 @@ local function uninstallPesdeAsync(scope: string, name: string, realm: Realm): U
 	refreshInstalledRoots()
 
 	logger.info(`uninstall succeeded: {scope}/{name}`)
-	busyAtom(false)
 	return {
 		ok = true,
 		error = nil,
 	}
+end
+
+local function uninstallPesdeAsync(scope: string, name: string, realm: Realm): UninstallResult
+	return runWithBusyLock(function(): UninstallResult
+		logger.warn(`uninstall rejected: another installer operation is in progress`)
+		return {
+			ok = false,
+			error = "Another installer operation is in progress.",
+		}
+	end, function(): UninstallResult
+		return runUninstall(scope, name, realm)
+	end, function(err): UninstallResult
+		logger.error(`uninstall crashed for {scope}/{name}: {err}`)
+		return {
+			ok = false,
+			error = `Uninstall failed: {err}`,
+		}
+	end)
 end
 
 return uninstallPesdeAsync
