@@ -11,6 +11,7 @@ local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 local ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
 local DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
 local HomeScreen = require(StudioDiscover.Source.Screens.HomeScreen)
+local Installer = require(StudioDiscover.Source.Installer)
 local ManageScreen = require(StudioDiscover.Source.Screens.ManageScreen)
 local Navigation = require(StudioDiscover.Source.Navigation)
 local PackageScreen = require(StudioDiscover.Source.Screens.PackageScreen)
@@ -18,6 +19,7 @@ local SettingsScreen = require(StudioDiscover.Source.Screens.SettingsScreen)
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local Sidebar = require(StudioDiscover.Source.Common.Sidebar)
 local UpdatesScreen = require(StudioDiscover.Source.Screens.UpdatesScreen)
+local buildConfig = require(StudioDiscover.Generated.buildConfig)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local useIsCompact = require(StudioDiscover.Source.Common.useIsCompact)
 
@@ -54,6 +56,14 @@ local function App(props: Props)
 	end)
 
 	local isCompact = if sidebarMode == "Expanded" then false elseif sidebarMode == "Compact" then true else auto
+
+	local updatesCount = #Installer.useUpdates().updates
+	local widget = props.overlayGui
+	React.useEffect(function()
+		widget.Title = if updatesCount > 0
+			then `{buildConfig.widgetTitle} · {updatesCount} update{if updatesCount == 1 then "" else "s"}`
+			else buildConfig.widgetTitle
+	end, { widget, updatesCount } :: { any })
 
 	return e(ContextProviders, {
 		overlayGui = props.overlayGui :: GuiBase2d,
