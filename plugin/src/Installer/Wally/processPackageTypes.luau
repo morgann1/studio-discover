@@ -165,19 +165,66 @@ export type ExportedType = {
 	kind: "alias" | "function",
 }
 
-local function isAtLogicalLineStart(source: string, idx: number): boolean
-	local i = idx - 1
-	while i >= 1 do
-		local ch = source:sub(i, i)
-		if ch == "\n" or ch == "\r" then
-			return true
-		end
-		if ch ~= " " and ch ~= "\t" then
-			return false
-		end
-		i -= 1
+local function tryOpenLongBracket(source: string, pos: number): number?
+	if source:sub(pos, pos) ~= "[" then
+		return nil
 	end
-	return true
+	local level = 0
+	local i = pos + 1
+	while source:sub(i, i) == "=" do
+		level += 1
+		i += 1
+	end
+	if source:sub(i, i) == "[" then
+		return level
+	end
+	return nil
+end
+
+local function skipLongBracket(source: string, afterOpen: number, level: number): number
+	local close = "]" .. string.rep("=", level) .. "]"
+	local found = source:find(close, afterOpen, true)
+	if found == nil then
+		return #source + 1
+	end
+	return found + #close
+end
+
+local function skipStringOrComment(source: string, pos: number): number?
+	if pos > #source then
+		return nil
+	end
+	if source:sub(pos, pos + 1) == "--" then
+		local afterDash = pos + 2
+		local longLevel = tryOpenLongBracket(source, afterDash)
+		if longLevel ~= nil then
+			return skipLongBracket(source, afterDash + longLevel + 2, longLevel)
+		end
+		local nl = source:find("\n", afterDash, true)
+		return if nl == nil then #source + 1 else nl
+	end
+	local longLevel = tryOpenLongBracket(source, pos)
+	if longLevel ~= nil then
+		return skipLongBracket(source, pos + longLevel + 2, longLevel)
+	end
+	local ch = source:sub(pos, pos)
+	if ch == "'" or ch == '"' then
+		local i = pos + 1
+		while i <= #source do
+			local c = source:sub(i, i)
+			if c == "\\" then
+				i += 2
+			elseif c == ch then
+				return i + 1
+			elseif c == "\n" then
+				return i + 1
+			else
+				i += 1
+			end
+		end
+		return #source + 1
+	end
+	return nil
 end
 
 local function readBalancedAngleBrackets(source: string, start: number): number?
@@ -187,6 +234,11 @@ local function readBalancedAngleBrackets(source: string, start: number): number?
 	local squareDepth = 0
 	local i = start
 	while i <= #source do
+		local skipped = skipStringOrComment(source, i)
+		if skipped ~= nil then
+			i = skipped
+			continue
+		end
 		local ch = source:sub(i, i)
 		local prev = if i > 1 then source:sub(i - 1, i - 1) else ""
 		if ch == "(" then
@@ -216,14 +268,16 @@ end
 
 local function extractExportedTypes(source: string): { ExportedType }
 	local types: { ExportedType } = {}
-	local pos = 1
-	while pos <= #source do
-		local kwStart, kwEnd = source:find("export%s+type%s+", pos)
-		if kwStart == nil or kwEnd == nil then
-			break
+	local i = 1
+	while i <= #source do
+		local skipped = skipStringOrComment(source, i)
+		if skipped ~= nil then
+			i = skipped
+			continue
 		end
-		if not isAtLogicalLineStart(source, kwStart) then
-			pos = kwEnd + 1
+		local _, kwEnd = source:find("^%f[%w_]export%s+type%s+", i)
+		if kwEnd == nil then
+			i += 1
 			continue
 		end
 		local afterKw = kwEnd + 1
@@ -235,7 +289,7 @@ local function extractExportedTypes(source: string): { ExportedType }
 		end
 		local _, nameEnd, name = source:find("^([%w_]+)", afterKw)
 		if name == nil or nameEnd == nil then
-			pos = kwEnd + 1
+			i = kwEnd + 1
 			continue
 		end
 		local afterName = (nameEnd :: number) + 1
@@ -248,7 +302,7 @@ local function extractExportedTypes(source: string): { ExportedType }
 			end
 		end
 		table.insert(types, { name = name :: string, generics = generics, kind = kind })
-		pos = (nameEnd :: number) + 1
+		i = afterName
 	end
 	return types
 end
@@ -260,11 +314,13 @@ end
 local function resolveLink(linkModule: ModuleScript): ModuleScript?
 	local _, linkPackageId, moduleName = parseLinkRequire(linkModule.Source)
 	if linkPackageId == nil or moduleName == nil then
+		logger.debug(`resolveLink: "{linkModule:GetFullName()}" source is not a link pattern`)
 		return nil
 	end
 
 	local parent = linkModule.Parent
 	if parent == nil then
+		logger.warn(`resolveLink: "{linkModule:GetFullName()}" has no parent`)
 		return nil
 	end
 	local indexFolder = parent:FindFirstChild("_Index")
@@ -272,11 +328,15 @@ local function resolveLink(linkModule: ModuleScript): ModuleScript?
 		indexFolder = parent.Parent
 	end
 	if indexFolder == nil then
+		logger.warn(`resolveLink: "{linkModule:GetFullName()}" has no sibling or ancestor _Index folder`)
 		return nil
 	end
 
 	local packageFolder = indexFolder:FindFirstChild(linkPackageId :: string)
 	if packageFolder == nil then
+		logger.warn(
+			`resolveLink: "{linkModule:GetFullName()}" targets "{linkPackageId}" but no such package under "{indexFolder:GetFullName()}"`
+		)
 		return nil
 	end
 
@@ -284,6 +344,9 @@ local function resolveLink(linkModule: ModuleScript): ModuleScript?
 	if target ~= nil and target:IsA("ModuleScript") then
 		return target
 	end
+	logger.warn(
+		`resolveLink: "{linkModule:GetFullName()}" target module "{moduleName}" not found or not a ModuleScript in "{packageFolder:GetFullName()}"`
+	)
 	return nil
 end
 

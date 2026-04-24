@@ -229,6 +229,58 @@ describe("Luau type-syntax coverage", function()
 		expect(types[1].generics).toBe("<T>")
 	end)
 
+	test("extractExportedTypes skips export type inside a short comment", function()
+		local types = extractExportedTypes("-- export type Fake = number\nexport type Real = string")
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Real")
+	end)
+
+	test("extractExportedTypes skips export type inside a long comment", function()
+		local src = "--[[\nexport type Fake = number\n]] export type Real = string"
+		local types = extractExportedTypes(src)
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Real")
+	end)
+
+	test("extractExportedTypes skips export type inside a leveled long comment", function()
+		local src = "--[==[\nexport type Fake = number\n]==]\nexport type Real = string"
+		local types = extractExportedTypes(src)
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Real")
+	end)
+
+	test("extractExportedTypes skips export type inside a short string literal", function()
+		local types = extractExportedTypes("local s = 'export type Fake = number'\nexport type Real = string")
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Real")
+	end)
+
+	test("extractExportedTypes skips export type inside a long string literal", function()
+		local src = "local s = [[\nexport type Fake = number\n]]\nexport type Real = string"
+		local types = extractExportedTypes(src)
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Real")
+	end)
+
+	test("extractExportedTypes skips export type inside a leveled long string literal", function()
+		local src = "local s = [=[\nexport type Fake = number\n]=]\nexport type Real = string"
+		local types = extractExportedTypes(src)
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Real")
+	end)
+
+	test("extractExportedTypes does not match someexport type prefix", function()
+		local types = extractExportedTypes("someexport type Fake = number")
+		expect(#types).toBe(0)
+	end)
+
+	test("extractExportedTypes captures singleton string default containing >", function()
+		local types = extractExportedTypes([[export type Marker<T = ">"> = T]])
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Marker")
+		expect(types[1].generics).toBe([[<T = ">">]])
+	end)
+
 	test("extractExportedTypes handles multi-line header with variadic type-pack", function()
 		local src = table.concat({
 			"export type Handler<",
