@@ -18,6 +18,13 @@ local BUILTIN_TYPES: { [string]: boolean } = {
 	["unknown"] = true,
 }
 
+local TYPE_SYNTAX_TOKENS: { [string]: boolean } = {
+	["typeof"] = true,
+	["nil"] = true,
+	["true"] = true,
+	["false"] = true,
+}
+
 local function splitGenerics(generics: string): { string }
 	local inner = generics:match("^<(.+)>$")
 	if inner == nil then
@@ -29,10 +36,10 @@ local function splitGenerics(generics: string): { string }
 	local current = ""
 	for i = 1, #inner do
 		local ch = inner:sub(i, i)
-		if ch == "<" or ch == "(" then
+		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
 			depth += 1
 			current ..= ch
-		elseif ch == ">" or ch == ")" then
+		elseif ch == ">" or ch == ")" or ch == "}" or ch == "]" then
 			depth -= 1
 			current ..= ch
 		elseif ch == "," and depth == 0 then
@@ -53,11 +60,36 @@ local function extractParamName(param: string): string?
 end
 
 local function extractDefaultType(param: string): string?
-	return param:match("=%s*([%w_%.]+)%s*$")
+	local depth = 0
+	for i = 1, #param do
+		local ch = param:sub(i, i)
+		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
+			depth += 1
+		elseif ch == ">" or ch == ")" or ch == "}" or ch == "]" then
+			depth -= 1
+		elseif ch == "=" and depth == 0 then
+			local rest = param:sub(i + 1)
+			rest = (rest:gsub("^%s+", ""):gsub("%s+$", ""))
+			if rest == "" then
+				return nil
+			end
+			return rest
+		end
+	end
+	return nil
 end
 
 local function shouldKeepDefault(defaultType: string, resolvedTypes: { [string]: true }): boolean
-	return BUILTIN_TYPES[defaultType] == true or resolvedTypes[defaultType] == true
+	if defaultType:find("[%w_]%s*%.%s*[%a_]") ~= nil then
+		return false
+	end
+	for ident in defaultType:gmatch("[%a_][%w_]*") do
+		if BUILTIN_TYPES[ident] or resolvedTypes[ident] or TYPE_SYNTAX_TOKENS[ident] then
+			continue
+		end
+		return false
+	end
+	return true
 end
 
 local function stripUnknownDefaults(generics: string, resolvedTypes: { [string]: true }): string
@@ -125,25 +157,80 @@ local function extractParamNames(generics: string): string
 	return "<" .. table.concat(names, ", ") .. ">"
 end
 
-type ExportedType = {
+export type ExportedType = {
 	name: string,
 	generics: string,
+	kind: "alias" | "function",
 }
+
+local function isAtLogicalLineStart(source: string, idx: number): boolean
+	local i = idx - 1
+	while i >= 1 do
+		local ch = source:sub(i, i)
+		if ch == "\n" or ch == "\r" then
+			return true
+		end
+		if ch ~= " " and ch ~= "\t" then
+			return false
+		end
+		i -= 1
+	end
+	return true
+end
+
+local function readBalancedAngleBrackets(source: string, start: number): number?
+	local depth = 0
+	local i = start
+	while i <= #source do
+		local ch = source:sub(i, i)
+		if ch == "<" then
+			depth += 1
+		elseif ch == ">" then
+			depth -= 1
+			if depth == 0 then
+				return i
+			end
+		end
+		i += 1
+	end
+	return nil
+end
 
 local function extractExportedTypes(source: string): { ExportedType }
 	local types: { ExportedType } = {}
-	for line in source:gmatch("[^\n]+") do
-		local name, generics = line:match("^%s*export%s+type%s+([%w_]+)(%b<>)")
-		if name == nil then
-			name = line:match("^%s*export%s+type%s+([%w_]+)%s*=")
-			generics = nil
+	local pos = 1
+	while pos <= #source do
+		local kwStart, kwEnd = source:find("export%s+type%s+", pos)
+		if kwStart == nil or kwEnd == nil then
+			break
 		end
-		if name ~= nil then
-			table.insert(types, {
-				name = name :: string,
-				generics = generics or "",
-			})
+		if not isAtLogicalLineStart(source, kwStart) then
+			pos = kwEnd + 1
+			continue
 		end
+		local afterKw = kwEnd + 1
+		local kind: "alias" | "function" = "alias"
+		local _, fnEnd = source:find("^function%s+", afterKw)
+		if fnEnd ~= nil then
+			kind = "function"
+			afterKw = fnEnd + 1
+		end
+		local _, nameEnd, name = source:find("^([%w_]+)", afterKw)
+		if name == nil or nameEnd == nil then
+			pos = kwEnd + 1
+			continue
+		end
+		local afterName = (nameEnd :: number) + 1
+		local generics = ""
+		local nextNonWs = source:find("%S", afterName)
+		if nextNonWs ~= nil and source:sub(nextNonWs, nextNonWs) == "<" then
+			local genericsEnd = readBalancedAngleBrackets(source, nextNonWs)
+			if genericsEnd ~= nil then
+				generics = source:sub(nextNonWs, genericsEnd)
+			end
+		end
+		table.insert(types, { name = name :: string, generics = generics, kind = kind })
+		pos = (nameEnd :: number) + 1
 	end
 	return types
 end
@@ -203,7 +290,9 @@ local function processLink(linkModule: ModuleScript): boolean
 
 	local resolvedTypes: { [string]: true } = {}
 	for _, info in exported do
-		resolvedTypes[info.name] = true
+		if info.kind == "alias" then
+			resolvedTypes[info.name] = true
+		end
 	end
 
 	local requirePath = `{prefix}["{linkPackageId}"]["{moduleName}"]`
@@ -211,6 +300,9 @@ local function processLink(linkModule: ModuleScript): boolean
 	table.insert(lines, `local REQUIRED_MODULE = require({requirePath})`)
 
 	for _, info in exported do
+		if info.kind ~= "alias" then
+			continue
+		end
 		if info.generics ~= "" then
 			local paramNames = extractParamNames(info.generics)
 
@@ -241,4 +333,8 @@ end
 
 return table.freeze({
 	processLink = processLink,
+	extractExportedTypes = extractExportedTypes,
+	extractDefaultType = extractDefaultType,
+	splitGenerics = splitGenerics,
+	shouldKeepDefault = shouldKeepDefault,
 })
