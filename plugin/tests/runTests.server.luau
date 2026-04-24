@@ -9,15 +9,27 @@ local Tests = StudioDiscover:WaitForChild("Tests") :: Folder
 
 local Jest = require(DevPackages:WaitForChild("Jest"))
 
-local status, result = Jest.runCLI(Tests, {
-	verbose = false,
-	ci = false,
-}, { Tests }):awaitStatus()
+local ok, err = pcall(function()
+	local status, payload = Jest.runCLI(Tests, {
+		verbose = true,
+		ci = false,
+	}, { Tests }):awaitStatus()
 
-if status == "Rejected" then
-	error(result)
-end
+	if status ~= "Resolved" then
+		error(`Jest promise rejected: {tostring(payload)}`, 0)
+	end
 
-if result.results.numFailedTestSuites > 0 or result.results.numFailedTests > 0 then
-	error(`Jest: {result.results.numFailedTests} test(s) failed`)
+	local results = (payload :: any).results
+	if results == nil then
+		error(`Jest returned no results payload: {tostring(payload)}`, 0)
+	end
+
+	if results.numFailedTestSuites > 0 or results.numFailedTests > 0 then
+		error(`Jest: {results.numFailedTests} test(s) failed`, 0)
+	end
+end)
+
+if not ok then
+	warn(`[Tests] {tostring(err)}`)
+	error(tostring(err), 0)
 end
