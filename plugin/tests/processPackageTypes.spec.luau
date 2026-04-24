@@ -156,3 +156,82 @@ describe("extractExportedTypes", function()
 		expect(types[1].generics).toBe("<T = (...any) -> ()>")
 	end)
 end)
+
+describe("Luau type-syntax coverage", function()
+	test("splitGenerics keeps union defaults intact", function()
+		expect(splitGenerics("<T = A | B, U>")).toEqual({ "T = A | B", " U" })
+	end)
+
+	test("splitGenerics keeps intersection defaults intact", function()
+		expect(splitGenerics("<T = A & B, U>")).toEqual({ "T = A & B", " U" })
+	end)
+
+	test("splitGenerics handles optional-type defaults", function()
+		expect(splitGenerics("<T = number?, U>")).toEqual({ "T = number?", " U" })
+	end)
+
+	test("splitGenerics handles variadic type-pack params", function()
+		expect(splitGenerics("<T..., U>")).toEqual({ "T...", " U" })
+	end)
+
+	test("splitGenerics handles generic function-type defaults", function()
+		expect(splitGenerics("<F = <T>(T) -> T, U>")).toEqual({ "F = <T>(T) -> T", " U" })
+	end)
+
+	test("splitGenerics handles function-type defaults with named params", function()
+		expect(splitGenerics("<F = (a: number, b: string) -> boolean, U>")).toEqual({
+			"F = (a: number, b: string) -> boolean",
+			" U",
+		})
+	end)
+
+	test("splitGenerics handles record-table defaults", function()
+		expect(splitGenerics("<T = { x: number, y: number }, U>")).toEqual({
+			"T = { x: number, y: number }",
+			" U",
+		})
+	end)
+
+	test("splitGenerics handles indexer-table defaults", function()
+		expect(splitGenerics("<T = { [string]: number }, U>")).toEqual({
+			"T = { [string]: number }",
+			" U",
+		})
+	end)
+
+	test("extractDefaultType captures singleton literal defaults", function()
+		expect(extractDefaultType('T = "open"')).toBe('"open"')
+		expect(extractDefaultType("T = true")).toBe("true")
+		expect(extractDefaultType("T = 42")).toBe("42")
+	end)
+
+	test("extractDefaultType captures typeof defaults", function()
+		expect(extractDefaultType("T = typeof(workspace)")).toBe("typeof(workspace)")
+	end)
+
+	test("shouldKeepDefault keeps a union of builtins", function()
+		expect(shouldKeepDefault("number | string", {})).toBe(true)
+	end)
+
+	test("shouldKeepDefault keeps a typeof expression made of keywords", function()
+		expect(shouldKeepDefault("typeof(nil)", {})).toBe(true)
+	end)
+
+	test("shouldKeepDefault drops a union that references an external namespaced type", function()
+		expect(shouldKeepDefault("number | Foo.Bar", {})).toBe(false)
+	end)
+
+	test("extractExportedTypes handles multi-line header with variadic type-pack", function()
+		local src = table.concat({
+			"export type Handler<",
+			"    T...,",
+			"    R = ()",
+			"> = (T...) -> R",
+		}, "\n")
+		local types = extractExportedTypes(src)
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Handler")
+		expect(types[1].generics:find("T%.%.%.") ~= nil).toBe(true)
+		expect(types[1].generics:find("R = %(%)") ~= nil).toBe(true)
+	end)
+end)
