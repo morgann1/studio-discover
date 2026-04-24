@@ -10,6 +10,7 @@ local fs = require("@lute/fs")
 local process = require("@lute/process")
 
 local color = require("../utils/color")
+local install = require("./install")
 
 local test = {}
 
@@ -45,8 +46,8 @@ local function isDir(path: string): boolean
 end
 
 local function hasProgram(program: string): boolean
-	local result = process.run({ program, "--version" }, { stdio = "default" })
-	return result.ok
+	local ok, result = pcall(process.run, { program, "--version" }, { stdio = "default" })
+	return ok and result.ok
 end
 
 function test.run(options_: Options?): ()
@@ -60,14 +61,11 @@ function test.run(options_: Options?): ()
 	end
 
 	if not isDir("plugin/Packages") or not isDir("plugin/DevPackages") then
-		print(color.cyan(`→ Installing Wally packages`))
-		local install = process.run({ "wally", "install" }, { stdio = "inherit", cwd = "plugin" })
-		if not install.ok then
-			print(color.red(`  ✗ wally install failed`))
+		local ok = install.run({ quiet = true })
+		if not ok then
 			process.exit(1)
 			return
 		end
-		print(color.green(`  ✓ Packages installed`))
 		print()
 	end
 
