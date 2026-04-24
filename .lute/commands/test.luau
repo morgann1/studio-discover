@@ -52,7 +52,13 @@ local function rokitDeclares(tool: string): boolean
 	local handle = fs.open("rokit.toml", "r")
 	local contents = fs.read(handle)
 	fs.close(handle)
-	return contents:find(`\n{tool}%s*=`) ~= nil or contents:find(`^{tool}%s*=`) ~= nil
+	for line in contents:gmatch("[^\r\n]+") do
+		local name = line:match("^%s*([%w%-_]+)%s*=")
+		if name == tool then
+			return true
+		end
+	end
+	return false
 end
 
 function test.run(options_: Options?): ()
