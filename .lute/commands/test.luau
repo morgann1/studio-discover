@@ -45,9 +45,14 @@ local function isDir(path: string): boolean
 	return fs.exists(path) and fs.type(path) == "dir"
 end
 
-local function hasProgram(program: string): boolean
-	local ok, result = pcall(process.run, { program, "--version" }, { stdio = "default" })
-	return ok and result.ok
+local function rokitDeclares(tool: string): boolean
+	if not isFile("rokit.toml") then
+		return false
+	end
+	local handle = fs.open("rokit.toml", "r")
+	local contents = fs.read(handle)
+	fs.close(handle)
+	return contents:find(`\n{tool}%s*=`) ~= nil or contents:find(`^{tool}%s*=`) ~= nil
 end
 
 function test.run(options_: Options?): ()
@@ -88,17 +93,17 @@ function test.run(options_: Options?): ()
 		return
 	end
 
-	if not hasProgram("run-in-roblox") then
+	if not rokitDeclares("run-in-roblox") then
 		print()
-		print(color.yellow(`  run-in-roblox not found on PATH.`))
-		print(color.dim(`  Install via rokit or run manually:`))
+		print(color.yellow(`  run-in-roblox is not declared in rokit.toml.`))
+		print(color.dim(`  Add it with 'rokit add rojo-rbx/run-in-roblox', or run manually:`))
 		print(color.dim(`    open {OUTPUT} in Studio and run {RUNNER_SCRIPT} from the command bar.`))
 		return
 	end
 
 	print()
 	print(color.cyan(`→ Running tests`))
-	local run = process.run({
+	local ranOk, runResult = pcall(process.run, {
 		"run-in-roblox",
 		"--place",
 		OUTPUT,
@@ -106,7 +111,13 @@ function test.run(options_: Options?): ()
 		RUNNER_SCRIPT,
 	}, { stdio = "inherit" })
 
-	if not run.ok then
+	if not ranOk then
+		print(color.red(`  ✗ Could not invoke run-in-roblox: {runResult}`))
+		print(color.dim(`  Run 'rokit install' and try again, or open {OUTPUT} in Studio manually.`))
+		process.exit(1)
+		return
+	end
+	if not runResult.ok then
 		print(color.red(`  ✗ Tests failed`))
 		process.exit(1)
 		return
