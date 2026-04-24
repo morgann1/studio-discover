@@ -7,3 +7,6 @@ updates:
     labels:
       - dependencies
       - chore
+    commit-message:
+      prefix: chore
+      include: scope
