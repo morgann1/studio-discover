@@ -221,6 +221,14 @@ describe("Luau type-syntax coverage", function()
 		expect(shouldKeepDefault("number | Foo.Bar", {})).toBe(false)
 	end)
 
+	test("extractExportedTypes captures generics on export type function", function()
+		local types = extractExportedTypes("export type function Pair<T>(a: T, b: T) return a end")
+		expect(#types).toBe(1)
+		expect(types[1].name).toBe("Pair")
+		expect(types[1].kind).toBe("function")
+		expect(types[1].generics).toBe("<T>")
+	end)
+
 	test("extractExportedTypes handles multi-line header with variadic type-pack", function()
 		local src = table.concat({
 			"export type Handler<",
