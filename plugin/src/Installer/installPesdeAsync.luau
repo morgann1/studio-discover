@@ -6,12 +6,12 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 
-local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
 local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
+local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 
 local pesdeApplyAsync = require(StudioDiscover.Source.Installer.Pesde.applyAsync)
 local pesdeLockfile = require(StudioDiscover.Source.Installer.Pesde.lockfile)
@@ -20,7 +20,7 @@ local pesdeSnapshotRoots = require(StudioDiscover.Source.Installer.Pesde.snapsho
 
 local sharedTypes = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.installPesde")
+local logger = createLogger.createLogger("pesde.installer.install")
 
 type Realm = sharedTypes.Realm
 type InstallerState = sharedTypes.InstallerState
@@ -40,30 +40,15 @@ local function countPairs(t: { [any]: any }): number
 	return count
 end
 
-local function installPesdeAsync(
+local function runInstall(
 	scope: string,
 	name: string,
 	version: string,
 	alias: string,
-	realm: Realm?
+	realm: Realm?,
+	target: InstallerTarget
 ): InstallResult
-	if busyAtom() then
-		logger.warn(`install rejected: another installer operation is in progress`)
-		return {
-			ok = false,
-			error = "Another installer operation is in progress.",
-			failures = {},
-		}
-	end
-	busyAtom(true)
-
 	logger.info(`install pesde {scope}/{name}@{version} alias={alias} realm={realm or "shared"}`)
-
-	local target: InstallerTarget = {
-		scope = scope,
-		name = name,
-		version = version,
-	}
 
 	local function setState(next: InstallerState)
 		installerAtom(next)
@@ -170,7 +155,6 @@ local function installPesdeAsync(
 			errors = resolutionFailures,
 			target = target,
 		})
-		busyAtom(false)
 		return {
 			ok = false,
 			error = message,
@@ -201,7 +185,6 @@ local function installPesdeAsync(
 			errors = {},
 			target = target,
 		})
-		busyAtom(false)
 		return {
 			ok = false,
 			error = message,
@@ -252,7 +235,6 @@ local function installPesdeAsync(
 			errors = allFailures,
 			target = target,
 		})
-		busyAtom(false)
 		return {
 			ok = false,
 			error = message,
@@ -269,12 +251,50 @@ local function installPesdeAsync(
 		errors = allFailures,
 		target = target,
 	})
-	busyAtom(false)
 	return {
 		ok = true,
 		error = nil,
 		failures = allFailures,
 	}
+end
+
+local function installPesdeAsync(
+	scope: string,
+	name: string,
+	version: string,
+	alias: string,
+	realm: Realm?
+): InstallResult
+	local target: InstallerTarget = {
+		scope = scope,
+		name = name,
+		version = version,
+	}
+
+	return runWithBusyLock(function(): InstallResult
+		logger.warn(`install rejected: another installer operation is in progress`)
+		return {
+			ok = false,
+			error = "Another installer operation is in progress.",
+			failures = {},
+		}
+	end, function(): InstallResult
+		return runInstall(scope, name, version, alias, realm, target)
+	end, function(err): InstallResult
+		logger.error(`install crashed for {scope}/{name}@{version}: {err}`)
+		local message = `Install failed: {err}`
+		installerAtom({
+			status = "error",
+			message = message,
+			errors = { err },
+			target = target,
+		})
+		return {
+			ok = false,
+			error = message,
+			failures = { err },
+		}
+	end)
 end
 
 return installPesdeAsync

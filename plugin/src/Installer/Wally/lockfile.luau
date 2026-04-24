@@ -5,11 +5,12 @@ local ServerStorage = game:GetService("ServerStorage")
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 
 local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
 local types = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("installer.lockfile")
+local logger = createLogger.createLogger("wally.installer.lockfile")
 
 type LockEntry = types.LockEntry
 type ResolvedPackage = types.ResolvedPackage
@@ -85,8 +86,13 @@ local function save(resolved: { [string]: ResolvedPackage })
 	end
 	local lockModule = Instance.new("ModuleScript")
 	lockModule.Name = LOCKFILE_NAME
-	lockModule.Source = table.concat(lines, "\n")
 	lockModule.Parent = ServerStorage
+	local ok, err = setScriptSource(lockModule, table.concat(lines, "\n"))
+	if not ok then
+		logger.warn(`could not save lockfile: {err}`)
+		lockModule:Destroy()
+		return
+	end
 	logger.info(`saved lockfile ({#sortedIds} entries)`)
 end
 

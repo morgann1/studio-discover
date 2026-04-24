@@ -9,9 +9,10 @@ local containerName = require(StudioDiscover.Source.Installer.Pesde.containerNam
 local downloadAndExtractAsync = require(StudioDiscover.Source.Installer.Pesde.downloadAndExtractAsync)
 local extractExports = require(StudioDiscover.Source.Installer.Pesde.extractExports)
 local foldersModule = require(StudioDiscover.Source.Installer.Pesde.getPackagesFolder)
+local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 local types = require(StudioDiscover.Source.Installer.Pesde.types)
 
-local logger = createLogger.createLogger("installer.pesdeApply")
+local logger = createLogger.createLogger("pesde.installer.apply")
 
 local getPackagesFolder = foldersModule.getPackagesFolder
 local getOrCreateContainer = foldersModule.getOrCreateContainer
@@ -135,7 +136,7 @@ local function applyAsync(
 		logger.info(`downloading {packageId}`)
 
 		local target: "roblox" | "roblox_server" = if pkg.realm == "server" then "roblox_server" else "roblox"
-		local tree, extractedLibPath, err = downloadAndExtractAsync(pkg.scope, pkg.name, pkg.version, target)
+		local tree, pending, extractedLibPath, err = downloadAndExtractAsync(pkg.scope, pkg.name, pkg.version, target)
 		if tree == nil then
 			logger.warn(`download failed for {packageId}: {err}`)
 			table.insert(failures, `{packageId}: {err}`)
@@ -151,6 +152,20 @@ local function applyAsync(
 		outer:SetAttribute("Kind", pkg.kind)
 		if pkg.libPath ~= nil then
 			outer:SetAttribute("LibPath", pkg.libPath)
+		end
+
+		local sourceFailure: string? = nil
+		for _, item in pending :: { any } do
+			local ok, sourceErr = setScriptSource(item.script, item.content)
+			if not ok then
+				sourceFailure = `{item.path}: {sourceErr}`
+				break
+			end
+		end
+		if sourceFailure ~= nil then
+			logger.warn(`source write failed for {packageId}: {sourceFailure}`)
+			table.insert(failures, `{packageId}: {sourceFailure}`)
+			outer:Destroy()
 		end
 	end
 
@@ -255,7 +270,7 @@ local function applyAsync(
 			if depPkg == nil then
 				continue
 			end
-			local link = buildPackageLink.buildTransitiveLink(
+			local build = buildPackageLink.buildTransitiveLink(
 				pkg.kind,
 				dep.alias,
 				depPkg.scope,
@@ -265,8 +280,13 @@ local function applyAsync(
 				depPkg.kind,
 				typeExportsByPackageId[dep.packageId]
 			)
-			link:SetAttribute("PesdeLink", true)
-			link.Parent = linkerParent
+			build.link:SetAttribute("PesdeLink", true)
+			build.link.Parent = linkerParent
+			local ok, linkErr = setScriptSource(build.link, build.source)
+			if not ok then
+				logger.warn(`link source write failed for {packageId} -> {dep.packageId}: {linkErr}`)
+				build.link:Destroy()
+			end
 		end
 	end
 
@@ -276,7 +296,7 @@ local function applyAsync(
 			continue
 		end
 		local packagesFolder = getPackagesFolder(pkg.realm)
-		local link = buildPackageLink.buildTopLevelLink(
+		local build = buildPackageLink.buildTopLevelLink(
 			alias,
 			pkg.scope,
 			pkg.name,
@@ -285,7 +305,12 @@ local function applyAsync(
 			pkg.kind,
 			typeExportsByPackageId[packageId]
 		)
-		link.Parent = packagesFolder
+		build.link.Parent = packagesFolder
+		local ok, linkErr = setScriptSource(build.link, build.source)
+		if not ok then
+			logger.warn(`root link source write failed for {packageId}: {linkErr}`)
+			build.link:Destroy()
+		end
 	end
 
 	return failures

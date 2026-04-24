@@ -6,7 +6,7 @@ local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local foldersModule = require(StudioDiscover.Source.Installer.Pesde.getPackagesFolder)
 local types = require(StudioDiscover.Source.Installer.Pesde.types)
 
-local logger = createLogger.createLogger("installer.pesdeSnapshot")
+local logger = createLogger.createLogger("pesde.installer.snapshot")
 
 local findPackagesFolder = foldersModule.findPackagesFolder
 

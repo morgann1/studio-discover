@@ -13,9 +13,10 @@ local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local buildFileFilter = require(StudioDiscover.Source.Installer.Wally.fileFilter)
 local buildTree = require(StudioDiscover.Source.Installer.Wally.buildTree)
 
-local logger = createLogger.createLogger("installer.download")
+local logger = createLogger.createLogger("wally.installer.download")
 
 type Entry = buildTree.Entry
+type PendingSource = buildTree.PendingSource
 
 local function detectPrefix(zipData: string): string
 	for _, filename in zzlib.files(zipData) do
@@ -54,12 +55,16 @@ local function findSourcePath(zipData: string, prefix: string): string?
 	return nil
 end
 
-local function downloadAndExtractAsync(scope: string, name: string, version: string): (Instance?, string?)
+local function downloadAndExtractAsync(
+	scope: string,
+	name: string,
+	version: string
+): (Instance?, { PendingSource }?, string?)
 	logger.debug(`fetch {scope}/{name}@{version}`)
 	local zipData, err = downloadPackageAsync(scope, name, version)
 	if zipData == nil then
 		logger.warn(`download failed for {scope}/{name}@{version}: {err}`)
-		return nil, `Failed to download: {err}`
+		return nil, nil, `Failed to download: {err}`
 	end
 
 	local prefix = detectPrefix(zipData :: string)
@@ -112,11 +117,12 @@ local function downloadAndExtractAsync(scope: string, name: string, version: str
 	end)
 	if not extractOk then
 		logger.warn(`extract failed for {scope}/{name}@{version}: {extractErr}`)
-		return nil, `Failed to extract ZIP: {extractErr}`
+		return nil, nil, `Failed to extract ZIP: {extractErr}`
 	end
 
 	logger.debug(`extracted {#entries} entries from {scope}/{name}@{version}`)
-	return buildTree(entries, name)
+	local tree, pending = buildTree(entries, name)
+	return tree, pending, nil
 end
 
 return downloadAndExtractAsync

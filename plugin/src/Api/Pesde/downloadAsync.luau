@@ -9,7 +9,7 @@ local cache = require(StudioDiscover.Source.Api.cache)
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local rateLimiter = require(StudioDiscover.Source.Api.Pesde.rateLimiter)
 
-local logger = createLogger.createLogger("api.pesdeDownload")
+local logger = createLogger.createLogger("pesde.api.download")
 
 local API_BASE = "https://registry.pesde.daimond113.com/v1"
 
