@@ -10,10 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ New
 - Dock widget title flags pending updates with a " · N update(s)" suffix.
 - Settings screen has a "Reset to Defaults" row that restores every setting (display name overrides included) after a confirm.
-- About page now shows the build commit alongside the version (embedded at build time).
-
-### ✏️ Improvements
-- About page simplified: no more external URL links or "Built with" section — just identity + version + commit + author + license.
 
 ## [3.7.0] - 2026-04-22
 
