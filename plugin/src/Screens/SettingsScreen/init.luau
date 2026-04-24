@@ -14,10 +14,13 @@ local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local Setting = require(script.Setting)
 
 local Button = Foundation.Button
+local Dialog = Foundation.Dialog
 local View = Foundation.View
 local ButtonVariant = Foundation.Enums.ButtonVariant
+local DialogSize = Foundation.Enums.DialogSize
 local IconName = Foundation.Enums.IconName
 local InputSize = Foundation.Enums.InputSize
+local Orientation = Foundation.Enums.Orientation
 
 local e = React.createElement
 
@@ -28,6 +31,21 @@ local SIDEBAR_MODES: { string } = table.freeze({ "Auto", "Expanded", "Compact" }
 local function SettingsScreen()
 	local state = SettingsStore.useSettings()
 	local nextOrder = createNextOrder()
+
+	local isConfirmingReset, setIsConfirmingReset = React.useState(false)
+
+	local onResetRequest = React.useCallback(function()
+		setIsConfirmingReset(true)
+	end, {})
+
+	local onResetCancel = React.useCallback(function()
+		setIsConfirmingReset(false)
+	end, {})
+
+	local onResetConfirm = React.useCallback(function()
+		SettingsStore.resetToDefaults()
+		setIsConfirmingReset(false)
+	end, {})
 
 	local onNamingConventionChange = React.useCallback(function(value: any)
 		SettingsStore.setSetting("namingConvention", value)
@@ -56,6 +74,38 @@ local function SettingsScreen()
 		size = InputSize.Small,
 		onActivated = onEditDisplayNames,
 	})
+
+	local resetButton: React.ReactNode = e(Button, {
+		text = "Reset",
+		variant = ButtonVariant.Utility,
+		size = InputSize.Small,
+		onActivated = onResetRequest,
+	})
+
+	local confirmDialog: React.ReactNode = nil
+	if isConfirmingReset then
+		confirmDialog = e(Dialog.Root, {
+			size = DialogSize.Small,
+			hasBackdrop = true,
+			onClose = onResetCancel,
+		}, {
+			DialogTitle = e(Dialog.Title, {
+				text = "Reset settings?",
+			}),
+			DialogContent = e(Dialog.Content, {}, {
+				Body = e(Dialog.Text, {
+					Text = "This restores every setting to its default and clears any display name overrides. This can't be undone.",
+				}),
+			}),
+			DialogActions = e(Dialog.Actions, {
+				orientation = Orientation.Horizontal,
+				actions = {
+					{ text = "Cancel", variant = ButtonVariant.Standard, onActivated = onResetCancel },
+					{ text = "Reset", variant = ButtonVariant.Alert, onActivated = onResetConfirm },
+				},
+			}),
+		})
+	end
 
 	return e(Screen, { title = "Settings" }, {
 		Body = e(Content, {}, {
@@ -102,7 +152,15 @@ local function SettingsScreen()
 					onChange = onVerboseLoggingChange,
 					LayoutOrder = nextOrder(),
 				}),
+
+				ResetAll = e(Setting, {
+					name = "Reset to Defaults",
+					description = "Restore every setting to its default and clear display name overrides",
+					input = resetButton,
+					LayoutOrder = nextOrder(),
+				}),
 			}),
+			ConfirmResetDialog = confirmDialog,
 		}),
 	})
 end

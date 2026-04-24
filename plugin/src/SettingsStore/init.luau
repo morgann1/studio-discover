@@ -86,9 +86,15 @@ local function setSetting(key: string, value: any)
 	end)
 end
 
+local function resetToDefaults()
+	local store = get()
+	store.setStorage(DEFAULTS)
+end
+
 return table.freeze({
 	get = get,
 	useSettings = useSettings,
 	setSetting = setSetting,
+	resetToDefaults = resetToDefaults,
 	DEFAULTS = DEFAULTS,
 })
