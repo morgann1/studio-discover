@@ -18,6 +18,13 @@ local BUILTIN_TYPES: { [string]: boolean } = {
 	["unknown"] = true,
 }
 
+local TYPE_SYNTAX_TOKENS: { [string]: boolean } = {
+	["typeof"] = true,
+	["nil"] = true,
+	["true"] = true,
+	["false"] = true,
+}
+
 local function splitGenerics(generics: string): { string }
 	local inner = generics:match("^<(.+)>$")
 	if inner == nil then
@@ -29,10 +36,11 @@ local function splitGenerics(generics: string): { string }
 	local current = ""
 	for i = 1, #inner do
 		local ch = inner:sub(i, i)
-		if ch == "<" or ch == "(" then
+		local prev = if i > 1 then inner:sub(i - 1, i - 1) else ""
+		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
 			depth += 1
 			current ..= ch
-		elseif ch == ">" or ch == ")" then
+		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
 			depth -= 1
 			current ..= ch
 		elseif ch == "," and depth == 0 then
@@ -53,11 +61,37 @@ local function extractParamName(param: string): string?
 end
 
 local function extractDefaultType(param: string): string?
-	return param:match("=%s*([%w_%.]+)%s*$")
+	local depth = 0
+	for i = 1, #param do
+		local ch = param:sub(i, i)
+		local prev = if i > 1 then param:sub(i - 1, i - 1) else ""
+		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
+			depth += 1
+		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
+			depth -= 1
+		elseif ch == "=" and depth == 0 then
+			local rest = param:sub(i + 1)
+			rest = (rest:gsub("^%s+", ""):gsub("%s+$", ""))
+			if rest == "" then
+				return nil
+			end
+			return rest
+		end
+	end
+	return nil
 end
 
 local function shouldKeepDefault(defaultType: string, resolvedTypes: { [string]: true }): boolean
-	return BUILTIN_TYPES[defaultType] == true or resolvedTypes[defaultType] == true
+	if defaultType:find("[%w_]%s*%.%s*[%a_]") ~= nil then
+		return false
+	end
+	for ident in defaultType:gmatch("[%a_][%w_]*") do
+		if BUILTIN_TYPES[ident] or resolvedTypes[ident] or TYPE_SYNTAX_TOKENS[ident] then
+			continue
+		end
+		return false
+	end
+	return true
 end
 
 local function stripUnknownDefaults(generics: string, resolvedTypes: { [string]: true }): string
@@ -125,25 +159,150 @@ local function extractParamNames(generics: string): string
 	return "<" .. table.concat(names, ", ") .. ">"
 end
 
-type ExportedType = {
+export type ExportedType = {
 	name: string,
 	generics: string,
+	kind: "alias" | "function",
 }
+
+local function tryOpenLongBracket(source: string, pos: number): number?
+	if source:sub(pos, pos) ~= "[" then
+		return nil
+	end
+	local level = 0
+	local i = pos + 1
+	while source:sub(i, i) == "=" do
+		level += 1
+		i += 1
+	end
+	if source:sub(i, i) == "[" then
+		return level
+	end
+	return nil
+end
+
+local function skipLongBracket(source: string, afterOpen: number, level: number): number
+	local close = "]" .. string.rep("=", level) .. "]"
+	local found = source:find(close, afterOpen, true)
+	if found == nil then
+		return #source + 1
+	end
+	return found + #close
+end
+
+local function skipStringOrComment(source: string, pos: number): number?
+	if pos > #source then
+		return nil
+	end
+	if source:sub(pos, pos + 1) == "--" then
+		local afterDash = pos + 2
+		local longLevel = tryOpenLongBracket(source, afterDash)
+		if longLevel ~= nil then
+			return skipLongBracket(source, afterDash + longLevel + 2, longLevel)
+		end
+		local nl = source:find("\n", afterDash, true)
+		return if nl == nil then #source + 1 else nl
+	end
+	local longLevel = tryOpenLongBracket(source, pos)
+	if longLevel ~= nil then
+		return skipLongBracket(source, pos + longLevel + 2, longLevel)
+	end
+	local ch = source:sub(pos, pos)
+	if ch == "'" or ch == '"' then
+		local i = pos + 1
+		while i <= #source do
+			local c = source:sub(i, i)
+			if c == "\\" then
+				i += 2
+			elseif c == ch then
+				return i + 1
+			elseif c == "\n" then
+				return i + 1
+			else
+				i += 1
+			end
+		end
+		return #source + 1
+	end
+	return nil
+end
+
+local function readBalancedAngleBrackets(source: string, start: number): number?
+	local angleDepth = 0
+	local parenDepth = 0
+	local braceDepth = 0
+	local squareDepth = 0
+	local i = start
+	while i <= #source do
+		local skipped = skipStringOrComment(source, i)
+		if skipped ~= nil then
+			i = skipped
+			continue
+		end
+		local ch = source:sub(i, i)
+		local prev = if i > 1 then source:sub(i - 1, i - 1) else ""
+		if ch == "(" then
+			parenDepth += 1
+		elseif ch == ")" then
+			parenDepth -= 1
+		elseif ch == "{" then
+			braceDepth += 1
+		elseif ch == "}" then
+			braceDepth -= 1
+		elseif ch == "[" then
+			squareDepth += 1
+		elseif ch == "]" then
+			squareDepth -= 1
+		elseif ch == "<" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 then
+			angleDepth += 1
+		elseif ch == ">" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 and prev ~= "-" then
+			angleDepth -= 1
+			if angleDepth == 0 then
+				return i
+			end
+		end
+		i += 1
+	end
+	return nil
+end
 
 local function extractExportedTypes(source: string): { ExportedType }
 	local types: { ExportedType } = {}
-	for line in source:gmatch("[^\n]+") do
-		local name, generics = line:match("^%s*export%s+type%s+([%w_]+)(%b<>)")
-		if name == nil then
-			name = line:match("^%s*export%s+type%s+([%w_]+)%s*=")
-			generics = nil
+	local i = 1
+	while i <= #source do
+		local skipped = skipStringOrComment(source, i)
+		if skipped ~= nil then
+			i = skipped
+			continue
 		end
-		if name ~= nil then
-			table.insert(types, {
-				name = name :: string,
-				generics = generics or "",
-			})
+		local _, kwEnd = source:find("^%f[%w_]export%s+type%s+", i)
+		if kwEnd == nil then
+			i += 1
+			continue
 		end
+		local afterKw = kwEnd + 1
+		local kind: "alias" | "function" = "alias"
+		local _, fnEnd = source:find("^function%s+", afterKw)
+		if fnEnd ~= nil then
+			kind = "function"
+			afterKw = fnEnd + 1
+		end
+		local _, nameEnd, name = source:find("^([%w_]+)", afterKw)
+		if name == nil or nameEnd == nil then
+			i = kwEnd + 1
+			continue
+		end
+		local afterName = (nameEnd :: number) + 1
+		local generics = ""
+		local nextNonWs = source:find("%S", afterName)
+		if nextNonWs ~= nil and source:sub(nextNonWs, nextNonWs) == "<" then
+			local genericsEnd = readBalancedAngleBrackets(source, nextNonWs)
+			if genericsEnd ~= nil then
+				generics = source:sub(nextNonWs, genericsEnd)
+			end
+		end
+		table.insert(types, { name = name :: string, generics = generics, kind = kind })
+		i = afterName
 	end
 	return types
 end
@@ -155,11 +314,13 @@ end
 local function resolveLink(linkModule: ModuleScript): ModuleScript?
 	local _, linkPackageId, moduleName = parseLinkRequire(linkModule.Source)
 	if linkPackageId == nil or moduleName == nil then
+		logger.debug(`resolveLink: "{linkModule:GetFullName()}" source is not a link pattern`)
 		return nil
 	end
 
 	local parent = linkModule.Parent
 	if parent == nil then
+		logger.warn(`resolveLink: "{linkModule:GetFullName()}" has no parent`)
 		return nil
 	end
 	local indexFolder = parent:FindFirstChild("_Index")
@@ -167,11 +328,15 @@ local function resolveLink(linkModule: ModuleScript): ModuleScript?
 		indexFolder = parent.Parent
 	end
 	if indexFolder == nil then
+		logger.warn(`resolveLink: "{linkModule:GetFullName()}" has no sibling or ancestor _Index folder`)
 		return nil
 	end
 
 	local packageFolder = indexFolder:FindFirstChild(linkPackageId :: string)
 	if packageFolder == nil then
+		logger.warn(
+			`resolveLink: "{linkModule:GetFullName()}" targets "{linkPackageId}" but no such package under "{indexFolder:GetFullName()}"`
+		)
 		return nil
 	end
 
@@ -179,6 +344,9 @@ local function resolveLink(linkModule: ModuleScript): ModuleScript?
 	if target ~= nil and target:IsA("ModuleScript") then
 		return target
 	end
+	logger.warn(
+		`resolveLink: "{linkModule:GetFullName()}" target module "{moduleName}" not found or not a ModuleScript in "{packageFolder:GetFullName()}"`
+	)
 	return nil
 end
 
@@ -203,7 +371,9 @@ local function processLink(linkModule: ModuleScript): boolean
 
 	local resolvedTypes: { [string]: true } = {}
 	for _, info in exported do
-		resolvedTypes[info.name] = true
+		if info.kind == "alias" then
+			resolvedTypes[info.name] = true
+		end
 	end
 
 	local requirePath = `{prefix}["{linkPackageId}"]["{moduleName}"]`
@@ -211,6 +381,9 @@ local function processLink(linkModule: ModuleScript): boolean
 	table.insert(lines, `local REQUIRED_MODULE = require({requirePath})`)
 
 	for _, info in exported do
+		if info.kind ~= "alias" then
+			continue
+		end
 		if info.generics ~= "" then
 			local paramNames = extractParamNames(info.generics)
 
@@ -241,4 +414,8 @@ end
 
 return table.freeze({
 	processLink = processLink,
+	extractExportedTypes = extractExportedTypes,
+	extractDefaultType = extractDefaultType,
+	splitGenerics = splitGenerics,
+	shouldKeepDefault = shouldKeepDefault,
 })
