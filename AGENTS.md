@@ -2,7 +2,8 @@
 
 ## Task Completion Requirements
 
-- `lute run ci` must pass before considering tasks completed.
+- `lute run ci` and `lute run test` must pass before considering tasks completed.
+- If you touch logic under `plugin/src/`, add or update a Jest spec in `plugin/tests/` and verify it.
 
 ## Project Snapshot
 

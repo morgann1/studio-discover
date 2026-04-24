@@ -12,6 +12,10 @@ sourcemap.json
 
 # Wally
 plugin/Packages
+plugin/DevPackages
+
+# Test artifacts
+plugin/tests/build/
 
 # Other
 ref/
