@@ -6,7 +6,7 @@ local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
-local AboutScreen = require(StudioDiscover.Source.Screens.AboutScreen)
+local ChangelogScreen = require(StudioDiscover.Source.Screens.ChangelogScreen)
 local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 local ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
 local DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
@@ -32,24 +32,18 @@ type Props = {
 	overlayGui: DockWidgetPluginGui,
 }
 
+local SCREENS: { [string]: React.ComponentType<any> } = {
+	Package = PackageScreen,
+	Manage = ManageScreen,
+	Updates = UpdatesScreen,
+	Settings = SettingsScreen,
+	DisplayNames = DisplayNamesScreen,
+	Changelog = ChangelogScreen,
+}
+
 local CurrentScreen = React.memo(function()
 	local screen = Navigation.useScreen()
-
-	if screen.name == "Package" then
-		return e(PackageScreen)
-	elseif screen.name == "Manage" then
-		return e(ManageScreen)
-	elseif screen.name == "Updates" then
-		return e(UpdatesScreen)
-	elseif screen.name == "Settings" then
-		return e(SettingsScreen)
-	elseif screen.name == "DisplayNames" then
-		return e(DisplayNamesScreen)
-	elseif screen.name == "About" then
-		return e(AboutScreen)
-	end
-
-	return e(HomeScreen)
+	return e(SCREENS[screen.name] or HomeScreen)
 end)
 
 local function App(props: Props)

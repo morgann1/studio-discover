@@ -15,6 +15,9 @@
       "$className": "Folder",
       "buildConfig": {
         "$path": "generated/buildConfig.luau"
+      },
+      "changelog": {
+        "$path": "generated/changelog.luau"
       }
     }
   }

@@ -29,7 +29,7 @@ local useMotion = Motion.useMotion
 
 local e = React.createElement
 
-type ItemName = "Home" | "Manage" | "Updates" | "Settings" | "About"
+type ItemName = "Home" | "Manage" | "Updates" | "Changelog" | "Settings"
 
 type ItemDef = {
 	name: ItemName,
@@ -37,12 +37,15 @@ type ItemDef = {
 	icon: string,
 }
 
-local ITEMS: { ItemDef } = table.freeze({
+local TOP_ITEMS: { ItemDef } = table.freeze({
 	{ name = "Home" :: ItemName, text = "Home", icon = IconName.House },
 	{ name = "Manage" :: ItemName, text = "Installed", icon = IconName.Folder },
 	{ name = "Updates" :: ItemName, text = "Updates", icon = IconName.ArrowRotateRight },
 	{ name = "Settings" :: ItemName, text = "Settings", icon = IconName.Gear },
-	{ name = "About" :: ItemName, text = "About", icon = IconName.CircleI },
+}) :: { ItemDef }
+
+local BOTTOM_ITEMS: { ItemDef } = table.freeze({
+	{ name = "Changelog" :: ItemName, text = "Changelog", icon = IconName.RectangleList },
 }) :: { ItemDef }
 
 local EXPANDED_WIDTH = 252
@@ -105,25 +108,31 @@ local function Sidebar(props: Props)
 	local updatesCount = #updatesState.updates
 
 	local nextOrder = createNextOrder()
-	local nextNavOrder = createNextOrder()
 
-	local navItems: { [string]: any } = {}
-	for _, item in ITEMS do
-		local name = item.name
-		local isActive = current.name == name or (current.name == "base" and name == "Home")
+	local function renderNavItems(items: { ItemDef }): { [string]: any }
+		local result: { [string]: any } = {}
+		local order = createNextOrder()
+		for _, item in items do
+			local name = item.name
+			local isActive = current.name == name or (current.name == "base" and name == "Home")
 
-		navItems[name] = e(Item, {
-			text = item.text,
-			icon = item.icon,
-			isActive = isActive,
-			compact = compact,
-			badge = if name == "Updates" then updatesCount else nil,
-			LayoutOrder = nextNavOrder(),
-			onActivated = function()
-				Navigation.resetScreen(name)
-			end,
-		})
+			result[name] = e(Item, {
+				text = item.text,
+				icon = item.icon,
+				isActive = isActive,
+				compact = compact,
+				badge = if name == "Updates" then updatesCount else nil,
+				LayoutOrder = order(),
+				onActivated = function()
+					Navigation.resetScreen(name)
+				end,
+			})
+		end
+		return result
 	end
+
+	local topItems = renderNavItems(TOP_ITEMS)
+	local bottomItems = renderNavItems(BOTTOM_ITEMS)
 
 	return e(View, {
 		tag = "col gap-small padding-small bg-surface-100",
@@ -157,11 +166,26 @@ local function Sidebar(props: Props)
 		}),
 
 		Nav = e(View, {
-			tag = "col",
+			tag = "grow col",
 			Size = UDim2.fromScale(1, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = nextOrder(),
-		}, navItems),
+		}, {
+			Top = e(View, {
+				tag = "size-full-0 auto-y col",
+				LayoutOrder = 1,
+			}, topItems),
+
+			Spacer = e(View, {
+				tag = "grow",
+				Size = UDim2.fromScale(1, 0),
+				LayoutOrder = 2,
+			}),
+
+			Bottom = e(View, {
+				tag = "size-full-0 auto-y col",
+				LayoutOrder = 3,
+			}, bottomItems),
+		}),
 	})
 end
 
