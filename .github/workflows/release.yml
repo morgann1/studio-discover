@@ -76,4 +76,5 @@ jobs:
           ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
           ROBLOX_UNIVERSE_ID: ${{ vars.ROBLOX_UNIVERSE_ID }}
           ROBLOX_PLACE_ID: ${{ vars.ROBLOX_PLACE_ID }}
-        run: lute run upload-plugin StudioDiscover.rbxm --tag "${{ steps.meta.outputs.tag }}"
+        run: lute run upload-plugin StudioDiscover.rbxm --tag "${{
+          steps.meta.outputs.tag }}"
