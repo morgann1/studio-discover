@@ -65,6 +65,11 @@ local function formatSource(path: string, typeExports: { string }?): string
 	return body
 end
 
+export type LinkBuild = {
+	link: ModuleScript,
+	source: string,
+}
+
 local function buildTopLevelLink(
 	alias: string,
 	scope: string,
@@ -73,13 +78,12 @@ local function buildTopLevelLink(
 	libPath: string?,
 	kind: Kind,
 	typeExports: { string }?
-): ModuleScript
+): LinkBuild
 	local segments = depPathSegments(scope, name, version, libPath, kind)
 	local path = `./.pesde/{table.concat(segments, "/")}`
 	local link = Instance.new("ModuleScript")
 	link.Name = alias
-	link.Source = formatSource(path, typeExports)
-	return link
+	return { link = link, source = formatSource(path, typeExports) }
 end
 
 local function buildTransitiveLink(
@@ -91,15 +95,14 @@ local function buildTransitiveLink(
 	libPath: string?,
 	kind: Kind,
 	typeExports: { string }?
-): ModuleScript
+): LinkBuild
 	local up = transitiveUpLevels(dependantKind)
 	local prefix = "./" .. string.rep("../", up)
 	local segments = depPathSegments(scope, name, version, libPath, kind)
 	local path = `{prefix}{table.concat(segments, "/")}`
 	local link = Instance.new("ModuleScript")
 	link.Name = alias
-	link.Source = formatSource(path, typeExports)
-	return link
+	return { link = link, source = formatSource(path, typeExports) }
 end
 
 return table.freeze({

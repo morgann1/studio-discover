@@ -15,6 +15,7 @@ local tarAsync = require(StudioDiscover.Source.Installer.Pesde.tarAsync)
 local logger = createLogger.createLogger("installer.pesdeDownload")
 
 type Entry = buildTree.Entry
+type PendingSource = buildTree.PendingSource
 type Target = "roblox" | "roblox_server"
 
 local IGNORED_FILES: { [string]: true } = {
@@ -58,11 +59,11 @@ local function downloadAndExtractAsync(
 	name: string,
 	version: string,
 	target: Target
-): (Instance?, string?, string?)
+): (Instance?, { PendingSource }?, string?, string?)
 	logger.debug(`fetch {scope}/{name}@{version} {target}`)
 	local archive, err = downloadAsync(scope, name, version, target)
 	if archive == nil then
-		return nil, nil, `Failed to download: {err}`
+		return nil, nil, nil, `Failed to download: {err}`
 	end
 
 	local tarData: string = archive :: string
@@ -70,7 +71,7 @@ local function downloadAndExtractAsync(
 		local gunzipOk, result = pcall(zzlib.gunzip, tarData)
 		if not gunzipOk then
 			logger.warn(`gunzip failed for {scope}/{name}@{version}: {result}`)
-			return nil, nil, `Failed to decompress: {result}`
+			return nil, nil, nil, `Failed to decompress: {result}`
 		end
 		tarData = result :: string
 	end
@@ -78,7 +79,7 @@ local function downloadAndExtractAsync(
 	local parseOk, parseResult = pcall(tarAsync.parse, tarData)
 	if not parseOk then
 		logger.warn(`tar parse failed for {scope}/{name}@{version}: {parseResult}`)
-		return nil, nil, `Failed to extract: {parseResult}`
+		return nil, nil, nil, `Failed to extract: {parseResult}`
 	end
 
 	local entries: { Entry } = {}
@@ -103,7 +104,8 @@ local function downloadAndExtractAsync(
 	end
 
 	logger.debug(`extracted {#entries} entries from {scope}/{name}@{version}, libPath={libPath or "nil"}`)
-	return buildTree(entries, name), libPath
+	local tree, pending = buildTree(entries, name)
+	return tree, pending, libPath, nil
 end
 
 return downloadAndExtractAsync

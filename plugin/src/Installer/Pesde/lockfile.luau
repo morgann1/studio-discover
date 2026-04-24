@@ -6,6 +6,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local packageId = require(StudioDiscover.Source.Installer.Pesde.packageId)
+local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 local types = require(StudioDiscover.Source.Installer.Pesde.types)
 
 local logger = createLogger.createLogger("installer.pesdeLockfile")
@@ -113,8 +114,13 @@ local function save(resolved: { [string]: PesdeResolvedPackage })
 	end
 	local lockModule = Instance.new("ModuleScript")
 	lockModule.Name = LOCKFILE_NAME
-	lockModule.Source = table.concat(lines, "\n")
 	lockModule.Parent = ServerStorage
+	local ok, err = setScriptSource(lockModule, table.concat(lines, "\n"))
+	if not ok then
+		logger.warn(`could not save lockfile: {err}`)
+		lockModule:Destroy()
+		return
+	end
 	logger.info(`saved lockfile ({#sortedIds} entries)`)
 end
 

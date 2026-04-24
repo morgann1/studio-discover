@@ -12,6 +12,12 @@ export type Entry = {
 	content: string,
 }
 
+export type PendingSource = {
+	script: LuaSourceContainer,
+	path: string,
+	content: string,
+}
+
 local function getInstanceName(filename: string): string
 	local instanceName = filename
 	instanceName = instanceName:gsub("%.server%.luau?$", "")
@@ -20,11 +26,12 @@ local function getInstanceName(filename: string): string
 	return instanceName
 end
 
-local function buildTree(entries: { Entry }, packageName: string): Instance
+local function buildTree(entries: { Entry }, packageName: string): (Instance, { PendingSource })
 	logger.debug(`building tree for "{packageName}" ({#entries} entries)`)
 	local root: any = Instance.new("Folder")
 	root.Name = packageName
 
+	local pending: { PendingSource } = {}
 	local skipped = 0
 	local moduleCount = 0
 	local initPromotions = 0
@@ -74,7 +81,7 @@ local function buildTree(entries: { Entry }, packageName: string): Instance
 			if parent:IsA("Folder") then
 				local moduleScript: any = Instance.new(className :: any)
 				moduleScript.Name = parent.Name
-				moduleScript.Source = entry.content
+				table.insert(pending, { script = moduleScript, path = entry.path, content = entry.content })
 
 				if parent == root then
 					for _, child in parent:GetChildren() do
@@ -95,8 +102,8 @@ local function buildTree(entries: { Entry }, packageName: string): Instance
 		else
 			local inst: any = Instance.new(className :: any)
 			inst.Name = instanceName
-			inst.Source = entry.content
 			inst.Parent = parent
+			table.insert(pending, { script = inst, path = entry.path, content = entry.content })
 			moduleCount += 1
 		end
 	end
@@ -104,7 +111,7 @@ local function buildTree(entries: { Entry }, packageName: string): Instance
 	logger.debug(
 		`built "{packageName}" tree: {moduleCount} module(s), {initPromotions} init promotion(s), {skipped} skipped`
 	)
-	return root
+	return root, pending
 end
 
 return buildTree

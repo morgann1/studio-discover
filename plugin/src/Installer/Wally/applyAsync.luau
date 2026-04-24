@@ -7,6 +7,7 @@ local downloadAndExtractAsync = require(StudioDiscover.Source.Installer.Wally.do
 local foldersModule = require(StudioDiscover.Source.Installer.Wally.getPackagesFolder)
 local linkModule = require(StudioDiscover.Source.Installer.Wally.buildPackageLink)
 local processPackageTypes = require(StudioDiscover.Source.Installer.Wally.processPackageTypes)
+local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("installer.apply")
@@ -121,7 +122,8 @@ local function applyAsync(
 		end
 		logger.info(`downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}`)
 
-		local tree, err = downloadAndExtractAsync(resolvedPackage.scope, resolvedPackage.name, resolvedPackage.version)
+		local tree, pending, err =
+			downloadAndExtractAsync(resolvedPackage.scope, resolvedPackage.name, resolvedPackage.version)
 		if tree == nil then
 			logger.warn(
 				`download failed for {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {err}`
@@ -139,6 +141,26 @@ local function applyAsync(
 		packageFolder:SetAttribute("ModuleName", moduleName)
 		placeTreeInFolder(tree, packageFolder)
 		packageFolder.Parent = indexFolder
+
+		local sourceFailure: string? = nil
+		for _, item in pending :: { any } do
+			local ok, sourceErr = setScriptSource(item.script, item.content)
+			if not ok then
+				sourceFailure = `{item.path}: {sourceErr}`
+				break
+			end
+		end
+		if sourceFailure ~= nil then
+			logger.warn(
+				`source write failed for {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {sourceFailure}`
+			)
+			table.insert(
+				failures,
+				`{resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {sourceFailure}`
+			)
+			packageFolder:Destroy()
+			moduleNames[packageId] = nil
+		end
 	end
 
 	for packageId, resolvedPackage in resolved do
@@ -155,15 +177,21 @@ local function applyAsync(
 				continue
 			end
 			local dependencyModuleName = moduleNames[dep.packageId] or depResolved.name
-			local link = buildSiblingPackageLink(
+			local build = buildSiblingPackageLink(
 				dep.alias,
 				dep.packageId,
 				dependencyModuleName,
 				resolvedPackage.realm,
 				depResolved.realm
 			)
-			link.Parent = packageFolder
-			processPackageTypes.processLink(link)
+			build.link.Parent = packageFolder
+			local ok, linkErr = setScriptSource(build.link, build.source)
+			if not ok then
+				logger.warn(`link source write failed for {packageId} -> {dep.packageId}: {linkErr}`)
+				build.link:Destroy()
+				continue
+			end
+			processPackageTypes.processLink(build.link)
 		end
 	end
 
@@ -174,10 +202,16 @@ local function applyAsync(
 		end
 		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
 		local moduleName = moduleNames[packageId] or resolvedPackage.name
-		local rootLink =
+		local rootBuild =
 			buildRootPackageLink(alias, packageId, moduleName, resolvedPackage.realm, resolvedPackage.realm)
-		rootLink.Parent = packagesFolder
-		processPackageTypes.processLink(rootLink)
+		rootBuild.link.Parent = packagesFolder
+		local ok, linkErr = setScriptSource(rootBuild.link, rootBuild.source)
+		if not ok then
+			logger.warn(`root link source write failed for {packageId}: {linkErr}`)
+			rootBuild.link:Destroy()
+			continue
+		end
+		processPackageTypes.processLink(rootBuild.link)
 	end
 
 	return failures

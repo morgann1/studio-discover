@@ -3,6 +3,7 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local setScriptSource = require(StudioDiscover.Source.Util.setScriptSource)
 
 local logger = createLogger.createLogger("installer.processTypes")
 
@@ -229,7 +230,11 @@ local function processLink(linkModule: ModuleScript): boolean
 	end
 
 	table.insert(lines, "return REQUIRED_MODULE")
-	linkModule.Source = table.concat(lines, "\n")
+	local ok, err = setScriptSource(linkModule, table.concat(lines, "\n"))
+	if not ok then
+		logger.warn(`could not rewrite "{linkModule.Name}" with type exports: {err}`)
+		return false
+	end
 	logger.debug(`rewrote "{linkModule.Name}" with {#exported} exported type(s) from {linkPackageId}.{moduleName}`)
 	return true
 end

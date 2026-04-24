@@ -1,33 +1,32 @@
 --!strict
 
+export type LinkBuild = {
+	link: ModuleScript,
+	source: string,
+}
+
 type Realm = "shared" | "server"
 
-local function linkSameIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
+local function makeLink(linkName: string, source: string): LinkBuild
 	local link = Instance.new("ModuleScript")
 	link.Name = linkName
-	link.Source = `return require(script.Parent.Parent["{packageId}"]["{moduleName}"])`
-	return link
+	return { link = link, source = source }
 end
 
-local function linkRootSameIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
-	local link = Instance.new("ModuleScript")
-	link.Name = linkName
-	link.Source = `return require(script.Parent._Index["{packageId}"]["{moduleName}"])`
-	return link
+local function linkSameIndex(linkName: string, packageId: string, moduleName: string): LinkBuild
+	return makeLink(linkName, `return require(script.Parent.Parent["{packageId}"]["{moduleName}"])`)
 end
 
-local function linkSharedIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
-	local link = Instance.new("ModuleScript")
-	link.Name = linkName
-	link.Source = `return require(game.ReplicatedStorage.Packages._Index["{packageId}"]["{moduleName}"])`
-	return link
+local function linkRootSameIndex(linkName: string, packageId: string, moduleName: string): LinkBuild
+	return makeLink(linkName, `return require(script.Parent._Index["{packageId}"]["{moduleName}"])`)
 end
 
-local function linkServerIndex(linkName: string, packageId: string, moduleName: string): ModuleScript
-	local link = Instance.new("ModuleScript")
-	link.Name = linkName
-	link.Source = `return require(game.ServerStorage.ServerPackages._Index["{packageId}"]["{moduleName}"])`
-	return link
+local function linkSharedIndex(linkName: string, packageId: string, moduleName: string): LinkBuild
+	return makeLink(linkName, `return require(game.ReplicatedStorage.Packages._Index["{packageId}"]["{moduleName}"])`)
+end
+
+local function linkServerIndex(linkName: string, packageId: string, moduleName: string): LinkBuild
+	return makeLink(linkName, `return require(game.ServerStorage.ServerPackages._Index["{packageId}"]["{moduleName}"])`)
 end
 
 local function buildSiblingPackageLink(
@@ -36,7 +35,7 @@ local function buildSiblingPackageLink(
 	moduleName: string,
 	sourceRealm: Realm,
 	dependencyRealm: Realm
-): ModuleScript
+): LinkBuild
 	if sourceRealm == dependencyRealm then
 		return linkSameIndex(linkName, packageId, moduleName)
 	end
@@ -52,7 +51,7 @@ local function buildRootPackageLink(
 	moduleName: string,
 	sourceRealm: Realm,
 	dependencyRealm: Realm
-): ModuleScript
+): LinkBuild
 	if sourceRealm == dependencyRealm then
 		return linkRootSameIndex(linkName, packageId, moduleName)
 	end
