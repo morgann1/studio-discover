@@ -2,6 +2,11 @@
   "name": "StudioDiscoverTests",
   "tree": {
     "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Packages": {
+        "$path": "DevPackages/"
+      }
+    },
     "ServerScriptService": {
       "StudioDiscover": {
         "$className": "Folder",
@@ -10,9 +15,6 @@
         },
         "Packages": {
           "$path": "Packages/"
-        },
-        "DevPackages": {
-          "$path": "DevPackages/"
         },
         "Generated": {
           "$className": "Folder",

@@ -1,9 +1,8 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
-local DevPackages = StudioDiscover.DevPackages
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local JestGlobals = require(DevPackages.JestGlobals)
+local JestGlobals = require(ReplicatedStorage.Packages.JestGlobals)
 local describe = JestGlobals.describe
 local expect = JestGlobals.expect
 local test = JestGlobals.test

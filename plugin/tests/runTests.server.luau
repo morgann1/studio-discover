@@ -1,12 +1,13 @@
 --!strict
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local Packages = ReplicatedStorage:WaitForChild("Packages") :: Folder
 local StudioDiscover = ServerScriptService:WaitForChild("StudioDiscover") :: Folder
-local DevPackages = StudioDiscover:WaitForChild("DevPackages") :: Folder
 local Tests = StudioDiscover:WaitForChild("Tests") :: Folder
 
-local Jest = require(DevPackages:WaitForChild("Jest"))
+local Jest = require(Packages:WaitForChild("Jest"))
 
 local status, result = Jest.runCLI(Tests, {
 	verbose = false,
