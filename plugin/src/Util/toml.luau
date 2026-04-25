@@ -83,13 +83,14 @@ local function tableToToml(tbl: { [any]: any }, parent: string?): string
 	end
 
 	for k, v in subtables do
-		local key = parent and (parent .. "." .. quoteKey(k)) or quoteKey(k)
+		local key = if parent ~= nil then parent .. "." .. quoteKey(k) else quoteKey(k)
 		result ..= tableToToml(v, key)
 	end
 
 	for k, v in arrayTables do
 		for _, entry in v do
-			result ..= "\n[[" .. (parent and parent .. "." or "") .. quoteKey(k) .. "]]\n"
+			local prefix = if parent ~= nil then parent .. "." else ""
+			result ..= "\n[[" .. prefix .. quoteKey(k) .. "]]\n"
 			result ..= tableToToml(entry, nil)
 		end
 	end
@@ -270,7 +271,7 @@ local function deserialize(input: string): { [string]: unknown }
 			currentTable = ensurePath(result, splitTablePath(tablePath :: string))
 		elseif string.match(line, "^(.-)%s*=%s*(.-)$") then
 			local rawKey, rawValue = string.match(line, "^(.-)%s*=%s*(.-)$")
-			assert(rawKey and rawValue)
+			assert(rawKey and rawValue, "Luau")
 			local key = string.match(rawKey, "^%s*(.-)%s*$") :: string
 			if string.match(key, '^"(.*)"$') or string.match(key, "^'(.*)'$") then
 				key = string.sub(key, 2, -2)

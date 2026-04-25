@@ -1,10 +1,5 @@
 --!strict
 
--- Narrow markdown parser for CHANGELOG.md.
--- Handles: H1/H2/H3, bullet lists (`- `), paragraphs, and inline
--- `**bold**`, `*italic*`, `` `code` ``, `[text](url)`.
--- Inline segments are emitted as Roblox RichText.
-
 export type Block = {
 	kind: "heading" | "bullet" | "paragraph" | "blank",
 	level: number?,
@@ -20,14 +15,10 @@ local function escapeRich(text: string): string
 	return result
 end
 
--- Applied to non-code text after HTML escaping. Order matters: bold before
--- italic (both use `*`), links last to keep their label text untouched by the
--- emphasis passes.
 local function applyEmphasis(text: string): string
 	local out = text
 	out = out:gsub("%*%*([^*]+)%*%*", "<b>%1</b>")
 	out = out:gsub("%*([^*]+)%*", "<i>%1</i>")
-	-- RichText has no click affordance; render links as underlined text.
 	out = out:gsub("%[([^%]]+)%]%b()", "<u>%1</u>")
 	return out
 end

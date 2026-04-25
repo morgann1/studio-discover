@@ -1,8 +1,4 @@
 --!strict
--- Detects the sandboxed-plugin "script injection" denial that surfaces from
--- DataModel writes. Roblox currently auto-denies the first request before
--- showing the user the real permission dialog, so the first attempt after
--- install predictably fails; the second attempt should prompt and succeed.
 
 local MESSAGE = "Discover needs script injection permission to modify packages. "
 	.. "Retry the action — Studio should now prompt you to allow it. "
