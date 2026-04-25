@@ -1,2 +1,4 @@
 * text=auto
 *.luau text eol=lf
+*.lock text eol=lf
+*.toml text eol=lf
