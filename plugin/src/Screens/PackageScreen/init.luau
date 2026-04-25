@@ -201,6 +201,7 @@ local function PackageScreen()
 					LayoutOrder = chipOrder(),
 				})
 			end
+			local registryRowOrder = createNextOrder()
 			aboutChildren.Registry = e(View, {
 				tag = "size-full-0 auto-y row align-y-center gap-medium",
 				LayoutOrder = aboutOrder(),
@@ -208,11 +209,11 @@ local function PackageScreen()
 				Label = e(Text, {
 					tag = "auto-xy text-body-small content-muted",
 					Text = "Registry:",
-					LayoutOrder = 1,
+					LayoutOrder = registryRowOrder(),
 				}),
 				Chips = e(View, {
 					tag = "grow auto-y row align-y-center gap-xsmall",
-					LayoutOrder = 2,
+					LayoutOrder = registryRowOrder(),
 				}, chips),
 			})
 		end

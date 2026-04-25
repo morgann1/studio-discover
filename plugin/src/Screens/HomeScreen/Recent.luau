@@ -37,11 +37,15 @@ local function Recent(props: Props)
 	local state = useRecent()
 	local compact = CompactContext.useCompact()
 
+	local sectionOrder = createNextOrder()
+	local headingOrder = sectionOrder()
+	local bodyOrder = sectionOrder()
+
 	local body: React.ReactNode
 	if state.loading then
 		body = e(View, {
 			tag = "size-full-0 auto-y align-x-center padding-medium",
-			LayoutOrder = 2,
+			LayoutOrder = bodyOrder,
 		}, {
 			Inner = e(Loading, {}),
 		})
@@ -49,7 +53,7 @@ local function Recent(props: Props)
 		body = e(Text, {
 			tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left",
 			Text = state.error or "No recent pesde packages available.",
-			LayoutOrder = 2,
+			LayoutOrder = bodyOrder,
 		})
 	else
 		local cards: { [string]: any } = {}
@@ -70,16 +74,17 @@ local function Recent(props: Props)
 			for i = 1, #state.packages, 2 do
 				local pkgA = state.packages[i]
 				local pkgB = state.packages[i + 1]
+				local cellOrder = createNextOrder()
 				local cells: { [string]: any } = {
 					Left = e(View, {
 						tag = "grow auto-y",
-						LayoutOrder = 1,
+						LayoutOrder = cellOrder(),
 					}, {
 						Card = renderCard(pkgA),
 					}),
 					Right = e(View, {
 						tag = "grow auto-y",
-						LayoutOrder = 2,
+						LayoutOrder = cellOrder(),
 					}, if pkgB ~= nil then { Card = renderCard(pkgB) } else nil),
 				}
 				cards[`row_{i}`] = e(View, {
@@ -90,7 +95,7 @@ local function Recent(props: Props)
 		end
 		body = e(View, {
 			tag = "size-full-0 auto-y col gap-medium",
-			LayoutOrder = 2,
+			LayoutOrder = bodyOrder,
 		}, cards)
 	end
 
@@ -101,7 +106,7 @@ local function Recent(props: Props)
 		Heading = e(Text, {
 			tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left",
 			Text = "Recently published",
-			LayoutOrder = 1,
+			LayoutOrder = headingOrder,
 		}),
 		Body = body,
 	})

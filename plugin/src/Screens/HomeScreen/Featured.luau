@@ -106,16 +106,17 @@ local function Featured(props: Props)
 		for i = 1, #FEATURED, 2 do
 			local pkgA = FEATURED[i]
 			local pkgB = FEATURED[i + 1]
+			local cellOrder = createNextOrder()
 			local cells: { [string]: any } = {
 				Left = e(View, {
 					tag = "grow auto-y",
-					LayoutOrder = 1,
+					LayoutOrder = cellOrder(),
 				}, {
 					Card = renderCard(pkgA),
 				}),
 				Right = e(View, {
 					tag = "grow auto-y",
-					LayoutOrder = 2,
+					LayoutOrder = cellOrder(),
 				}, if pkgB ~= nil then { Card = renderCard(pkgB) } else nil),
 			}
 			cards[`row_{i}`] = e(View, {
@@ -125,6 +126,7 @@ local function Featured(props: Props)
 		end
 	end
 
+	local sectionOrder = createNextOrder()
 	return e(View, {
 		tag = "size-full-0 auto-y col gap-medium",
 		LayoutOrder = props.LayoutOrder,
@@ -132,11 +134,11 @@ local function Featured(props: Props)
 		Heading = e(Text, {
 			tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left",
 			Text = "Featured",
-			LayoutOrder = 1,
+			LayoutOrder = sectionOrder(),
 		}),
 		Cards = e(View, {
 			tag = "size-full-0 auto-y col gap-medium",
-			LayoutOrder = 2,
+			LayoutOrder = sectionOrder(),
 		}, cards),
 	})
 end
