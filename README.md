@@ -31,9 +31,9 @@
 
 ## 🚀 About
 
-If you want to use a Luau package in Roblox Studio, the usual path is a bit of a trek. You install [Wally](https://wally.run/) or [pesde](https://pesde.dev/), set up Rokit, set up Rojo, wire it into your project, and only then can you actually `require` the thing. Great if you're already deep in that workflow. A lot of hassle if you just want to use a package.
+To use a Luau package in Roblox Studio, the usual path is four tools deep. You install [Wally](https://wally.run/) or [pesde](https://pesde.dev/), set up Rokit, set up Rojo, wire it into your project, and only then can you actually `require` the thing. Great for an existing workflow. Slow if you just want one package.
 
-Studio Discover skips the setup. Browse Wally and pesde packages from inside Studio, hit install, and the package shows up in your place — dependencies, types, and all.
+Studio Discover skips the setup. Browse Wally and pesde packages from inside Studio, hit install, and the package shows up in your place: dependencies, types, and all.
 
 ## 📸 Screenshots
 
@@ -85,7 +85,7 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 - **Dependency navigation registry**: opening a dependency from the Package screen now keeps the source registry instead of defaulting back to Wally.
 
 🗑 **Removed**
-- GitHub-release self-update check and the Check for Updates setting — the Creator Store handles plugin updates now.
+- GitHub-release self-update check and the Check for Updates setting; the Creator Store handles plugin updates now.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
@@ -147,22 +147,23 @@ Issues and pull requests are welcome.
 
 Studio Discover is built on top of work from a lot of other people. Thank you to:
 
-- [**cxmeel**](https://github.com/cxmeel) — the Luau, Creator Store, GitHub Releases, and GitHub Repository badges are from their [Markdown Buttons gist](https://gist.github.com/cxmeel/b3af232eba0ace022e2fba8b7b286520).
-- [**maneetoo**](https://github.com/maneetoo/Roblox-OSS-Badges) — the Changelog and My Profile badges are from their Roblox OSS Badges collection.
-- [**Roblox**](https://github.com/Roblox/foundation) — the **Foundation** UI library the plugin is built with, and the Contributions Welcome badge in this README is from Roblox's own assets.
-- [**UpliftGames**](https://wally.run) and [**daimond113**](https://pesde.dev) — for the **Wally** and **pesde** registries the plugin queries.
-- [**jsdotlua**](https://github.com/jsdotlua/react-lua) — the **React** port for Roblox.
-- [**littensy**](https://github.com/littensy/charm) — **Charm** and **ReactCharm** for reactivity.
-- [**Corecii**](https://github.com/Corecii/GreenTea) — **GreenTea** for runtime type checking.
-- [**evaera**](https://github.com/evaera/roblox-lua-promise) — the **Promise** implementation.
-- [**roblox-rbx**](https://github.com/rojo-rbx) — **Rojo** and **Rokit** for project sync and toolchain management.
-- The [**Luau**](https://luau.org/) team and the [**Lute**](https://github.com/luau-lang/lute) project — for the language and the standalone runtime that powers the build/CI scripts.
-- [**grilme99**](https://github.com/grilme99) — the `.lute` build/CI scripts started as a port of their `.lune` scripts from [studio-activity](https://github.com/grilme99/studio-activity), reworked to be cross-platform and adapted for this project.
-- [**flipbook-labs**](https://github.com/flipbook-labs) — the [`roblox-packages`](https://github.com/flipbook-labs/roblox-packages) crate pulls Foundation (Roblox's modern Studio UI components) into the build; without it the plugin would likely be sitting on [StudioComponents](https://github.com/sircfenner/StudioComponents) or a hand-rolled UI instead.
+- [**cxmeel**](https://github.com/cxmeel): the Luau, Creator Store, GitHub Releases, and GitHub Repository badges are from their [Markdown Buttons gist](https://gist.github.com/cxmeel/b3af232eba0ace022e2fba8b7b286520).
+- [**maneetoo**](https://github.com/maneetoo/Roblox-OSS-Badges): the Changelog and My Profile badges are from their Roblox OSS Badges collection.
+- [**Roblox**](https://github.com/Roblox/foundation): the **Foundation** UI library the plugin is built with.
+- [**Roblox**](https://github.com/Roblox/foundation): the Contributions Welcome badge in this README is from Roblox's own assets.
+- [**UpliftGames**](https://wally.run) and [**daimond113**](https://pesde.dev): for the **Wally** and **pesde** registries the plugin queries.
+- [**jsdotlua**](https://github.com/jsdotlua/react-lua): the **React** port for Roblox.
+- [**littensy**](https://github.com/littensy/charm): **Charm** and **ReactCharm** for reactivity.
+- [**Corecii**](https://github.com/Corecii/GreenTea): **GreenTea** for runtime type checking.
+- [**evaera**](https://github.com/evaera/roblox-lua-promise): the **Promise** implementation.
+- [**roblox-rbx**](https://github.com/rojo-rbx): **Rojo** and **Rokit** for project sync and toolchain management.
+- The [**Luau**](https://luau.org/) team and the [**Lute**](https://github.com/luau-lang/lute) project: for the language and the standalone runtime that powers the build/CI scripts.
+- [**grilme99**](https://github.com/grilme99): the `.lute` build/CI scripts started as a port of their `.lune` scripts from [studio-activity](https://github.com/grilme99/studio-activity), reworked to be cross-platform and adapted for this project.
+- [**flipbook-labs**](https://github.com/flipbook-labs): the [`roblox-packages`](https://github.com/flipbook-labs/roblox-packages) crate pulls Foundation (Roblox's modern Studio UI components) into the build; without it the plugin would likely be sitting on [StudioComponents](https://github.com/sircfenner/StudioComponents) or a hand-rolled UI instead.
 
 ## 📃 License
 
-Studio Discover's own source is intended to be freely redistributable. Read it, fork it, modify it, ship it. There's no `LICENSE` file in the repo yet, but the intent is permissive (MIT or similar).
+Studio Discover's own source is intended to be freely redistributable: read it, fork it, modify it, and ship it. There's no `LICENSE` file in the repo yet, but the intent is permissive (MIT or similar).
 
 The one thing to watch out for is [Foundation](https://github.com/Roblox/foundation), Roblox's UI library. The built `StudioDiscover.rbxm` bundles it at build time, and Foundation is not open source, so redistributing the *built artifact* is subject to Roblox's terms for Foundation, not this repo's license. A proper `LICENSE` will be added once Foundation is either swapped out or its redistribution terms are confirmed.
 
