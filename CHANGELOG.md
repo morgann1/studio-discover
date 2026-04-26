@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-04-27
+
 ### ✨ New
 - Dock widget title flags pending updates with a " · N update(s)" suffix.
 - Settings screen has a "Reset to Defaults" row that restores every setting (display name overrides included) after a confirm.
@@ -139,7 +141,8 @@ Initial release.
 - Metadata-fetch `useEffect` now cleans up on unmount.
 - Partial-install error message wording.
 
-[Unreleased]: https://github.com/morgann1/studio-discover/compare/v3.7.0...HEAD
+[Unreleased]: https://github.com/morgann1/studio-discover/compare/v3.8.0...HEAD
+[3.8.0]: https://github.com/morgann1/studio-discover/compare/v3.7.0...v3.8.0
 [3.7.0]: https://github.com/morgann1/studio-discover/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/morgann1/studio-discover/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/morgann1/studio-discover/compare/v2.6.0...v3.5.0
