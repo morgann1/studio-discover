@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ New
 - Dock widget title flags pending updates with a " · N update(s)" suffix.
 - Settings screen has a "Reset to Defaults" row that restores every setting (display name overrides included) after a confirm.
+- Sidebar's bottom slot opens a new Changelog screen that renders the bundled `CHANGELOG.md`, replacing the previous About page.
 
 ### ✏️ Improvements
 - Plugin upgraded to SharedToolbar 0.3.1, which exposes Interposer and Leader directly so the bootstrap drives the protocol stack itself instead of going through the old `register` wrapper.
 - Toolbar button icon ramp now ships dedicated colorful-light, colorful-dark, and mono asset variants; the underlying toolbar swaps automatically with the Studio theme.
+- Wally's `processPackageTypes` parser is now driven by a hand-written tokenizer with full test coverage, so type re-export generation handles nested generics, string literals, and comments without falling back to brittle pattern matching.
 
 ### 🛠 Fixes
 - Installing a package with a file over Roblox's 200,000-char ModuleScript.Source limit no longer crashes the install. Every script source write in the installer is now routed through `ScriptEditorService:UpdateSourceAsync`, which bypasses the direct-assignment limit.
