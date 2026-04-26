@@ -160,6 +160,7 @@ Studio Discover is built on top of work from a lot of other people. Thank you to
 - The [**Luau**](https://luau.org/) team and the [**Lute**](https://github.com/luau-lang/lute) project: for the language and the standalone runtime that powers the build/CI scripts.
 - [**grilme99**](https://github.com/grilme99): the `.lute` build/CI scripts started as a port of their `.lune` scripts from [studio-activity](https://github.com/grilme99/studio-activity), reworked to be cross-platform and adapted for this project.
 - [**flipbook-labs**](https://github.com/flipbook-labs): the [`roblox-packages`](https://github.com/flipbook-labs/roblox-packages) crate pulls Foundation (Roblox's modern Studio UI components) into the build; without it the plugin would likely be sitting on [StudioComponents](https://github.com/sircfenner/StudioComponents) or a hand-rolled UI instead.
+- [**Elttob**](https://github.com/Elttob) (Daniel P H Fox): the toolbar button uses [**Vanilla**](https://github.com/Elttob/Vanilla) icons, and the cross-plugin toolbar slot is built on **SharedToolbar**, **Interposer**, **Leader**, and **DoCleanup** from [LibStudioElttob](https://github.com/Elttob/LibStudioElttob) (the `morgann1/*` wally forks are minor adaptations of these).
 
 ## 📃 License
 
