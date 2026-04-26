@@ -18,7 +18,10 @@ Cryo = "morgann1/cryo@1.1.0"
 ReactCharm = "littensy/react-charm@0.3.0"
 Charm = "littensy/charm@0.10.0"
 Promise = "evaera/promise@4.0.0"
-SharedToolbar = "morgann1/shared-toolbar@0.2.1"
+SharedToolbar = "morgann1/shared-toolbar@0.3.1"
+Interposer = "morgann1/interposer@0.1.0"
+Leader = "morgann1/leader@0.1.0"
+DoCleanup = "morgann1/do-cleanup@0.1.0"
 GreenTea = "corecii/greentea@0.4.11"
 
 [dev-dependencies]

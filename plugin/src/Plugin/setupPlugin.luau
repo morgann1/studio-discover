@@ -5,6 +5,9 @@ local StudioService = game:GetService("StudioService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
+local DoCleanup = require(StudioDiscover.Packages.DoCleanup)
+local Interposer = require(StudioDiscover.Packages.Interposer)
+local Leader = require(StudioDiscover.Packages.Leader)
 local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
 local SharedToolbar = require(StudioDiscover.Packages.SharedToolbar)
 local buildConfig = require(StudioDiscover.Generated.buildConfig)
@@ -13,6 +16,9 @@ local createLogger = require(StudioDiscover.Source.Util.createLogger)
 local logger = createLogger.createLogger("plugin.bootstrap")
 
 local WIDGET_INFO = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 936, 702, 306, 306)
+
+local PROTOCOL_NAMESPACE = "@22:43/shared-toolbar"
+local TOOLBAR_ID = "22:43"
 
 local function setupPlugin(plugin: Plugin): ()
 	if RunService:IsRunning() then
@@ -43,40 +49,63 @@ local function setupPlugin(plugin: Plugin): ()
 		destroyApp = mountApp(plugin, widget)
 	end
 
-	local handle = SharedToolbar.register({
-		plugin = plugin,
-		mediumName = buildConfig.mediumName,
-		toolbarTitle = buildConfig.toolbarTitle,
-		peerId = buildConfig.peerId,
-		buttons = {
-			{
-				id = buildConfig.buttonId,
-				title = buildConfig.buttonTitle,
-				tooltip = buildConfig.buttonTooltip,
-				iconId = buildConfig.icon,
+	local scope: { unknown } = {}
+
+	local interposer = Interposer.logon(buildConfig.mediumName, buildConfig.mediumName, scope)
+	local leader = Leader.track(scope, interposer)
+
+	local toolbar = SharedToolbar.connect(
+		scope,
+		plugin,
+		buildConfig.mediumName,
+		interposer,
+		leader,
+		PROTOCOL_NAMESPACE,
+		TOOLBAR_ID,
+		buildConfig.toolbarTitle,
+		buildConfig.peerId,
+		{
+			[buildConfig.buttonId] = {
+				displayName = buildConfig.buttonTitle,
+				toolTip = buildConfig.buttonTooltip,
+				iconRamp = buildConfig.icon,
 				clickableWhenViewportHidden = true,
-				onClick = function()
-					widget.Enabled = not widget.Enabled
-				end,
+				creationOrder = 0,
 			},
 		},
-	})
+		{}
+	)
+
+	table.insert(
+		scope,
+		toolbar.onClick(function(buttonId: string)
+			if buttonId == buildConfig.buttonId then
+				widget.Enabled = not widget.Enabled
+			end
+		end)
+	)
+
+	local function setActiveIfLeader(isActive: boolean)
+		if leader.selfIsLeader() == true then
+			toolbar.setActive(buildConfig.buttonId, isActive)
+		end
+	end
 
 	local enabledConn = widget:GetPropertyChangedSignal("Enabled"):Connect(function()
-		handle:setActive(buildConfig.buttonId, widget.Enabled)
+		setActiveIfLeader(widget.Enabled)
 		if widget.Enabled then
 			mount()
 		end
 	end)
 
 	if widget.Enabled then
-		handle:setActive(buildConfig.buttonId, true)
+		setActiveIfLeader(true)
 		mount()
 	end
 
 	plugin.Unloading:Connect(function()
 		enabledConn:Disconnect()
-		handle:destroy()
+		DoCleanup(scope)
 		if destroyApp ~= nil then
 			destroyApp()
 			destroyApp = nil
