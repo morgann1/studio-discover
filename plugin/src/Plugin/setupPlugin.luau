@@ -64,6 +64,7 @@ local function setupPlugin(plugin: Plugin): ()
 		TOOLBAR_ID,
 		buildConfig.toolbarTitle,
 		buildConfig.peerId,
+		{},
 		{
 			[buildConfig.buttonId] = {
 				displayName = buildConfig.buttonTitle,
@@ -72,8 +73,7 @@ local function setupPlugin(plugin: Plugin): ()
 				clickableWhenViewportHidden = true,
 				creationOrder = 0,
 			},
-		},
-		{}
+		}
 	)
 
 	table.insert(
@@ -85,21 +85,19 @@ local function setupPlugin(plugin: Plugin): ()
 		end)
 	)
 
-	local function setActiveIfLeader(isActive: boolean)
-		if leader.selfIsLeader() == true then
-			toolbar.setActive(buildConfig.buttonId, isActive)
-		end
+	local function setActive(isActive: boolean)
+		toolbar.setActive(buildConfig.buttonId, isActive)
 	end
 
 	local enabledConn = widget:GetPropertyChangedSignal("Enabled"):Connect(function()
-		setActiveIfLeader(widget.Enabled)
+		setActive(widget.Enabled)
 		if widget.Enabled then
 			mount()
 		end
 	end)
 
 	if widget.Enabled then
-		setActiveIfLeader(true)
+		setActive(true)
 		mount()
 	end
 
