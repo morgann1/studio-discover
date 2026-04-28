@@ -44,3 +44,17 @@ Maintainability is a first-class priority, not a clean-up step. Hold every chang
 
 - [docs/process/luau-style.md](docs/process/luau-style.md) — Luau (Roblox plugin).
 - [docs/process/react-patterns.md](docs/process/react-patterns.md) — React (Roblox plugin).
+
+## Bumping the version
+
+The plugin version is duplicated across several files and the README's "What's New" highlight reel. When asked to bump the version (e.g. `3.8.0` → `3.8.1`), update **all** of the following in a single commit:
+
+1. `plugin/src/Util/Version.luau` — the runtime version string.
+2. `plugin/wally.toml` — `[package].version`.
+3. `plugin/wally.lock` — the `morgann1/studio-discover` entry's `version`.
+4. `CHANGELOG.md` — add a new `## [X.Y.Z] - YYYY-MM-DD` section above the previous release, move any `[Unreleased]` entries into it, and update the compare links at the bottom (`[Unreleased]` → `compare/vX.Y.Z...HEAD`, plus a new `[X.Y.Z]: .../compare/vPREV...vX.Y.Z` line).
+5. `README.md` — update the `### Version X.Y (Latest)` heading **and** the matching ToC anchor (`[Version X.Y (Latest)](#version-xy-latest)`) to reflect the new minor. Refresh the highlight bullets if the release added user-visible changes; for patch releases, only update if the patch is worth surfacing.
+
+Use semver: `MAJOR.MINOR.PATCH`. Dependency bumps and small fixes are PATCH; new user-visible features are MINOR; breaking changes are MAJOR. Commit message format: `chore(release): bump version to X.Y.Z`.
+
+Do **not** create a git tag or push — the user runs the release workflow manually.
