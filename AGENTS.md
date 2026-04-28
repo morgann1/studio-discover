@@ -8,7 +8,7 @@
 
 ## Project Snapshot
 
-TBD
+Discover is a Roblox Studio plugin for browsing and installing packages from the [Wally](https://wally.run) and [pesde](https://pesde.dev) registries without leaving Studio. It's a pure-Luau alternative to the external Rokit/Rojo/Wally CLI toolchain.
 
 ## Core Priorities
 
