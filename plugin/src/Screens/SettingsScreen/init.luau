@@ -63,8 +63,16 @@ local function SettingsScreen()
 		SettingsStore.setSetting("verboseLogging", value)
 	end, {})
 
+	local onConfirmBeforeInstallChange = React.useCallback(function(value: any)
+		SettingsStore.setSetting("confirmBeforeInstall", value)
+	end, {})
+
 	local onEditDisplayNames = React.useCallback(function()
 		Navigation.pushScreen("DisplayNames")
+	end, {})
+
+	local onEditRegistries = React.useCallback(function()
+		Navigation.pushScreen("Registries")
 	end, {})
 
 	local editButton: React.ReactNode = e(Button, {
@@ -80,6 +88,14 @@ local function SettingsScreen()
 		variant = ButtonVariant.Utility,
 		size = InputSize.Small,
 		onActivated = onResetRequest,
+	})
+
+	local editRegistriesButton: React.ReactNode = e(Button, {
+		text = "Edit",
+		icon = IconName.Pencil,
+		variant = ButtonVariant.Utility,
+		size = InputSize.Small,
+		onActivated = onEditRegistries,
 	})
 
 	local confirmDialog: React.ReactNode = nil
@@ -150,6 +166,21 @@ local function SettingsScreen()
 					description = "Enable detailed diagnostic logging in the Output window",
 					value = state.verboseLogging,
 					onChange = onVerboseLoggingChange,
+					LayoutOrder = nextOrder(),
+				}),
+
+				ConfirmBeforeInstall = e(Setting, {
+					name = "Confirm Before Install",
+					description = "Show a confirmation dialog before installing a package",
+					value = state.confirmBeforeInstall,
+					onChange = onConfirmBeforeInstallChange,
+					LayoutOrder = nextOrder(),
+				}),
+
+				Registries = e(Setting, {
+					name = "Registries",
+					description = "Choose which registries Studio Discover will browse and install from",
+					input = editRegistriesButton,
 					LayoutOrder = nextOrder(),
 				}),
 

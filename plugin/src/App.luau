@@ -15,6 +15,7 @@ local Installer = require(StudioDiscover.Source.Installer)
 local ManageScreen = require(StudioDiscover.Source.Screens.ManageScreen)
 local Navigation = require(StudioDiscover.Source.Navigation)
 local PackageScreen = require(StudioDiscover.Source.Screens.PackageScreen)
+local RegistriesScreen = require(StudioDiscover.Source.Screens.RegistriesScreen)
 local SettingsScreen = require(StudioDiscover.Source.Screens.SettingsScreen)
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local Sidebar = require(StudioDiscover.Source.Common.Sidebar)
@@ -40,6 +41,7 @@ local SCREENS: { [string]: React.ComponentType<any> } = {
 	Updates = UpdatesScreen,
 	Settings = SettingsScreen,
 	DisplayNames = DisplayNamesScreen,
+	Registries = RegistriesScreen,
 	Changelog = ChangelogScreen,
 }
 

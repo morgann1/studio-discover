@@ -4,6 +4,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
+local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local searchPackagesAsync = require(StudioDiscover.Source.Api.Wally.searchAsync)
 local searchPesdeAsync = require(StudioDiscover.Source.Api.Pesde.searchAsync)
 local types = require(StudioDiscover.Source.Api.types)
@@ -98,6 +99,9 @@ local function sortBriefs(briefs: { types.PackageBrief })
 end
 
 local function useSearchPackages(query: string): SearchState
+	local registries = SettingsStore.useSettings().registries
+	local wallyEnabled = registries.wally
+	local pesdeEnabled = registries.pesde
 	local state: SearchState, setState = React.useState(EMPTY)
 
 	React.useEffect(function(): (() -> ())?
@@ -113,13 +117,24 @@ local function useSearchPackages(query: string): SearchState
 				return
 			end
 
+			if not wallyEnabled and not pesdeEnabled then
+				setState({ loading = false, data = {}, error = nil })
+				return
+			end
+
 			setState({ loading = true, data = nil, error = nil })
 
 			local wallyResults: { types.WallyPackageBrief }? = nil
 			local wallyErr: string? = nil
 			local pesdeResults: { types.PackageBrief }? = nil
 			local pesdeErr: string? = nil
-			local remaining = 2
+			local remaining = 0
+			if wallyEnabled then
+				remaining += 1
+			end
+			if pesdeEnabled then
+				remaining += 1
+			end
 
 			local function done()
 				remaining -= 1
@@ -133,8 +148,14 @@ local function useSearchPackages(query: string): SearchState
 				sortBriefs(merged)
 
 				local finalError: string? = nil
-				if wallyResults == nil and pesdeResults == nil then
+				local wallyMissing = wallyEnabled and wallyResults == nil
+				local pesdeMissing = pesdeEnabled and pesdeResults == nil
+				if wallyMissing and pesdeMissing then
 					finalError = wallyErr or pesdeErr or "Search failed"
+				elseif wallyMissing and not pesdeEnabled then
+					finalError = wallyErr or "Search failed"
+				elseif pesdeMissing and not wallyEnabled then
+					finalError = pesdeErr or "Search failed"
 				end
 
 				setState({
@@ -144,21 +165,25 @@ local function useSearchPackages(query: string): SearchState
 				})
 			end
 
-			task.spawn(function()
-				wallyResults, wallyErr = searchPackagesAsync(query)
-				done()
-			end)
+			if wallyEnabled then
+				task.spawn(function()
+					wallyResults, wallyErr = searchPackagesAsync(query)
+					done()
+				end)
+			end
 
-			task.spawn(function()
-				pesdeResults, pesdeErr = searchPesdeAsync(query)
-				done()
-			end)
+			if pesdeEnabled then
+				task.spawn(function()
+					pesdeResults, pesdeErr = searchPesdeAsync(query)
+					done()
+				end)
+			end
 		end)
 
 		return function()
 			cancelled = true
 		end
-	end, { query })
+	end, { query, wallyEnabled, pesdeEnabled } :: { any })
 
 	return state
 end

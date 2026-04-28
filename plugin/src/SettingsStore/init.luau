@@ -17,12 +17,19 @@ export type DisplayNameRule = {
 	displayName: string,
 }
 
+export type RegistryEnableMap = {
+	wally: boolean,
+	pesde: boolean,
+}
+
 export type SettingsState = {
 	namingConvention: NamingConvention,
 	displayNames: { DisplayNameRule },
 	reduceMotion: boolean,
 	sidebarMode: SidebarMode,
 	verboseLogging: boolean,
+	confirmBeforeInstall: boolean,
+	registries: RegistryEnableMap,
 }
 
 local DEFAULTS: SettingsState = table.freeze({
@@ -31,6 +38,8 @@ local DEFAULTS: SettingsState = table.freeze({
 	reduceMotion = false,
 	sidebarMode = "Auto" :: SidebarMode,
 	verboseLogging = false,
+	confirmBeforeInstall = true,
+	registries = table.freeze({ wally = true, pesde = true }) :: RegistryEnableMap,
 })
 
 local function check<T>(type_: T): (value: any) -> (boolean, any?)
@@ -58,6 +67,12 @@ local VALIDATORS = {
 	reduceMotion = check(gt.boolean()),
 	sidebarMode = check(gt.union(gt.literal("Auto"), gt.literal("Expanded"), gt.literal("Compact"))),
 	verboseLogging = check(gt.boolean()),
+	confirmBeforeInstall = check(gt.boolean()),
+	registries = check(gt.table({
+		wally = gt.boolean(),
+		pesde = gt.boolean(),
+		[gt.any()] = gt.never(),
+	})),
 }
 
 local get = Charm.computed(function()

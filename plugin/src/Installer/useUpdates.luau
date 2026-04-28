@@ -7,6 +7,7 @@ local React = require(StudioDiscover.Packages.React)
 local getPesdeMetadataAsync = require(StudioDiscover.Source.Api.Pesde.getMetadataAsync)
 local getWallyMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
 
+local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local compareSemver = require(StudioDiscover.Source.Util.compareSemver)
 local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
 
@@ -36,6 +37,9 @@ local EMPTY: UpdatesState = { updates = {}, loading = false }
 local function useUpdates(): UpdatesState
 	local installedState = useInstalledRoots()
 	local installedRoots = installedState.roots
+	local registries = SettingsStore.useSettings().registries
+	local wallyEnabled = registries.wally
+	local pesdeEnabled = registries.pesde
 	local state: UpdatesState, setState = React.useState(EMPTY)
 
 	React.useEffect(function(): (() -> ())?
@@ -56,6 +60,12 @@ local function useUpdates(): UpdatesState
 			for _, root in installedRoots do
 				if cancelled then
 					return
+				end
+				if root.registry == "wally" and not wallyEnabled then
+					continue
+				end
+				if root.registry == "pesde" and not pesdeEnabled then
+					continue
 				end
 				local metadata = if root.registry == "pesde"
 					then getPesdeMetadataAsync(root.scope, root.name)
@@ -90,7 +100,7 @@ local function useUpdates(): UpdatesState
 		return function()
 			cancelled = true
 		end
-	end, { installedRoots } :: { any })
+	end, { installedRoots, wallyEnabled, pesdeEnabled } :: { any })
 
 	return state
 end

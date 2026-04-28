@@ -6,10 +6,12 @@ local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 
 local Content = require(StudioDiscover.Source.Common.Content)
+local InstallConfirmDialog = require(StudioDiscover.Source.Installer.InstallConfirmDialog)
 local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
 local Screen = require(StudioDiscover.Source.Common.Screen)
 local Section = require(StudioDiscover.Source.Common.Section)
+local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local capitalize = require(StudioDiscover.Source.Util.capitalize)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local types = require(StudioDiscover.Source.Api.types)
@@ -19,6 +21,7 @@ local Dependencies = require(script.Dependencies)
 local Hero = require(script.Hero)
 
 local Chip = Foundation.Chip
+local Empty = Foundation.Empty
 local Loading = Foundation.Loading
 local Text = Foundation.Text
 local View = Foundation.View
@@ -73,16 +76,30 @@ local function PackageScreen()
 	local name = (screen.options.name :: string?) or ""
 	local requestedVersion = (screen.options.version :: string?) or ""
 
-	local registries: { types.Registry }
+	local settings = SettingsStore.useSettings()
+	local registrySettings = settings.registries
+
+	local rawRegistries: { types.Registry }
 	local optionRegistries = screen.options.registries :: { types.Registry }?
 	if optionRegistries ~= nil and #optionRegistries > 0 then
-		registries = optionRegistries
+		rawRegistries = optionRegistries
 	else
-		registries = { (screen.options.registry :: types.Registry?) or "wally" }
+		rawRegistries = { (screen.options.registry :: types.Registry?) or "wally" }
 	end
 
-	local selectedRegistry: types.Registry, setSelectedRegistry = React.useState(registries[1])
+	local registries: { types.Registry } = {}
+	for _, r in rawRegistries do
+		local enabled = if r == "wally" then registrySettings.wally else registrySettings.pesde
+		if enabled then
+			table.insert(registries, r)
+		end
+	end
+
+	local selectedRegistry: types.Registry, setSelectedRegistry = React.useState(registries[1] or rawRegistries[1])
 	React.useEffect(function()
+		if #registries == 0 then
+			return
+		end
 		local stillValid = false
 		for _, r in registries do
 			if r == selectedRegistry then
@@ -95,10 +112,15 @@ local function PackageScreen()
 		end
 	end, { registries } :: { any })
 
+	local onOpenRegistries = React.useCallback(function()
+		Navigation.pushScreen("Registries")
+	end, {})
+
 	local state = usePackageMetadata(scope, name, selectedRegistry)
 	local installerState = Installer.useInstaller()
 	local installedRoots = Installer.useInstalledRoots().roots
 	local selectedVersion, setSelectedVersion = React.useState("")
+	local isConfirmingInstall, setIsConfirmingInstall = React.useState(false)
 
 	React.useEffect(function()
 		if state.data == nil or #state.data.versions == 0 then
@@ -120,7 +142,15 @@ local function PackageScreen()
 	local title = if scope ~= "" and name ~= "" then `{scope}/{name}` else "Package"
 
 	local body: React.ReactNode
-	if state.loading then
+	if #registries == 0 then
+		body = e(Empty, {
+			text = "This package's source registries are disabled. Enable them in Settings to install.",
+			button = {
+				text = "Open Registries",
+				onActivated = onOpenRegistries,
+			},
+		})
+	elseif state.loading then
 		body = e(View, {
 			tag = "size-full align-x-center align-y-center",
 		}, {
@@ -220,10 +250,24 @@ local function PackageScreen()
 
 		local installRealm: "shared" | "server" = if pkg.realm == "server" then "server" else "shared"
 		local activeVersion = if selectedVersion ~= "" then selectedVersion else pkg.version
-		local onInstall = function()
+		local function performInstall()
 			task.spawn(function()
 				Installer.installAsync(scope, name, activeVersion, name, installRealm, selectedRegistry)
 			end)
+		end
+		local onInstall = function()
+			if settings.confirmBeforeInstall then
+				setIsConfirmingInstall(true)
+			else
+				performInstall()
+			end
+		end
+		local onConfirmInstall = function()
+			setIsConfirmingInstall(false)
+			performInstall()
+		end
+		local onCancelInstall = function()
+			setIsConfirmingInstall(false)
 		end
 
 		local target = installerState.target
@@ -289,6 +333,18 @@ local function PackageScreen()
 				LayoutOrder = nextOrder(),
 			}, {
 				List = e(Dependencies, { deps = group.deps, registry = selectedRegistry }),
+			})
+		end
+
+		if isConfirmingInstall then
+			bodyChildren.ConfirmInstallDialog = e(InstallConfirmDialog, {
+				scope = scope,
+				name = name,
+				version = activeVersion,
+				registry = selectedRegistry,
+				realm = installRealm,
+				onConfirm = onConfirmInstall,
+				onCancel = onCancelInstall,
 			})
 		end
 
