@@ -2,7 +2,6 @@
 <a name="top"></a>
 
 [![Luau](./.github/assets/badges/link-luau.svg)](https://luau.org/)
-[![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/91442200339606)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
 
@@ -21,10 +20,10 @@
 - [📸 Screenshots](#-screenshots)
 - [✨ What's New](#-whats-new)
   - [Version 3.7 (Latest)](#version-37-latest)
-- [📝 How to Build](#-how-to-build)
-  - [Prerequisites](#prerequisites)
-  - [Build](#build)
-  - [Releasing](#releasing)
+- [📝 Installation](#-installation)
+  - [From Releases](#from-releases)
+  - [From the Creator Store](#from-the-creator-store)
+  - [From Source](#from-source)
 - [🤝 Feedback and Contributions](#-feedback-and-contributions)
 - [🙏 Credits](#-credits)
 - [📃 License](#-license)
@@ -89,15 +88,30 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
-## 📝 How to Build
+## 📝 Installation
 
-### Prerequisites
+### From Releases
+
+The fastest way to get the plugin without building it yourself.
+
+1. Download the latest `StudioDiscover.rbxm` from [GitHub Releases](https://github.com/morgann1/studio-discover/releases/latest).
+2. Drag the file into Roblox Studio.
+3. Right-click the **Discover** folder in the Explorer and pick **Save / Export > Save as Local Plugin**.
+
+A **Discover** button will appear in your toolbar.
+
+### From the Creator Store
+
+> [!WARNING]
+> Roblox moderation is currently preventing the plugin from being distributed via the Creator Store. The listing has been removed pending appeal (see issue [#24](https://github.com/morgann1/studio-discover/issues/24)).
+> 
+> Hopefully this'll be resolved soon. In the meantime, install via [Releases](#from-releases) or [from source](#from-source).
+
+### From Source
+
+For contributors and anyone who wants to run a local build.
 
 You'll need [Rokit](https://github.com/rojo-rbx/rokit) installed.
-
-### Build
-
-To build the plugin, follow these steps:
 
 ```shell
 # Open a terminal (Command Prompt or PowerShell for Windows, Terminal for macOS or Linux)
@@ -111,26 +125,22 @@ cd studio-discover
 # Install the toolchain
 rokit install
 
-# Install wally packages, patch in the `Foundation` package.
+# Set up the project
+lute run setup
+
+# Run codegen (optional)
+lute run codegen
+
+# Install the packages
 lute run install
 
 # Build the plugin
 lute run build
 ```
 
-Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click the **Discover** folder in the Explorer, and pick **Save / Export > Save as Local Plugin**. A **Discover** button will appear in your toolbar.
+Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click the **Discover** folder in the Explorer, and pick **Save / Export > Save as Local Plugin**.
 
-> `lute run install` fetches the Wally packages, pulls Foundation from the pinned Roblox version, and applies anything under `plugin/patches/`.
-
-> If you plan to fork this or contribute, also run `lute run setup`. Without it, luau-lsp won't resolve things out of the box.
-
-> To test changes alongside the creator store version without collisions, run `lute run build --dev`. This produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and plugin settings namespace.
-
-### Releasing
-
-Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds `StudioDiscover.rbxm` and creates a GitHub release with the notes drawn from `CHANGELOG.md`.
-
-**The Creator Store listing is updated manually**: Open Cloud does not yet support updating Plugin-type assets, so after the GitHub release lands, download the release `.rbxm`, insert it in Studio, right-click the `Discover` folder, and pick **Publish as Plugin → Update Existing**.
+> To test changes alongside the Creator Store version without collisions, run `lute run build --dev`. This produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and plugin settings namespace.
 
 ## 🤝 Feedback and Contributions
 
