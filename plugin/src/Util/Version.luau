@@ -1,5 +1,5 @@
 --!strict
 
-local Version = "3.8.0"
+local Version = "3.8.1"
 
 return Version

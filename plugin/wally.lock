@@ -354,7 +354,7 @@ dependencies = []
 
 [[package]]
 name = "morgann1/studio-discover"
-version = "3.8.0"
+version = "3.8.1"
 dependencies = [["Charm", "littensy/charm@0.10.0"], ["Cryo", "morgann1/cryo@1.1.0"], ["DoCleanup", "morgann1/do-cleanup@0.1.0"], ["GreenTea", "corecii/greentea@0.4.11"], ["Interposer", "morgann1/interposer@0.1.1"], ["Leader", "morgann1/leader@0.1.3"], ["Promise", "evaera/promise@4.0.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactCharm", "littensy/react-charm@0.3.0"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["SharedToolbar", "morgann1/shared-toolbar@0.3.4"], ["zzlib", "morgann1/zzlib@0.1.0"], ["Jest", "jsdotlua/jest@3.10.0"], ["JestGlobals", "jsdotlua/jest-globals@3.10.0"]]
 
 [[package]]

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.1] - 2026-04-28
+
+### 🛠 Fixes
+- Toolbar button now advertises itself as shared so peer plugins running SharedToolbar see it and dock alongside it.
+
+### ✏️ Improvements
+- Bumped SharedToolbar to 0.3.4, Leader to 0.1.3, Interposer to 0.1.1, and luau-lsp to 1.66.1.
+
 ## [3.8.0] - 2026-04-27
 
 ### ✨ New
@@ -141,7 +149,8 @@ Initial release.
 - Metadata-fetch `useEffect` now cleans up on unmount.
 - Partial-install error message wording.
 
-[Unreleased]: https://github.com/morgann1/studio-discover/compare/v3.8.0...HEAD
+[Unreleased]: https://github.com/morgann1/studio-discover/compare/v3.8.1...HEAD
+[3.8.1]: https://github.com/morgann1/studio-discover/compare/v3.8.0...v3.8.1
 [3.8.0]: https://github.com/morgann1/studio-discover/compare/v3.7.0...v3.8.0
 [3.7.0]: https://github.com/morgann1/studio-discover/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/morgann1/studio-discover/compare/v3.5.0...v3.6.0
