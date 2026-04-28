@@ -19,7 +19,7 @@
 - [🚀 About](#-about)
 - [📸 Screenshots](#-screenshots)
 - [✨ What's New](#-whats-new)
-  - [Version 3.7 (Latest)](#version-37-latest)
+  - [Version 3.8 (Latest)](#version-38-latest)
 - [📝 Installation](#-installation)
   - [From Releases](#from-releases)
   - [From the Creator Store](#from-the-creator-store)
@@ -67,24 +67,22 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 
 ## ✨ What's New
 
-### Version 3.7 (Latest)
+### Version 3.8 (Latest)
 
 ✨ **New**
-- **Creator Store distribution**: releases now auto-publish to the [Creator Store listing](https://create.roblox.com/store/asset/91442200339606), so Studio keeps the plugin up to date for you.
-- **pesde registry**: browse and install packages from [pesde](https://pesde.dev) alongside Wally.
-- **Dev build variant**: `lute run build --dev` produces `StudioDiscover-Dev.rbxm` with its own toolbar slot, widget, and settings namespace for side-by-side testing against the Creator Store version.
-- **Versioned widget title**: the dock widget now includes the plugin version (matching Rojo's convention).
+- **Update count in widget title**: the dock widget title flags pending updates with a ` · N update(s)` suffix.
+- **Reset to Defaults**: Settings now has a row that restores every setting (display name overrides included) after a confirm.
+- **Changelog screen**: the sidebar's bottom slot opens a new Changelog screen that renders the bundled `CHANGELOG.md`, replacing the previous About page.
 
 ✏️ **Improvements**
-- **Shared toolbar slot**: the button registers under the `22:43 Plugin Suite` toolbar via SharedToolbar.
-- **Less Explorer noise**: installer no longer creates empty `Packages`/`DevPackages`/`ServerPackages` folders during snapshot.
+- **Themed toolbar icon**: the toolbar button ships dedicated colorful-light, colorful-dark, and mono variants and swaps automatically with the Studio theme.
+- **Tokenizer-driven type rewrites**: Wally's `processPackageTypes` parser is now a hand-written tokenizer with full test coverage, so type re-export generation handles nested generics, string literals, and comments correctly.
+- **SharedToolbar 0.3.x**: bootstrap now drives Interposer and Leader directly instead of going through the old `register` wrapper.
 
 🛠 **Fixes**
-- **Clearer permission errors**: script injection denials explain what happened and tell you to retry so Studio shows the actual permission dialog.
-- **Dependency navigation registry**: opening a dependency from the Package screen now keeps the source registry instead of defaulting back to Wally.
-
-🗑 **Removed**
-- GitHub-release self-update check and the Check for Updates setting; the Creator Store handles plugin updates now.
+- **Large module installs**: installing a package with a file over Roblox's 200,000-char `ModuleScript.Source` limit no longer crashes the install. Every script source write is now routed through `ScriptEditorService:UpdateSourceAsync`.
+- **Stuck "busy" state**: install/uninstall/updateAll no longer leave the plugin locked in a busy state when an operation throws — the lock now releases and the installer transitions to an error status on uncaught failures.
+- **Shared toolbar visibility**: the plugin's toolbar button now advertises itself as shared so peer plugins running SharedToolbar can see it and dock alongside it.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
