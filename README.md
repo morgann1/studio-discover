@@ -103,7 +103,7 @@ A **Discover** button will appear in your toolbar.
 ### From the Creator Store
 
 > [!WARNING]
-> Roblox moderation is currently preventing the plugin from being distributed via the Creator Store. The listing has been removed pending appeal (see issue [#24](https://github.com/morgann1/studio-discover/issues/24)).
+> Roblox moderation is currently preventing the plugin from being distributed via the Creator Store. Pending appeal (see issue [#24](https://github.com/morgann1/studio-discover/issues/24)).
 > 
 > Hopefully this'll be resolved soon. In the meantime, install via [Releases](#from-releases) or [from source](#from-source).
 
