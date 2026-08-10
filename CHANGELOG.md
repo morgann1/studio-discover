@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigating to a package's dependency from the Package screen preserves the source registry (previously defaulted back to Wally).
 
 ### 🗑 Removed
-- GitHub-release self-update check and the Check for Updates setting — Creator Store handles plugin updates now.
+- GitHub-release self-update check and the Check for Updates setting. Creator Store handles plugin updates now.
 
 ## [3.6.0] - 2026-04-19
 

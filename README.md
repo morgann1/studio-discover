@@ -1,3 +1,6 @@
+> [!NOTE]
+> This plugin was developed with Claude Code (unsure of what model).
+
 ![Studio Discover](./.github/assets/banner.jpg)
 <a name="top"></a>
 
@@ -70,19 +73,19 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 ### Version 3.8 (Latest)
 
 ✨ **New**
-- **Update count in widget title**: the dock widget title flags pending updates with a ` · N update(s)` suffix.
-- **Reset to Defaults**: Settings now has a row that restores every setting (display name overrides included) after a confirm.
-- **Changelog screen**: the sidebar's bottom slot opens a new Changelog screen that renders the bundled `CHANGELOG.md`, replacing the previous About page.
+- The dock widget title flags pending updates with a ` · N update(s)` suffix.
+- Settings has a "Reset to Defaults" row that restores every setting (display name overrides included) after a confirm.
+- The sidebar's bottom slot opens a new Changelog screen that renders the bundled `CHANGELOG.md`, replacing the previous About page.
 
 ✏️ **Improvements**
-- **Themed toolbar icon**: the toolbar button ships dedicated colorful-light, colorful-dark, and mono variants and swaps automatically with the Studio theme.
-- **Tokenizer-driven type rewrites**: Wally's `processPackageTypes` parser is now a hand-written tokenizer with full test coverage, so type re-export generation handles nested generics, string literals, and comments correctly.
-- **SharedToolbar 0.3.x**: bootstrap now drives Interposer and Leader directly instead of going through the old `register` wrapper.
+- The toolbar button ships dedicated colorful-light, colorful-dark, and mono icon variants, and swaps automatically with the Studio theme.
+- Wally's `processPackageTypes` parser is now a hand-written tokenizer with full test coverage, so type re-export generation handles nested generics, string literals, and comments correctly.
+- Bootstrap drives Interposer and Leader directly on SharedToolbar 0.3.x, instead of going through the old `register` wrapper.
 
 🛠 **Fixes**
-- **Large module installs**: installing a package with a file over Roblox's 200,000-char `ModuleScript.Source` limit no longer crashes the install. Every script source write is now routed through `ScriptEditorService:UpdateSourceAsync`.
-- **Stuck "busy" state**: install/uninstall/updateAll no longer leave the plugin locked in a busy state when an operation throws — the lock now releases and the installer transitions to an error status on uncaught failures.
-- **Shared toolbar visibility**: the plugin's toolbar button now advertises itself as shared so peer plugins running SharedToolbar can see it and dock alongside it.
+- Installing a package with a file over Roblox's 200,000-char `ModuleScript.Source` limit no longer crashes the install. Every script source write now goes through `ScriptEditorService:UpdateSourceAsync`.
+- Install, uninstall, and updateAll no longer leave the plugin locked in a busy state when an operation throws. The lock releases and the installer moves to an error status on uncaught failures.
+- The plugin's toolbar button now advertises itself as shared, so peer plugins running SharedToolbar can see it and dock alongside it.
 
 > See 📋 [`CHANGELOG.md`](./CHANGELOG.md) for full details.
 
@@ -90,7 +93,7 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 
 ### From Releases
 
-The fastest way to get the plugin without building it yourself.
+This is the fastest way to get the plugin, and you don't have to build anything.
 
 1. Download the latest `StudioDiscover.rbxm` from [GitHub Releases](https://github.com/morgann1/studio-discover/releases/latest).
 2. Drag the file into Roblox Studio.
@@ -107,9 +110,7 @@ A **Discover** button will appear in your toolbar.
 
 ### From Source
 
-For contributors and anyone who wants to run a local build.
-
-You'll need [Rokit](https://github.com/rojo-rbx/rokit) installed.
+If you're contributing, or you just want to run a local build, you'll need [Rokit](https://github.com/rojo-rbx/rokit) installed.
 
 ```shell
 # Open a terminal (Command Prompt or PowerShell for Windows, Terminal for macOS or Linux)
@@ -147,9 +148,9 @@ Then drag the generated `StudioDiscover.rbxm` into Roblox Studio, right-click th
 
 Issues and pull requests are welcome.
 
-- **Bugs and feature requests**: open an issue at [GitHub Issues](https://github.com/morgann1/studio-discover/issues).
-- **Pull requests**: before opening one, please file an issue describing the change so we can agree on direction. Run `lute run ci` locally before pushing. It mirrors what CI checks.
-- **Scope**: contributions that fit the project's goals (see [About](#-about)) are the easiest to land. Studio Discover is a solo project, so response times vary.
+- Report bugs and request features at [GitHub Issues](https://github.com/morgann1/studio-discover/issues).
+- Before opening a pull request, please file an issue describing the change so we can agree on direction. Run `lute run ci` locally before pushing; it mirrors what CI checks.
+- Contributions that fit the project's goals (see [About](#-about)) are the easiest to land. Studio Discover is a solo project, so response times vary.
 
 ## 🙏 Credits
 
@@ -157,17 +158,17 @@ Studio Discover is built on top of work from a lot of other people. Thank you to
 
 - [**cxmeel**](https://github.com/cxmeel): the Luau, Creator Store, GitHub Releases, and GitHub Repository badges are from their [Markdown Buttons gist](https://gist.github.com/cxmeel/b3af232eba0ace022e2fba8b7b286520).
 - [**maneetoo**](https://github.com/maneetoo/Roblox-OSS-Badges): the Changelog and My Profile badges are from their Roblox OSS Badges collection.
-- [**Roblox**](https://github.com/Roblox/foundation): the **Foundation** UI library the plugin is built with and the **Contributions Welcome badge** in this README is from Roblox's own assets.
-- [**UpliftGames**](https://wally.run) and [**daimond113**](https://pesde.dev): for the **Wally** and **pesde** registries the plugin queries.
-- [**jsdotlua**](https://github.com/jsdotlua/react-lua): the **React** port for Roblox.
-- [**littensy**](https://github.com/littensy/charm): **Charm** and **ReactCharm** for reactivity.
-- [**Corecii**](https://github.com/Corecii/GreenTea): **GreenTea** for runtime type checking.
-- [**evaera**](https://github.com/evaera/roblox-lua-promise): the **Promise** implementation.
-- [**rojo-rbx**](https://github.com/rojo-rbx): **Rojo** and **Rokit** for project sync and toolchain management.
-- The [**Luau**](https://luau.org/) team and the [**Lute**](https://github.com/luau-lang/lute) project: for the language and the standalone runtime that powers the build/CI scripts.
+- [**Roblox**](https://github.com/Roblox/foundation): the Foundation UI library the plugin is built with. The Contributions Welcome badge in this README is also from Roblox's own assets.
+- [**UpliftGames**](https://wally.run) and [**daimond113**](https://pesde.dev): the Wally and pesde registries the plugin queries.
+- [**jsdotlua**](https://github.com/jsdotlua/react-lua): the React port for Roblox.
+- [**littensy**](https://github.com/littensy/charm): Charm and ReactCharm for reactivity.
+- [**Corecii**](https://github.com/Corecii/GreenTea): GreenTea for runtime type checking.
+- [**evaera**](https://github.com/evaera/roblox-lua-promise): the Promise implementation.
+- [**rojo-rbx**](https://github.com/rojo-rbx): Rojo and Rokit for project sync and toolchain management.
+- The [**Luau**](https://luau.org/) team and the [**Lute**](https://github.com/luau-lang/lute) project: the language and the standalone runtime that powers the build and CI scripts.
 - [**grilme99**](https://github.com/grilme99): the `.lute` build/CI scripts started as a port of their `.lune` scripts from [studio-activity](https://github.com/grilme99/studio-activity), reworked to be cross-platform and adapted for this project.
 - [**flipbook-labs**](https://github.com/flipbook-labs): the [`roblox-packages`](https://github.com/flipbook-labs/roblox-packages) crate pulls Foundation (Roblox's modern Studio UI components) into the build; without it the plugin would likely be sitting on [StudioComponents](https://github.com/sircfenner/StudioComponents) or a hand-rolled UI instead.
-- [**Elttob**](https://github.com/Elttob) (Daniel P H Fox): the toolbar button uses [**Vanilla**](https://devforum.roblox.com/t/vanilla-3-the-pragmatic-icon-set-for-roblox-studio/935745) icons, and the cross-plugin toolbar slot is built on **SharedToolbar**, **Interposer**, **Leader**, and **DoCleanup** from [LibStudioElttob](https://github.com/Elttob/LibStudioElttob) (the `morgann1/*` wally forks are minor adaptations of these).
+- [**Elttob**](https://github.com/Elttob) (Daniel P H Fox): the toolbar button uses [Vanilla](https://devforum.roblox.com/t/vanilla-3-the-pragmatic-icon-set-for-roblox-studio/935745) icons, and the cross-plugin toolbar slot is built on SharedToolbar, Interposer, Leader, and DoCleanup from [LibStudioElttob](https://github.com/Elttob/LibStudioElttob) (the `morgann1/*` wally forks are minor adaptations of these).
 
 ## 📃 License
 
