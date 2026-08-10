@@ -20,3 +20,4 @@ plugin/tests/build/
 # Other
 ref/
 .claude/
+.ignore/
