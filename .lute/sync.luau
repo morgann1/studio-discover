@@ -1,17 +1,17 @@
 --[[
-	Vendors the upstream reference repos into `.repos/` with git subtree.
+	Clones the reference repos into `.repos/`.
 
 	Usage: lute run sync [--repo <id>] [--latest] [--dry-run]
 
-	Each repo is added the first time and pulled afterwards, pinned to the tag
-	matching the version this repo targets, or following its branch when we do
-	not depend on a particular version. `--latest` ignores the pins and takes
-	every branch tip, and `--dry-run` prints the git commands without running
-	them.
+	Each repo is cloned shallow the first time and fetched afterwards, pinned to
+	the tag matching the version this repo targets, or following its branch when
+	we do not depend on a particular version. `--latest` ignores the pins and
+	takes every branch tip, and `--dry-run` prints the git commands without
+	running them.
 
-	git subtree commits the vendored content into this repository, which is what
-	makes the reference reproducible for everyone who clones it, and also what
-	makes the first sync a large commit. Run it deliberately.
+	`.repos/` is gitignored. These are local reading material, not vendored
+	dependencies, so nothing here is committed and nothing here is built. Run it
+	again whenever you bump a matching dependency.
 
 	The repos themselves are declared in lib/reference-repos.
 ]]
@@ -29,11 +29,17 @@ type Plan = {
 	repo: ReferenceRepo,
 	action: string,
 	ref: string,
-	args: { string },
+	commands: { { string } },
 }
 
 local function isDir(path: string): boolean
 	return fs.exists(path) and fs.type(path) == "dir"
+end
+
+-- Only a directory with a .git in it can be fetched into. Anything else there is
+-- something we did not create, and clobbering it is not our call.
+local function isClone(path: string): boolean
+	return isDir(path) and fs.exists(`{path}/.git`)
 end
 
 -- Lua patterns treat `-` as a quantifier, and tool names contain it.
@@ -78,21 +84,36 @@ local function resolveRef(repo: ReferenceRepo, latest: boolean): (string?, strin
 	return `{repo.tagPrefix}{version}`, nil
 end
 
+--[[
+	A fresh checkout is one shallow clone. An existing one is a shallow fetch of
+	the wanted ref followed by a hard reset onto it, which moves between tags and
+	branches without keeping any history we would never read.
+]]
 local function planFor(repo: ReferenceRepo, latest: boolean): (Plan?, string?)
 	local ref, reason = resolveRef(repo, latest)
 	if ref == nil then
 		return nil, reason
 	end
 
-	local action = if isDir(repo.prefix) then "pull" else "add"
+	local commands: { { string } }
+	local action: string
 
-	return {
-		repo = repo,
-		action = action,
-		ref = ref,
-		args = { "subtree", action, `--prefix={repo.prefix}`, repo.repository, ref, "--squash" },
-	},
-		nil
+	if isClone(repo.prefix) then
+		action = "update"
+		commands = {
+			{ "git", "-C", repo.prefix, "fetch", "--depth", "1", "origin", ref },
+			{ "git", "-C", repo.prefix, "reset", "--hard", "FETCH_HEAD" },
+		}
+	elseif isDir(repo.prefix) then
+		return nil, `{repo.prefix} exists but is not a git checkout. Remove it and sync again.`
+	else
+		action = "clone"
+		commands = {
+			{ "git", "clone", "--depth", "1", "--branch", ref, repo.repository, repo.prefix },
+		}
+	end
+
+	return { repo = repo, action = action, ref = ref, commands = commands }, nil
 end
 
 local function selectRepos(repoId: string?): { ReferenceRepo }
@@ -115,33 +136,12 @@ local function selectRepos(repoId: string?): { ReferenceRepo }
 	return {}
 end
 
--- git subtree refuses to work from a dirty tree, with a message that does not
--- make the reason obvious. Say it plainly instead.
-local function requireCleanTree()
-	local result = process.run({ "git", "status", "--porcelain" })
-	if not result.ok then
-		print(color.bold(color.red("Could not read git status")))
-		process.exit(1)
-		return
-	end
-	if result.stdout:match("%S") ~= nil then
-		print(
-			color.bold(color.red("Working tree is not clean. git subtree needs a clean tree; commit or stash first."))
-		)
-		process.exit(1)
-	end
-end
-
 local args = parseArgs({ "repo" })
 local latest = args.flags.latest or false
 local dryRun = args.flags["dry-run"] or false
 local repos = selectRepos(args.values.repo)
 
 print(color.bold(color.white(if dryRun then "Planning reference repo sync...\n" else "Syncing reference repos...\n")))
-
-if not dryRun then
-	requireCleanTree()
-end
 
 local failed = false
 
@@ -153,18 +153,28 @@ for _, repo in repos do
 		continue
 	end
 
-	print(color.cyan(`→ {repo.id}: git subtree {plan.action} from {plan.ref}`))
+	print(color.cyan(`→ {repo.id}: {plan.action} at {plan.ref}`))
 
 	if dryRun then
-		print(color.dim(`  git {table.concat(plan.args, " ")}`))
+		for _, command in plan.commands do
+			print(color.dim(`  {table.concat(command, " ")}`))
+		end
 		continue
 	end
 
-	local result = process.run({ "git", table.unpack(plan.args) }, { stdio = "inherit" })
-	if result.ok then
+	local ok = true
+	for _, command in plan.commands do
+		local result = process.run(command, { stdio = "inherit" })
+		if not result.ok then
+			ok = false
+			break
+		end
+	end
+
+	if ok then
 		print(color.green(`  ✓ {repo.prefix}`))
 	else
-		print(color.red(`  ✗ git subtree {plan.action} failed for "{repo.id}"`))
+		print(color.red(`  ✗ {plan.action} failed for "{repo.id}"`))
 		failed = true
 	end
 end

@@ -1,5 +1,5 @@
 --[[
-	The upstream repos `lute run sync` vendors into `.repos/`.
+	The upstream repos `lute run sync` clones into `.repos/`.
 
 	Discover's packages are Luau ports of these tools, so having the real
 	implementation on disk at the version we target is what makes "does wally
@@ -20,7 +20,7 @@ export type VersionSource = {
 
 export type ReferenceRepo = {
 	id: string,
-	-- Directory the subtree lands in, relative to the repo root.
+	-- Directory the checkout lands in, relative to the repo root. Gitignored.
 	prefix: string,
 	repository: string,
 	-- Branch used by --latest.
