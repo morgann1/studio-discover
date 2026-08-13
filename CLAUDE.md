@@ -62,12 +62,12 @@ The most common defect in this repo is a change that works on the path you teste
 
 - **Registries.** Wally and pesde each have their own package, and they never call each other. Fixing the Wally path is not fixing the feature, and reaching across from one into the other is not the fix either. If both need the same thing, it belongs in `packages/core/`.
 - **Realms.** `shared` and `server` resolve to different folders, different lockfile entries, and different alias collision sets.
-- **Screens.** Home, Package, Manage, Updates, Settings, Display Names, Registries, Changelog. Behavior reachable from the package page is usually also reachable from Manage and Updates.
+- **Screens.** Home, Package, Manage, Updates, Settings, Display Names, Registries. Behavior reachable from the package page is usually also reachable from Manage and Updates.
 - **Sidebar modes.** Expanded, Compact, and Auto, which flips on widget width. Every screen has to survive the 306px minimum.
 - **Themes.** Foundation gives you light and dark for free, and only if you use its tokens. Never hardcode a color.
 - **Settings.** Behavior a user might want off belongs in `SettingsStore`: a default, a GreenTea validator, and a row on the Settings screen. A corrupt saved value must fall back to the default, not crash the plugin.
 - **Reverse states.** If you added a way in, add the way out and the way to see it. Install needs uninstall. A one-way door is a bug.
-- **Docs.** `docs/process/` is written for us. `README.md` and `CHANGELOG.md` are written for the user, in shipped-product voice, with no repo tooling or source paths.
+- **Docs.** `docs/process/` is written for us. `README.md` is written for the user, in shipped-product voice, with no repo tooling or source paths.
 
 ## Commands
 
@@ -92,7 +92,7 @@ The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. `cd .lut
 - Conventional commit titles, plain language: `fix(installer): large modules no longer crash the install`.
 - Body: the problem in a sentence or two, then how you fixed it. End with the model and harness that did the work.
 - Rebase onto latest main before opening. Stale branches conflict and burn a review round.
-- Anything a user would notice gets a `CHANGELOG.md` entry under `[Unreleased]`.
+- Release notes are generated from the commits between tags, so the PR title is what ships to users. Write it that way.
 - UI changes need before/after screenshots, docked and expanded, light and dark.
 - One concern per PR. If the description says "also", split it.
 
@@ -103,8 +103,7 @@ The version is duplicated in several places and they all move together, in one c
 1. `plugin/wally.toml` — `[package].version`. Codegen reads this one to stamp the build.
 2. `plugin/wally.lock` — the `morgann1/studio-discover` entry's `version`.
 3. `packages/core/src/version.luau` — the runtime version string.
-4. `CHANGELOG.md` — a new `## [X.Y.Z] - YYYY-MM-DD` section above the previous release, `[Unreleased]` entries moved into it, and the compare links at the bottom updated.
-5. `README.md` — the `### Version X.Y (Latest)` heading and its ToC anchor. Refresh the highlights if the release changed anything user-visible.
+4. `README.md` — the `### Version X.Y (Latest)` heading and its ToC anchor. Refresh the highlights if the release changed anything user-visible.
 
 Semver: dependency bumps and small fixes are PATCH, new user-visible features are MINOR, breaking changes are MAJOR. Commit as `chore(release): bump version to X.Y.Z`. Do not tag and do not push — we run the release workflow by hand.
 

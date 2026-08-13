@@ -6,7 +6,6 @@ local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
-local ChangelogScreen = require(StudioDiscover.Source.Screens.ChangelogScreen)
 local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 local ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
 local DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
@@ -42,7 +41,6 @@ local SCREENS: { [string]: React.ComponentType<any> } = {
 	Settings = SettingsScreen,
 	DisplayNames = DisplayNamesScreen,
 	Registries = RegistriesScreen,
-	Changelog = ChangelogScreen,
 }
 
 local CurrentScreen = React.memo(function()

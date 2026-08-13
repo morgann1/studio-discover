@@ -29,7 +29,7 @@ local useMotion = Motion.useMotion
 
 local e = React.createElement
 
-type ItemName = "Home" | "Manage" | "Updates" | "Changelog" | "Settings"
+type ItemName = "Home" | "Manage" | "Updates" | "Settings"
 
 type ItemDef = {
 	name: ItemName,
@@ -42,10 +42,6 @@ local TOP_ITEMS: { ItemDef } = table.freeze({
 	{ name = "Manage" :: ItemName, text = "Installed", icon = IconName.Folder },
 	{ name = "Updates" :: ItemName, text = "Updates", icon = IconName.ArrowRotateRight },
 	{ name = "Settings" :: ItemName, text = "Settings", icon = IconName.Gear },
-}) :: { ItemDef }
-
-local BOTTOM_ITEMS: { ItemDef } = table.freeze({
-	{ name = "Changelog" :: ItemName, text = "Changelog", icon = IconName.RectangleList },
 }) :: { ItemDef }
 
 local EXPANDED_WIDTH = 252
@@ -132,7 +128,6 @@ local function Sidebar(props: Props)
 	end
 
 	local topItems = renderNavItems(TOP_ITEMS)
-	local bottomItems = renderNavItems(BOTTOM_ITEMS)
 
 	return e(View, {
 		tag = "col gap-small padding-small bg-surface-100",
@@ -169,23 +164,7 @@ local function Sidebar(props: Props)
 			tag = "grow col",
 			Size = UDim2.fromScale(1, 0),
 			LayoutOrder = nextOrder(),
-		}, {
-			Top = e(View, {
-				tag = "size-full-0 auto-y col",
-				LayoutOrder = 1,
-			}, topItems),
-
-			Spacer = e(View, {
-				tag = "grow",
-				Size = UDim2.fromScale(1, 0),
-				LayoutOrder = 2,
-			}),
-
-			Bottom = e(View, {
-				tag = "size-full-0 auto-y col",
-				LayoutOrder = 3,
-			}, bottomItems),
-		}),
+		}, topItems),
 	})
 end
 
