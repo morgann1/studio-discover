@@ -1,31 +1,22 @@
 --[[
-	Install Entry Point
-	
-	Installs all packages.
+	Installs Wally packages, pulls the Roblox-only packages, and applies patches.
+
+	Usage: lute run install [--quiet]
+
+	The work lives in lib/install because setup and test both run it first.
 ]]
 
 local process = require("@lute/process")
 
-local cli = require("./lib/cli/parser")
-local command = require("./commands/install")
+local install = require("./lib/install")
+local parseArgs = require("./lib/args")
 
-local function main()
-	local parser = cli.parser()
-	parser:setDescription(command.description)
-	parser:setCommandName(`lute run {command.name}`)
+local args = parseArgs()
 
-	for _, arg: any in command.arguments do
-		parser:add(arg.name, arg.kind, arg.options)
-	end
+local ok = install.run({
+	quiet = args.flags.quiet or args.flags.q,
+})
 
-	parser:parse(process.args)
-
-	local ok = command.run({
-		quiet = parser:has("quiet"),
-	})
-	if not ok then
-		process.exit(1)
-	end
+if not ok then
+	process.exit(1)
 end
-
-main()
