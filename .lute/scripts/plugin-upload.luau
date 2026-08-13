@@ -6,7 +6,7 @@
 	to publish a new version of the Creator Store plugin asset.
 ]]
 
-local PLUGIN_ID = 91442200339606
+local PLUGIN_ID = 124703864101585
 local PLUGIN_NAME = "Discover"
 local PLUGIN_DESCRIPTION = "Browse and install Luau packages from Wally and pesde directly from Roblox Studio."
 local PLUGIN_CREATOR_ID = 48044582
