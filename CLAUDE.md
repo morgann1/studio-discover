@@ -39,7 +39,7 @@ Of note: testing Discover means running it against a real place with real packag
 We need to be on the same page with terminology. When communicating, use this language:
 
 - **you** means the agent reading this file and changing Discover.
-- **we, us, maintainer** means morgann1 and the people building Discover. These are who you are talking to now.
+- **we, us, and maintainers** mean morgann1 and the people building Discover. These are who you are talking to now.
 - **user** means the person using Discover to develop games on Roblox.
 - **registry** means Wally or pesde: the index Discover searches and downloads from.
 - **package** means one scope/name/version in a registry.
@@ -84,7 +84,7 @@ The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. One file
 
 ## Verifying
 
-- `lute run ci` and `lute run test` both pass before a task is done. Not one of them.
+- **`lute run ci` and `lute run test` both pass before a task is done.** Not one of them.
 - Logic you touch under `plugin/src/` gets a Jest spec in `plugin/tests/`, and you run it.
 - run-in-roblox needs a native Roblox Studio install and does not work under WSL. The test command detects WSL and stops after the build. Build there if you like, then run the tests from a native Windows terminal, or open the built place in Studio and run `runTests.server.luau` from the command bar.
 - The only real proof of an install path is an install. Ask before running one against a place that matters.
@@ -94,7 +94,7 @@ The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. One file
 - Never open a PR unless we explicitly ask you to.
 - Conventional commit titles, plain language: `fix(installer): large modules no longer crash the install`.
 - Body: the problem in a sentence or two, then how you fixed it. End with the model and harness that did the work.
-- Rebase onto latest main before opening. Stale branches conflict and burn a review round.
+- **Rebase onto latest main before opening.** Stale branches conflict and burn a review round.
 - Release notes are generated from the commits between tags, so the PR title is what ships to users. Write it that way.
 - UI changes need before/after screenshots, docked and expanded, light and dark.
 - One concern per PR. If the description says "also", split it.
@@ -103,12 +103,12 @@ The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. One file
 
 The version is duplicated in several places and they all move together, in one commit:
 
-1. `plugin/wally.toml` — `[package].version`. Codegen reads this one to stamp the build.
-2. `plugin/wally.lock` — the `morgann1/studio-discover` entry's `version`.
-3. `packages/core/src/version.luau` — the runtime version string.
-4. `README.md` — the `### Version X.Y (Latest)` heading and its ToC anchor. Refresh the highlights if the release changed anything user-visible.
+1. `plugin/wally.toml` - `[package].version`. Codegen reads this one to stamp the build.
+2. `plugin/wally.lock` - the `morgann1/studio-discover` entry's `version`.
+3. `packages/core/src/version.luau` - the runtime version string.
+4. `README.md` - the `### Version X.Y (Latest)` heading and its ToC anchor. Refresh the highlights if the release changed anything user-visible.
 
-Semver: dependency bumps and small fixes are PATCH, new user-visible features are MINOR, breaking changes are MAJOR. Commit as `chore(release): bump version to X.Y.Z`. Do not tag and do not push — we run the release workflow by hand.
+Semver: dependency bumps and small fixes are PATCH, new user-visible features are MINOR, breaking changes are MAJOR. Commit as `chore(release): bump version to X.Y.Z`. Do not tag and do not push. We run the release workflow by hand.
 
 ## How it works
 
@@ -116,26 +116,26 @@ Search and metadata go through a per-registry HTTP client that is rate limited, 
 
 ## Where code lives
 
-The repo is a source-only monorepo. `packages/` holds the parts that are really Luau ports of standalone tools, and `plugin/` holds everything coupled to Studio, React, and Charm. Packages are mounted into the build by Rojo, one entry per package in `plugin/default.project.json` and `plugin/test.project.json`; there are no per-package manifests and nothing is published. Adding a package means a mount in both project files, and a `packages/<name>/tests` mount under `Tests` if it has specs. `ANALYZE_PATHS` in `.lute/commands/ci.luau` already covers all of `packages`.
+The repo is a source-only monorepo. `packages/` holds the parts that are really Luau ports of standalone tools, and `plugin/` holds everything coupled to Studio, React, and Charm. Packages are mounted into the build by Rojo, one entry per package in `plugin/default.project.json` and `plugin/test.project.json`; there are no per-package manifests and nothing is published. Adding a package means a mount in both project files, and a `packages/<name>/tests` mount under `Tests` if it has specs. `ANALYZE_PATHS` in `.lute/ci.luau` already covers all of `packages`.
 
 Three rules hold the shape together. A package requires its siblings through the mount name, never through `Source`, and never requires anything under `plugin/src`. The two registry packages never require each other. Third-party code still comes from the one vendored tree at `StudioDiscover.Packages`, since there is a single `wally.toml`; both registry packages take `zzlib` that way.
 
-- `packages/core/` — what both registries and the plugin share: the logger, `setScriptSource`, the TOML reader, the HTTP cache and rate limiter, the archive-to-Instance tree builder, and the shared type vocabulary in `types.luau`. Mounted as `StudioDiscover.Core`.
-- `packages/semver/` — parsing and comparison, plus a constraint engine per registry in `wally.luau` and `pesde.luau`. Mounted as `StudioDiscover.Semver`.
-- `packages/package-types/` — a Luau port of the wally-package-types CLI. `parseExportedTypes.luau` is the pure half and is where the tests point; `init.luau` returns `processLink`, which rewrites one link module in place. Mounted as `StudioDiscover.PackageTypes`.
-- `packages/wally-registry/` — Wally's engine: `Api/` for search, metadata and download; then resolve, apply, lockfile, snapshot, and the naming rules around `_Index`. Mounted as `StudioDiscover.WallyRegistry`.
-- `packages/pesde-registry/` — the same surface for pesde, including the tar reader and the normalization from pesde's metadata into `Core.types.PackageMetadata`. Mounted as `StudioDiscover.PesdeRegistry`.
-- `plugin/bin/Main.plugin.luau` — the entry point. Everything hangs off `Plugin/setupPlugin`.
-- `plugin/src/Api/` — the React hooks over registry search and metadata. The requests themselves live in the registry packages.
-- `plugin/src/Installer/` — orchestration only: the ChangeHistory recording, the busy lock, install/update/uninstall, the Charm atoms and the `use*` hooks. The resolve and apply engines live in the registry packages. Most of the risk in this repo lives here.
-- `plugin/src/Screens/` — one folder per screen, `init.luau` plus its local pieces.
-- `plugin/src/Common/` — shells and hooks shared across screens.
-- `plugin/src/Navigation/`, `SettingsStore/`, `SearchStore/` — Charm-backed state, one file per operation.
-- `plugin/src/Util/` — one function per file, file named for the function. Anything a package would also want belongs in `packages/core/` instead.
-- `plugin/src/Plugin/` — Studio-facing glue: the plugin handle, widget mounting, settings persistence.
-- `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` — generated, gitignored, never edited by hand.
-- `docs/ui/` — vendored Foundation component reference. Read it before inventing a component that already exists.
-- `.repos/` — vendored read-only references. Prefer their patterns over invented ones. Never edit or import from them. Sync with `lute run sync` when bumping the matching dependency.
+- `packages/core/` - what both registries and the plugin share: the logger, `setScriptSource`, the TOML reader, the HTTP cache and rate limiter, the archive-to-Instance tree builder, and the shared type vocabulary in `types.luau`. Mounted as `StudioDiscover.Core`.
+- `packages/semver/` - parsing and comparison, plus a constraint engine per registry in `wally.luau` and `pesde.luau`. Mounted as `StudioDiscover.Semver`.
+- `packages/package-types/` - a Luau port of the wally-package-types CLI. `parseExportedTypes.luau` is the pure half and is where the tests point; `init.luau` returns `processLink`, which rewrites one link module in place. Mounted as `StudioDiscover.PackageTypes`.
+- `packages/wally-registry/` - Wally's engine: `Api/` for search, metadata and download; then resolve, apply, lockfile, snapshot, and the naming rules around `_Index`. Mounted as `StudioDiscover.WallyRegistry`.
+- `packages/pesde-registry/` - the same surface for pesde, including the tar reader and the normalization from pesde's metadata into `Core.types.PackageMetadata`. Mounted as `StudioDiscover.PesdeRegistry`.
+- `plugin/bin/Main.plugin.luau` - the entry point. Everything hangs off `Plugin/setupPlugin`.
+- `plugin/src/Api/` - the React hooks over registry search and metadata. The requests themselves live in the registry packages.
+- `plugin/src/Installer/` - orchestration only: the ChangeHistory recording, the busy lock, install/update/uninstall, the Charm atoms and the `use*` hooks. The resolve and apply engines live in the registry packages. Most of the risk in this repo lives here.
+- `plugin/src/Screens/` - one folder per screen, `init.luau` plus its local pieces.
+- `plugin/src/Common/` - shells and hooks shared across screens.
+- `plugin/src/Navigation/`, `SettingsStore/`, `SearchStore/` - Charm-backed state, one file per operation.
+- `plugin/src/Util/` - one function per file, file named for the function. Anything a package would also want belongs in `packages/core/` instead.
+- `plugin/src/Plugin/` - Studio-facing glue: the plugin handle, widget mounting, settings persistence.
+- `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` - generated, gitignored, never edited by hand.
+- `docs/ui/` - vendored Foundation component reference. Read it before inventing a component that already exists.
+- `.repos/` - vendored read-only references. Prefer their patterns over invented ones. Never edit or import from them. Sync with `lute run sync` when bumping the matching dependency.
 
 ## Taste
 
