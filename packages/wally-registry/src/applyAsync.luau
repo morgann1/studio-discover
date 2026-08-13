@@ -203,8 +203,7 @@ local function applyAsync(
 		end
 		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
 		local moduleName = moduleNames[packageId] or resolvedPackage.name
-		local rootBuild =
-			buildRootPackageLink(alias, packageId, moduleName, resolvedPackage.realm, resolvedPackage.realm)
+		local rootBuild = buildRootPackageLink(alias, packageId, moduleName)
 		rootBuild.link.Parent = packagesFolder
 		local ok, linkErr = setScriptSource(rootBuild.link, rootBuild.source)
 		if not ok then
