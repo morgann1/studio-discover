@@ -7,7 +7,7 @@ local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
 local installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
-local types = require(StudioDiscover.Source.Installer.types)
+local types = require(StudioDiscover.Core.types)
 
 type InstalledRoot = types.InstalledRoot
 

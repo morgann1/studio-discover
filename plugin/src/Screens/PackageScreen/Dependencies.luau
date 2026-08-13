@@ -5,10 +5,11 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 
+local coreTypes = require(StudioDiscover.Core.types)
+
 local Navigation = require(StudioDiscover.Source.Navigation)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
-local types = require(StudioDiscover.Source.Api.types)
 
 local Button = Foundation.Button
 local View = Foundation.View
@@ -18,8 +19,8 @@ local InputSize = Foundation.Enums.InputSize
 local e = React.createElement
 
 type Props = {
-	deps: types.WallyDependencyMap,
-	registry: types.Registry,
+	deps: coreTypes.DependencyMap,
+	registry: coreTypes.Registry,
 	LayoutOrder: number?,
 }
 

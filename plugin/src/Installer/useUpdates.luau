@@ -4,18 +4,19 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
-local getPesdeMetadataAsync = require(StudioDiscover.Source.Api.Pesde.getMetadataAsync)
-local getWallyMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
+local getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
+local getWallyMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
+
+local compareSemver = require(StudioDiscover.Semver.compareSemver)
+local parseSemver = require(StudioDiscover.Semver.parseSemver)
 
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local compareSemver = require(StudioDiscover.Source.Util.compareSemver)
-local parseSemver = require(StudioDiscover.Source.Util.parseSemver)
 
-local installerTypes = require(StudioDiscover.Source.Installer.types)
+local coreTypes = require(StudioDiscover.Core.types)
 local useInstalledRoots = require(StudioDiscover.Source.Installer.useInstalledRoots)
 
-type Realm = installerTypes.Realm
-type Registry = installerTypes.Registry
+type Realm = coreTypes.Realm
+type Registry = coreTypes.Registry
 
 export type UpdateInfo = {
 	scope: string,

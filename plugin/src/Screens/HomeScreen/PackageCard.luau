@@ -6,7 +6,7 @@ local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
-local types = require(StudioDiscover.Source.Api.types)
+local types = require(StudioDiscover.Core.types)
 
 local Navigation = require(StudioDiscover.Source.Navigation)
 local RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)

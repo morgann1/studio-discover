@@ -5,15 +5,16 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 
 local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local coreTypes = require(StudioDiscover.Core.types)
+local createLogger = require(StudioDiscover.Core.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
 local installPesdeAsync = require(StudioDiscover.Source.Installer.installPesdeAsync)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
-local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
-local packageId = require(StudioDiscover.Source.Installer.Wally.packageId)
-local resolveAsync = require(StudioDiscover.Source.Installer.Wally.resolveAsync)
+local lockfile = require(StudioDiscover.WallyRegistry.lockfile)
+local packageId = require(StudioDiscover.WallyRegistry.packageId)
+local resolveAsync = require(StudioDiscover.WallyRegistry.resolveAsync)
 local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
-local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
+local snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
 local types = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("wally.installer.install")
@@ -27,8 +28,8 @@ local function countPairs(t: { [any]: any }): number
 end
 
 type Realm = "shared" | "server"
-type Registry = types.Registry
-type RootRequest = types.RootRequest
+type Registry = coreTypes.Registry
+type RootRequest = coreTypes.RootRequest
 type InstallerState = types.InstallerState
 type InstallerTarget = types.InstallerTarget
 

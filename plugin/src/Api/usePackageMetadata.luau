@@ -4,13 +4,13 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
-local getPackageMetadataAsync = require(StudioDiscover.Source.Api.Wally.getMetadataAsync)
-local getPesdeMetadataAsync = require(StudioDiscover.Source.Api.Pesde.getMetadataAsync)
-local types = require(StudioDiscover.Source.Api.types)
+local getPackageMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
+local getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
+local coreTypes = require(StudioDiscover.Core.types)
 
 export type MetadataState = {
 	loading: boolean,
-	data: types.WallyPackageMetadata?,
+	data: coreTypes.PackageMetadata?,
 	error: string?,
 }
 
@@ -20,15 +20,19 @@ local EMPTY: MetadataState = table.freeze({
 	error = nil,
 })
 
-local function fetchAsync(registry: types.Registry, scope: string, name: string): (types.WallyPackageMetadata?, string?)
+local function fetchAsync(
+	registry: coreTypes.Registry,
+	scope: string,
+	name: string
+): (coreTypes.PackageMetadata?, string?)
 	if registry == "pesde" then
 		return getPesdeMetadataAsync(scope, name)
 	end
 	return getPackageMetadataAsync(scope, name)
 end
 
-local function usePackageMetadata(scope: string, name: string, registry: types.Registry?): MetadataState
-	local resolvedRegistry: types.Registry = registry or "wally"
+local function usePackageMetadata(scope: string, name: string, registry: coreTypes.Registry?): MetadataState
+	local resolvedRegistry: coreTypes.Registry = registry or "wally"
 	local state: MetadataState, setState = React.useState(EMPTY)
 
 	React.useEffect(function(): (() -> ())?

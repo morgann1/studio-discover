@@ -4,17 +4,17 @@ local ChangeHistoryService = game:GetService("ChangeHistoryService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local createLogger = require(StudioDiscover.Core.createLogger)
 local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 
-local pesdeApplyAsync = require(StudioDiscover.Source.Installer.Pesde.applyAsync)
-local pesdeLockfile = require(StudioDiscover.Source.Installer.Pesde.lockfile)
-local pesdeResolveAsync = require(StudioDiscover.Source.Installer.Pesde.resolveAsync)
-local pesdeSnapshotRoots = require(StudioDiscover.Source.Installer.Pesde.snapshotRoots)
+local pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
+local pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
+local pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
+local pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
 
-local sharedTypes = require(StudioDiscover.Source.Installer.types)
+local sharedTypes = require(StudioDiscover.Core.types)
 
 local logger = createLogger.createLogger("pesde.installer.uninstall")
 

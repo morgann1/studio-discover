@@ -52,7 +52,7 @@ We need to be on the same page with terminology. When communicating, use this la
 
 ## The three ways to hurt yourself
 
-1. **Assigning `.Source` directly.** Roblox caps `ModuleScript.Source` at 200,000 characters, and a package with one file over that limit takes the entire install down with it. Route every source write through `Util/setScriptSource`, which goes through `ScriptEditorService:UpdateSourceAsync` and has no such limit.
+1. **Assigning `.Source` directly.** Roblox caps `ModuleScript.Source` at 200,000 characters, and a package with one file over that limit takes the entire install down with it. Route every source write through `Core.setScriptSource`, which goes through `ScriptEditorService:UpdateSourceAsync` and has no such limit.
 2. **Mutating the place outside a recording.** All DataModel writes belong inside `TryBeginRecording`/`FinishRecording`, and a failure must `Cancel`, not `Commit`. See `Installer/applyRootsAsync`. A half-applied tree the user cannot undo is worse than an install that simply failed.
 3. **Editing generated or vendored trees.** `plugin/generated/`, `plugin/Packages/`, and `plugin/DevPackages/` are gitignored and rebuilt by `lute run codegen` and `lute run install`. Anything you write there disappears on the next build. To change a dependency's code, add a patch under `plugin/patches/` with `lute run patch`.
 
@@ -60,7 +60,7 @@ We need to be on the same page with terminology. When communicating, use this la
 
 The most common defect in this repo is a change that works on the path you tested and is missing everywhere else. Before calling work done, walk this list and say which entries applied:
 
-- **Registries.** Wally and pesde each have their own subtree under `Api/` and `Installer/`. Fixing the Wally path is not fixing the feature.
+- **Registries.** Wally and pesde each have their own package, and they never call each other. Fixing the Wally path is not fixing the feature, and reaching across from one into the other is not the fix either. If both need the same thing, it belongs in `packages/core/`.
 - **Realms.** `shared` and `server` resolve to different folders, different lockfile entries, and different alias collision sets.
 - **Screens.** Home, Package, Manage, Updates, Settings, Display Names, Registries, Changelog. Behavior reachable from the package page is usually also reachable from Manage and Updates.
 - **Sidebar modes.** Expanded, Compact, and Auto, which flips on widget width. Every screen has to survive the 306px minimum.
@@ -102,7 +102,7 @@ The version is duplicated in several places and they all move together, in one c
 
 1. `plugin/wally.toml` — `[package].version`. Codegen reads this one to stamp the build.
 2. `plugin/wally.lock` — the `morgann1/studio-discover` entry's `version`.
-3. `plugin/src/Util/Version.luau` — the runtime version string.
+3. `packages/core/src/version.luau` — the runtime version string.
 4. `CHANGELOG.md` — a new `## [X.Y.Z] - YYYY-MM-DD` section above the previous release, `[Unreleased]` entries moved into it, and the compare links at the bottom updated.
 5. `README.md` — the `### Version X.Y (Latest)` heading and its ToC anchor. Refresh the highlights if the release changed anything user-visible.
 
@@ -114,13 +114,22 @@ Search and metadata go through a per-registry HTTP client that is rate limited, 
 
 ## Where code lives
 
+The repo is a source-only monorepo. `packages/` holds the parts that are really Luau ports of standalone tools, and `plugin/` holds everything coupled to Studio, React, and Charm. Packages are mounted into the build by Rojo, one entry per package in `plugin/default.project.json` and `plugin/test.project.json`; there are no per-package manifests and nothing is published. Adding a package means a mount in both project files, and a `packages/<name>/tests` mount under `Tests` if it has specs. `ANALYZE_PATHS` in `.lute/commands/ci.luau` already covers all of `packages`.
+
+Three rules hold the shape together. A package requires its siblings through the mount name, never through `Source`, and never requires anything under `plugin/src`. The two registry packages never require each other. Third-party code still comes from the one vendored tree at `StudioDiscover.Packages`, since there is a single `wally.toml`; both registry packages take `zzlib` that way.
+
+- `packages/core/` — what both registries and the plugin share: the logger, `setScriptSource`, the TOML reader, the HTTP cache and rate limiter, the archive-to-Instance tree builder, and the shared type vocabulary in `types.luau`. Mounted as `StudioDiscover.Core`.
+- `packages/semver/` — parsing and comparison, plus a constraint engine per registry in `wally.luau` and `pesde.luau`. Mounted as `StudioDiscover.Semver`.
+- `packages/package-types/` — a Luau port of the wally-package-types CLI. `parseExportedTypes.luau` is the pure half and is where the tests point; `init.luau` returns `processLink`, which rewrites one link module in place. Mounted as `StudioDiscover.PackageTypes`.
+- `packages/wally-registry/` — Wally's engine: `Api/` for search, metadata and download; then resolve, apply, lockfile, snapshot, and the naming rules around `_Index`. Mounted as `StudioDiscover.WallyRegistry`.
+- `packages/pesde-registry/` — the same surface for pesde, including the tar reader and the normalization from pesde's metadata into `Core.types.PackageMetadata`. Mounted as `StudioDiscover.PesdeRegistry`.
 - `plugin/bin/Main.plugin.luau` — the entry point. Everything hangs off `Plugin/setupPlugin`.
-- `plugin/src/Api/` — search and metadata. `Wally/` and `Pesde/` per registry; cache, rate limiter, and user agent shared at the top.
-- `plugin/src/Installer/` — resolve, download, apply, uninstall, updates. Same per-registry split. Most of the risk in this repo lives here.
+- `plugin/src/Api/` — the React hooks over registry search and metadata. The requests themselves live in the registry packages.
+- `plugin/src/Installer/` — orchestration only: the ChangeHistory recording, the busy lock, install/update/uninstall, the Charm atoms and the `use*` hooks. The resolve and apply engines live in the registry packages. Most of the risk in this repo lives here.
 - `plugin/src/Screens/` — one folder per screen, `init.luau` plus its local pieces.
 - `plugin/src/Common/` — shells and hooks shared across screens.
 - `plugin/src/Navigation/`, `SettingsStore/`, `SearchStore/` — Charm-backed state, one file per operation.
-- `plugin/src/Util/` — one function per file, file named for the function.
+- `plugin/src/Util/` — one function per file, file named for the function. Anything a package would also want belongs in `packages/core/` instead.
 - `plugin/src/Plugin/` — Studio-facing glue: the plugin handle, widget mounting, settings persistence.
 - `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` — generated, gitignored, never edited by hand.
 - `docs/ui/` — vendored Foundation component reference. Read it before inventing a component that already exists.
@@ -138,6 +147,5 @@ Search and metadata go through a per-registry HTTP client that is rate limited, 
 
 ## Additional tips
 
-- When writing Luau code, refer to the style guide at `docs/process/luau-style.md`.
 - When writing React-Luau code, refer to the pattern guide at `docs/process/react-patterns.md`.
 - Don't verify with browsers or computer use unless the user explicitly agrees or requests it.

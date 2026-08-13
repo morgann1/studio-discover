@@ -7,7 +7,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local Charm = require(StudioDiscover.Packages.Charm)
 
 local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local createLogger = require(StudioDiscover.Core.createLogger)
 
 local logger = createLogger.createLogger("settings")
 

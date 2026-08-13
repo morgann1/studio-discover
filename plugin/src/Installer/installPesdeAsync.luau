@@ -6,23 +6,24 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local coreTypes = require(StudioDiscover.Core.types)
+local createLogger = require(StudioDiscover.Core.createLogger)
 local formatName = require(StudioDiscover.Source.Util.formatName)
 local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
 local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 
-local pesdeApplyAsync = require(StudioDiscover.Source.Installer.Pesde.applyAsync)
-local pesdeLockfile = require(StudioDiscover.Source.Installer.Pesde.lockfile)
-local pesdeResolveAsync = require(StudioDiscover.Source.Installer.Pesde.resolveAsync)
-local pesdeSnapshotRoots = require(StudioDiscover.Source.Installer.Pesde.snapshotRoots)
+local pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
+local pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
+local pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
+local pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
 
 local sharedTypes = require(StudioDiscover.Source.Installer.types)
 
 local logger = createLogger.createLogger("pesde.installer.install")
 
-type Realm = sharedTypes.Realm
+type Realm = coreTypes.Realm
 type InstallerState = sharedTypes.InstallerState
 type InstallerTarget = sharedTypes.InstallerTarget
 

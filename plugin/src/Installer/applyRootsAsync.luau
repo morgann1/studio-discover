@@ -4,17 +4,18 @@ local ChangeHistoryService = game:GetService("ChangeHistoryService")
 
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local applyAsync = require(StudioDiscover.Source.Installer.Wally.applyAsync)
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
-local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
+local applyAsync = require(StudioDiscover.WallyRegistry.applyAsync)
+local coreTypes = require(StudioDiscover.Core.types)
+local createLogger = require(StudioDiscover.Core.createLogger)
+local lockfile = require(StudioDiscover.WallyRegistry.lockfile)
 local permissionError = require(StudioDiscover.Source.Installer.permissionError)
 local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
-local types = require(StudioDiscover.Source.Installer.types)
+local types = require(StudioDiscover.WallyRegistry.types)
 
 local logger = createLogger.createLogger("wally.installer.applyRoots")
 
 type ResolvedPackage = types.ResolvedPackage
-type ProgressCallback = types.ProgressCallback
+type ProgressCallback = coreTypes.ProgressCallback
 
 export type ApplyRootsResult = {
 	ok: boolean,

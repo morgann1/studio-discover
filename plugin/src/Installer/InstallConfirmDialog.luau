@@ -5,9 +5,9 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 
-local apiTypes = require(StudioDiscover.Source.Api.types)
+local coreTypes = require(StudioDiscover.Core.types)
+
 local capitalize = require(StudioDiscover.Source.Util.capitalize)
-local types = require(StudioDiscover.Source.Installer.types)
 
 local Dialog = Foundation.Dialog
 local ButtonVariant = Foundation.Enums.ButtonVariant
@@ -16,8 +16,8 @@ local Orientation = Foundation.Enums.Orientation
 
 local e = React.createElement
 
-type Realm = types.Realm
-type Registry = apiTypes.Registry
+type Realm = coreTypes.Realm
+type Registry = coreTypes.Registry
 
 local REGISTRY_LABELS: { [Registry]: string } = {
 	wally = "Wally",

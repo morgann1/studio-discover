@@ -16,6 +16,21 @@
         "Source": {
           "$path": "src/"
         },
+        "Core": {
+          "$path": "../packages/core/src"
+        },
+        "PackageTypes": {
+          "$path": "../packages/package-types/src"
+        },
+        "PesdeRegistry": {
+          "$path": "../packages/pesde-registry/src"
+        },
+        "Semver": {
+          "$path": "../packages/semver/src"
+        },
+        "WallyRegistry": {
+          "$path": "../packages/wally-registry/src"
+        },
         "Packages": {
           "$path": "Packages/"
         },
@@ -29,7 +44,22 @@
           }
         },
         "Tests": {
-          "$path": "tests/"
+          "$path": "tests/",
+          "Core": {
+            "$path": "../packages/core/tests"
+          },
+          "PackageTypes": {
+            "$path": "../packages/package-types/tests"
+          },
+          "PesdeRegistry": {
+            "$path": "../packages/pesde-registry/tests"
+          },
+          "Semver": {
+            "$path": "../packages/semver/tests"
+          },
+          "WallyRegistry": {
+            "$path": "../packages/wally-registry/tests"
+          }
         }
       }
     }
