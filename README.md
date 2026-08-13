@@ -5,6 +5,7 @@
 <a name="top"></a>
 
 [![Luau](./.github/assets/badges/link-luau.svg)](https://luau.org/)
+[![Creator Store](./.github/assets/badges/link-creator-store.svg)](https://create.roblox.com/store/asset/124703864101585/Studio-Discover)
 [![GitHub Releases](./.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases/latest)
 [![GitHub Repository](./.github/assets/badges/link-github-repository.svg)](https://github.com/morgann1/studio-discover)
 
@@ -24,8 +25,8 @@
 - [✨ What's New](#-whats-new)
   - [Version 3.8 (Latest)](#version-38-latest)
 - [📝 Installation](#-installation)
-  - [From Releases](#from-releases)
   - [From the Creator Store](#from-the-creator-store)
+  - [From Releases](#from-releases)
   - [From Source](#from-source)
 - [🤝 Feedback and Contributions](#-feedback-and-contributions)
 - [🙏 Credits](#-credits)
@@ -91,22 +92,24 @@ Studio Discover skips the setup. Browse Wally and pesde packages from inside Stu
 
 ## 📝 Installation
 
+### From the Creator Store
+
+This is the recommended way to install. Studio keeps the plugin up to date for you.
+
+1. Open the [Studio Discover listing](https://create.roblox.com/store/asset/124703864101585/Studio-Discover).
+2. Click **Install**.
+
+A **Discover** button will appear in your toolbar.
+
 ### From Releases
 
-This is the fastest way to get the plugin, and you don't have to build anything.
+Use this if you want a specific version, or one that isn't published yet.
 
 1. Download the latest `StudioDiscover.rbxm` from [GitHub Releases](https://github.com/morgann1/studio-discover/releases/latest).
 2. Drag the file into Roblox Studio.
 3. Right-click the **Discover** folder in the Explorer and pick **Save / Export > Save as Local Plugin**.
 
-A **Discover** button will appear in your toolbar.
-
-### From the Creator Store
-
-> [!WARNING]
-> Roblox moderation is currently preventing the plugin from being distributed via the Creator Store. Pending appeal (see issue [#24](https://github.com/morgann1/studio-discover/issues/24)).
-> 
-> Hopefully this'll be resolved soon. In the meantime, install via [Releases](#from-releases) or [from source](#from-source).
+Local plugins don't auto-update, so you'll need to repeat this on each release.
 
 ### From Source
 
