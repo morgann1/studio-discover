@@ -11,7 +11,7 @@ local Leader = require(StudioDiscover.Packages.Leader)
 local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
 local SharedToolbar = require(StudioDiscover.Packages.SharedToolbar)
 local buildConfig = require(StudioDiscover.Generated.buildConfig)
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local createLogger = require(StudioDiscover.Core.createLogger)
 
 local logger = createLogger.createLogger("plugin.bootstrap")
 

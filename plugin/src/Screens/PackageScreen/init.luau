@@ -14,7 +14,8 @@ local Section = require(StudioDiscover.Source.Common.Section)
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local capitalize = require(StudioDiscover.Source.Util.capitalize)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-local types = require(StudioDiscover.Source.Api.types)
+local coreTypes = require(StudioDiscover.Core.types)
+
 local usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
 
 local Dependencies = require(script.Dependencies)
@@ -27,14 +28,14 @@ local Text = Foundation.Text
 local View = Foundation.View
 local ChipSize = Foundation.Enums.ChipSize
 
-local REGISTRY_LABELS: { [types.Registry]: string } = {
+local REGISTRY_LABELS: { [coreTypes.Registry]: string } = {
 	wally = "Wally",
 	pesde = "pesde",
 }
 
 local e = React.createElement
 
-local function findVersion(data: types.WallyPackageMetadata, version: string): types.WallyPackageVersion
+local function findVersion(data: coreTypes.PackageMetadata, version: string): coreTypes.PackageVersion
 	for _, entry in data.versions do
 		if entry.package.version == version then
 			return entry
@@ -79,15 +80,15 @@ local function PackageScreen()
 	local settings = SettingsStore.useSettings()
 	local registrySettings = settings.registries
 
-	local rawRegistries: { types.Registry }
-	local optionRegistries = screen.options.registries :: { types.Registry }?
+	local rawRegistries: { coreTypes.Registry }
+	local optionRegistries = screen.options.registries :: { coreTypes.Registry }?
 	if optionRegistries ~= nil and #optionRegistries > 0 then
 		rawRegistries = optionRegistries
 	else
-		rawRegistries = { (screen.options.registry :: types.Registry?) or "wally" }
+		rawRegistries = { (screen.options.registry :: coreTypes.Registry?) or "wally" }
 	end
 
-	local registries: { types.Registry } = {}
+	local registries: { coreTypes.Registry } = {}
 	for _, r in rawRegistries do
 		local enabled = if r == "wally" then registrySettings.wally else registrySettings.pesde
 		if enabled then
@@ -95,7 +96,7 @@ local function PackageScreen()
 		end
 	end
 
-	local selectedRegistry: types.Registry, setSelectedRegistry = React.useState(registries[1] or rawRegistries[1])
+	local selectedRegistry: coreTypes.Registry, setSelectedRegistry = React.useState(registries[1] or rawRegistries[1])
 	React.useEffect(function()
 		if #registries == 0 then
 			return
@@ -198,7 +199,7 @@ local function PackageScreen()
 		type DepGroup = {
 			key: string,
 			title: string,
-			deps: types.WallyDependencyMap,
+			deps: coreTypes.DependencyMap,
 		}
 		local depGroups: { DepGroup } = {
 			{ key = "Shared", title = "Shared dependencies", deps = selected.dependencies },
@@ -218,7 +219,7 @@ local function PackageScreen()
 		if #registries > 1 then
 			local chipOrder = createNextOrder()
 			local chips: { [string]: any } = {}
-			for _, registry: types.Registry in registries do
+			for _, registry: coreTypes.Registry in registries do
 				local registryLabel = REGISTRY_LABELS[registry] or (registry :: any)
 				local active = selectedRegistry == registry
 				chips[registry] = e(Chip, {

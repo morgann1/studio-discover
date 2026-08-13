@@ -6,7 +6,7 @@ local Charm = require(StudioDiscover.Packages.Charm)
 local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 local gt = require(StudioDiscover.Packages.GreenTea)
 
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
+local createLogger = require(StudioDiscover.Core.createLogger)
 local createPluginSettingsStore = require(StudioDiscover.Source.Plugin.createPluginSettingsStore)
 
 export type NamingConvention = "Original" | "PascalCase" | "camelCase" | "snake_case" | "kebab-case"

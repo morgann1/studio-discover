@@ -1,0 +1,332 @@
+--!strict
+
+--[[
+	Reading exported types back out of Luau source.
+
+	This half of the package is pure string work: it never touches an Instance,
+	which is what makes it directly testable. `init.luau` is the half that knows
+	about link modules and `_Index`.
+]]
+
+local BUILTIN_TYPES: { [string]: boolean } = {
+	["any"] = true,
+	["boolean"] = true,
+	["buffer"] = true,
+	["never"] = true,
+	["number"] = true,
+	["string"] = true,
+	["thread"] = true,
+	["unknown"] = true,
+}
+
+local TYPE_SYNTAX_TOKENS: { [string]: boolean } = {
+	["typeof"] = true,
+	["nil"] = true,
+	["true"] = true,
+	["false"] = true,
+}
+
+export type ExportedType = {
+	name: string,
+	generics: string,
+	kind: "alias" | "function",
+}
+
+-- Splits "<T, U = string>" into its top-level parameters, ignoring commas nested
+-- inside brackets or an inner generic list.
+local function splitGenerics(generics: string): { string }
+	local inner = generics:match("^<(.+)>$")
+	if inner == nil then
+		return {}
+	end
+
+	local params: { string } = {}
+	local depth = 0
+	local current = ""
+	for i = 1, #inner do
+		local ch = inner:sub(i, i)
+		local prev = if i > 1 then inner:sub(i - 1, i - 1) else ""
+		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
+			depth += 1
+			current ..= ch
+		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
+			depth -= 1
+			current ..= ch
+		elseif ch == "," and depth == 0 then
+			table.insert(params, current)
+			current = ""
+		else
+			current ..= ch
+		end
+	end
+	if current ~= "" then
+		table.insert(params, current)
+	end
+	return params
+end
+
+local function extractParamName(param: string): string?
+	return param:match("^%s*([%w_]+)")
+end
+
+-- Returns the text after a top-level `=` in one generic parameter, if there is one.
+local function extractDefaultType(param: string): string?
+	local depth = 0
+	for i = 1, #param do
+		local ch = param:sub(i, i)
+		local prev = if i > 1 then param:sub(i - 1, i - 1) else ""
+		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
+			depth += 1
+		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
+			depth -= 1
+		elseif ch == "=" and depth == 0 then
+			local rest = param:sub(i + 1)
+			rest = (rest:gsub("^%s+", ""):gsub("%s+$", ""))
+			if rest == "" then
+				return nil
+			end
+			return rest
+		end
+	end
+	return nil
+end
+
+-- A default is only safe to copy across if every identifier in it resolves where
+-- the rewritten link module will be evaluated.
+local function shouldKeepDefault(defaultType: string, resolvedTypes: { [string]: true }): boolean
+	if defaultType:find("[%w_]%s*%.%s*[%a_]") ~= nil then
+		return false
+	end
+	for ident in defaultType:gmatch("[%a_][%w_]*") do
+		if BUILTIN_TYPES[ident] or resolvedTypes[ident] or TYPE_SYNTAX_TOKENS[ident] then
+			continue
+		end
+		return false
+	end
+	return true
+end
+
+-- Luau only allows defaulted generics after every non-defaulted one, so dropping a
+-- default means dropping every default to its left as well.
+local function stripUnknownDefaults(generics: string, resolvedTypes: { [string]: true }): string
+	if generics == "" then
+		return ""
+	end
+
+	local params = splitGenerics(generics)
+	if #params == 0 then
+		return generics
+	end
+
+	local hasDefault: { boolean } = {}
+	local keepDefault: { boolean } = {}
+	for i, param in params do
+		local defaultType = extractDefaultType(param)
+		hasDefault[i] = defaultType ~= nil
+		keepDefault[i] = defaultType ~= nil and shouldKeepDefault(defaultType :: string, resolvedTypes)
+	end
+
+	local lastStrippedIndex = 0
+	for i = #params, 1, -1 do
+		if hasDefault[i] and not keepDefault[i] then
+			lastStrippedIndex = i
+			break
+		end
+		if not hasDefault[i] then
+			lastStrippedIndex = i
+			break
+		end
+	end
+
+	local result: { string } = {}
+	for i, param in params do
+		if i <= lastStrippedIndex then
+			local name = extractParamName(param)
+			local isVariadic = param:match("%.%.%.") ~= nil
+			if isVariadic then
+				table.insert(result, (name or param) .. "...")
+			else
+				table.insert(result, name or param)
+			end
+		else
+			table.insert(result, param)
+		end
+	end
+
+	return "<" .. table.concat(result, ", ") .. ">"
+end
+
+-- Turns a generic declaration into the argument list that forwards it on.
+local function extractParamNames(generics: string): string
+	if generics == "" then
+		return ""
+	end
+
+	local params = splitGenerics(generics)
+	local names: { string } = {}
+	for _, param in params do
+		local name = extractParamName(param)
+		if name ~= nil then
+			local isVariadic = param:match("%.%.%.") ~= nil
+			table.insert(names, if isVariadic then name .. "..." else name)
+		end
+	end
+	return "<" .. table.concat(names, ", ") .. ">"
+end
+
+local function tryOpenLongBracket(source: string, pos: number): number?
+	if source:sub(pos, pos) ~= "[" then
+		return nil
+	end
+	local level = 0
+	local i = pos + 1
+	while source:sub(i, i) == "=" do
+		level += 1
+		i += 1
+	end
+	if source:sub(i, i) == "[" then
+		return level
+	end
+	return nil
+end
+
+local function skipLongBracket(source: string, afterOpen: number, level: number): number
+	local close = "]" .. string.rep("=", level) .. "]"
+	local found = source:find(close, afterOpen, true)
+	if found == nil then
+		return #source + 1
+	end
+	return found + #close
+end
+
+-- Returns the position just past a comment or string literal starting at `pos`,
+-- or nil when `pos` is ordinary source. Keeps `export type` inside a comment or
+-- string from being read as a real declaration.
+local function skipStringOrComment(source: string, pos: number): number?
+	if pos > #source then
+		return nil
+	end
+	if source:sub(pos, pos + 1) == "--" then
+		local afterDash = pos + 2
+		local longLevel = tryOpenLongBracket(source, afterDash)
+		if longLevel ~= nil then
+			return skipLongBracket(source, afterDash + longLevel + 2, longLevel)
+		end
+		local nl = source:find("\n", afterDash, true)
+		return if nl == nil then #source + 1 else nl
+	end
+	local longLevel = tryOpenLongBracket(source, pos)
+	if longLevel ~= nil then
+		return skipLongBracket(source, pos + longLevel + 2, longLevel)
+	end
+	local ch = source:sub(pos, pos)
+	if ch == "'" or ch == '"' then
+		local i = pos + 1
+		while i <= #source do
+			local c = source:sub(i, i)
+			if c == "\\" then
+				i += 2
+			elseif c == ch then
+				return i + 1
+			elseif c == "\n" then
+				return i + 1
+			else
+				i += 1
+			end
+		end
+		return #source + 1
+	end
+	return nil
+end
+
+-- Finds the `>` closing the generic list that opens at `start`, skipping over
+-- `->` arrows and any brackets or strings in between.
+local function readBalancedAngleBrackets(source: string, start: number): number?
+	local angleDepth = 0
+	local parenDepth = 0
+	local braceDepth = 0
+	local squareDepth = 0
+	local i = start
+	while i <= #source do
+		local skipped = skipStringOrComment(source, i)
+		if skipped ~= nil then
+			i = skipped
+			continue
+		end
+		local ch = source:sub(i, i)
+		local prev = if i > 1 then source:sub(i - 1, i - 1) else ""
+		if ch == "(" then
+			parenDepth += 1
+		elseif ch == ")" then
+			parenDepth -= 1
+		elseif ch == "{" then
+			braceDepth += 1
+		elseif ch == "}" then
+			braceDepth -= 1
+		elseif ch == "[" then
+			squareDepth += 1
+		elseif ch == "]" then
+			squareDepth -= 1
+		elseif ch == "<" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 then
+			angleDepth += 1
+		elseif ch == ">" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 and prev ~= "-" then
+			angleDepth -= 1
+			if angleDepth == 0 then
+				return i
+			end
+		end
+		i += 1
+	end
+	return nil
+end
+
+local function extractExportedTypes(source: string): { ExportedType }
+	local types: { ExportedType } = {}
+	local i = 1
+	while i <= #source do
+		local skipped = skipStringOrComment(source, i)
+		if skipped ~= nil then
+			i = skipped
+			continue
+		end
+		local _, kwEnd = source:find("^%f[%w_]export%s+type%s+", i)
+		if kwEnd == nil then
+			i += 1
+			continue
+		end
+		local afterKw = kwEnd + 1
+		local kind: "alias" | "function" = "alias"
+		local _, fnEnd = source:find("^function%s+", afterKw)
+		if fnEnd ~= nil then
+			kind = "function"
+			afterKw = fnEnd + 1
+		end
+		local _, nameEnd, name = source:find("^([%w_]+)", afterKw)
+		if name == nil or nameEnd == nil then
+			i = kwEnd + 1
+			continue
+		end
+		local afterName = (nameEnd :: number) + 1
+		local generics = ""
+		local nextNonWs = source:find("%S", afterName)
+		if nextNonWs ~= nil and source:sub(nextNonWs, nextNonWs) == "<" then
+			local genericsEnd = readBalancedAngleBrackets(source, nextNonWs)
+			if genericsEnd ~= nil then
+				generics = source:sub(nextNonWs, genericsEnd)
+			end
+		end
+		table.insert(types, { name = name :: string, generics = generics, kind = kind })
+		i = afterName
+	end
+	return types
+end
+
+return table.freeze({
+	extractDefaultType = extractDefaultType,
+	extractExportedTypes = extractExportedTypes,
+	extractParamName = extractParamName,
+	extractParamNames = extractParamNames,
+	shouldKeepDefault = shouldKeepDefault,
+	splitGenerics = splitGenerics,
+	stripUnknownDefaults = stripUnknownDefaults,
+})

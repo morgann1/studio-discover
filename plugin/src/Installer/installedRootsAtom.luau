@@ -4,7 +4,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local Charm = require(StudioDiscover.Packages.Charm)
 
-local types = require(StudioDiscover.Source.Installer.types)
+local types = require(StudioDiscover.Core.types)
 
 type InstalledRoot = types.InstalledRoot
 

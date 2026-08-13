@@ -1,54 +1,11 @@
 --!strict
 
-export type Realm = "shared" | "server"
+--[[
+	Installer UI state, read by the package screen through `installerAtom`.
 
-export type Registry = "wally" | "pesde"
-
-export type Dependency = {
-	alias: string,
-	packageId: string,
-	realm: Realm,
-}
-
-export type ResolvedPackage = {
-	scope: string,
-	name: string,
-	version: string,
-	realm: Realm,
-	packageId: string,
-	dependencies: { Dependency },
-}
-
-export type RootRequest = {
-	scope: string,
-	name: string,
-	version: string,
-	requestRealm: Realm,
-	alias: string,
-}
-
-export type InstalledRoot = {
-	scope: string,
-	name: string,
-	version: string,
-	realm: Realm,
-	alias: string,
-	registry: Registry,
-}
-
-export type LockDependency = {
-	alias: string,
-	packageId: string,
-}
-
-export type LockEntry = {
-	name: string,
-	version: string,
-	realm: Realm,
-	dependencies: { LockDependency },
-}
-
-export type ProgressCallback = (message: string) -> ()
+	The shared vocabulary lives in `Core.types`, and each registry's resolved graph
+	lives in that registry's own types module.
+]]
 
 export type InstallStatus = "idle" | "running" | "success" | "error"
 

@@ -3,12 +3,12 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
-local createLogger = require(StudioDiscover.Source.Util.createLogger)
-local lockfile = require(StudioDiscover.Source.Installer.Wally.lockfile)
-local resolveAsync = require(StudioDiscover.Source.Installer.Wally.resolveAsync)
+local createLogger = require(StudioDiscover.Core.createLogger)
+local lockfile = require(StudioDiscover.WallyRegistry.lockfile)
+local resolveAsync = require(StudioDiscover.WallyRegistry.resolveAsync)
 local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
-local snapshotRoots = require(StudioDiscover.Source.Installer.Wally.snapshotRoots)
-local types = require(StudioDiscover.Source.Installer.types)
+local snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
+local types = require(StudioDiscover.Core.types)
 local updateAllPesdeAsync = require(StudioDiscover.Source.Installer.updateAllPesdeAsync)
 
 local logger = createLogger.createLogger("wally.installer.updateAll")

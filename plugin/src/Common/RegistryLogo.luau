@@ -5,7 +5,7 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
 
-local types = require(StudioDiscover.Source.Api.types)
+local types = require(StudioDiscover.Core.types)
 
 local Image = Foundation.Image
 

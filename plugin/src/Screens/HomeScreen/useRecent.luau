@@ -4,8 +4,8 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local React = require(StudioDiscover.Packages.React)
 
-local searchPesdeAsync = require(StudioDiscover.Source.Api.Pesde.searchAsync)
-local types = require(StudioDiscover.Source.Api.types)
+local searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
+local types = require(StudioDiscover.Core.types)
 
 local LIMIT = 12
 
