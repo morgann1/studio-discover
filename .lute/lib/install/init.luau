@@ -10,10 +10,10 @@ local process = require("@lute/process")
 
 local applyPatches = require("./install/patches")
 local codegen = require("./codegen")
-local color = require("../utils/color")
-local exec = require("../lib/process/exec")
+local color = require("./color")
+local exec = require("./exec")
 local installFoundation = require("./install/foundation")
-local rojo = require("../lib/project/rojo")
+local rojo = require("./rojo")
 
 local install = {}
 

@@ -71,13 +71,15 @@ The most common defect in this repo is a change that works on the path you teste
 
 ## Commands
 
-The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. `cd .lute && lute run help` lists everything.
+The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. One file per command at the top level, and `lute run <name>` runs `.lute/<name>.luau`; anything shared between commands lives in `.lute/lib/`. There is no help command, so this list is the index. A command reads its arguments with `lib/args`, which skips `process.args[1]` because that is the command name.
 
 - `lute setup` generates the Lute typedefs. `lute run setup` does codegen plus package install. Run both once after cloning.
 - `lute run install` runs `wally install`, `wally-package-types`, pulls Foundation and friends via `roblox-packages`, then applies patches. If module resolution looks broken, this probably did not run.
 - `lute run build` produces `StudioDiscover.rbxm`. `--dev` produces `StudioDiscover-Dev.rbxm` with a separate toolbar, widget, and plugin-settings identity, so it installs alongside the release build without colliding. Use `--dev` when testing.
 - `lute run ci` runs Selene, StyLua, a sourcemap refresh, and `luau-lsp analyze`. `--fix` formats instead of checking.
-- `lute run test` builds `plugin/tests/build/tests.rbxl` and drives Jest through run-in-roblox.
+- `lute run test` builds `plugin/tests/build/tests.rbxl` and drives Jest through run-in-roblox. `--build-only` stops after the build.
+- `lute run patch <package-path>` snapshots a vendored package on the first run and writes the diff to `plugin/patches/` on the second.
+- `lute run codegen` regenerates `plugin/generated/` and the sourcemap. `lute run upload-plugin <path>` publishes to the Creator Store, and the release workflow is what normally calls it.
 
 ## Verifying
 

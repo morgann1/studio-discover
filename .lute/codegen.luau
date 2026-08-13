@@ -1,30 +1,24 @@
 --[[
-	Codegen Entry Point
-	
-	Runs all code generation tasks.
+	Runs all code generation and refreshes the sourcemap.
+
+	Usage: lute run codegen [--quiet]
+
+	The work lives in lib/codegen because ci, build, install and setup all run it
+	as a step rather than shelling out to this command.
 ]]
 
 local process = require("@lute/process")
 
-local cli = require("./lib/cli/parser")
-local command = require("./commands/codegen")
+local codegen = require("./lib/codegen")
+local parseArgs = require("./lib/args")
 
-local function main()
-	local parser = cli.parser()
-	parser:setDescription(command.description)
-	parser:setCommandName(`lute run {command.name}`)
+local args = parseArgs()
 
-	for _, arg: any in command.arguments do
-		parser:add(arg.name, arg.kind, arg.options)
-	end
+local ok = codegen.run({
+	quiet = args.flags.quiet or args.flags.q,
+	generateSourcemap = true,
+})
 
-	parser:parse(process.args)
-
-	command.run({
-		quiet = parser:has("quiet"),
-		generateSourcemap = true,
-		generateProtos = parser:has("protos"),
-	})
+if not ok then
+	process.exit(1)
 end
-
-main()

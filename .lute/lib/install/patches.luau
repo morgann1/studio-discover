@@ -8,7 +8,7 @@
 local fs = require("@lute/fs")
 local process = require("@lute/process")
 
-local color = require("../../utils/color")
+local color = require("../color")
 
 local PATCHES_DIR = "plugin/patches"
 local PACKAGES_INDEX_DIR = "plugin/Packages/_Index"

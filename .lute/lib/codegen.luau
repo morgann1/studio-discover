@@ -8,8 +8,8 @@
 local fs = require("@lute/fs")
 local process = require("@lute/process")
 
-local color = require("../utils/color")
-local rojo = require("../lib/project/rojo")
+local color = require("./color")
+local rojo = require("./rojo")
 
 local codegen = {}
 
