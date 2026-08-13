@@ -80,6 +80,7 @@ The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. One file
 - `lute run test` builds `plugin/tests/build/tests.rbxl` and drives Jest through run-in-roblox. `--build-only` stops after the build.
 - `lute run patch <package-path>` snapshots a vendored package on the first run and writes the diff to `plugin/patches/` on the second.
 - `lute run codegen` regenerates `plugin/generated/` and the sourcemap. `lute run upload-plugin <path>` publishes to the Creator Store, and the release workflow is what normally calls it.
+- `lute run sync` vendors the reference repos into `.repos/` with `git subtree`. Ones we depend on at a version are pinned to the tag matching `rokit.toml`; the rest follow their branch. `--dry-run` prints the plan, `--repo <id>` limits it to one, `--latest` ignores the pins. Declared in `.lute/lib/reference-repos.luau`. It needs a clean working tree, and the first sync of a repo is a large commit.
 
 ## Verifying
 
@@ -134,6 +135,7 @@ Three rules hold the shape together. A package requires its siblings through the
 - `plugin/src/Plugin/` — Studio-facing glue: the plugin handle, widget mounting, settings persistence.
 - `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` — generated, gitignored, never edited by hand.
 - `docs/ui/` — vendored Foundation component reference. Read it before inventing a component that already exists.
+- `.repos/` — vendored read-only references. Prefer their patterns over invented ones. Never edit or import from them. Sync with `lute run sync` when bumping the matching dependency.
 
 ## Taste
 
