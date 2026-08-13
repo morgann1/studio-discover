@@ -21,3 +21,4 @@ plugin/tests/build/
 ref/
 .claude/
 .ignore/
+.repos/
