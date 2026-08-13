@@ -36,25 +36,27 @@ describe("buildSiblingPackageLink", function()
 		)
 	end)
 
-	test("reaches into ServerStorage when the realms differ the other way", function()
-		local build = buildSiblingPackageLink("Promise", PACKAGE_ID, MODULE_NAME, "shared", "server")
-		expect(build.source).toBe(
-			`return require(game.ServerStorage.ServerPackages._Index["{PACKAGE_ID}"]["{MODULE_NAME}"])`
-		)
+	--[[
+		A shared package depending on a server one is rejected by
+		`isDependencyValid` during resolve, matching wally's
+		`Realm::is_dependency_valid`. If it ever reaches apply, resolve is wrong,
+		and a link written anyway would put a ServerStorage require behind a
+		module that replicates: fine in Studio, broken for every client at
+		runtime. Failing the install cancels the recording instead.
+	]]
+	test("refuses to link a shared package to a server dependency", function()
+		expect(function()
+			buildSiblingPackageLink("Promise", PACKAGE_ID, MODULE_NAME, "shared", "server")
+		end).toThrow()
 	end)
 end)
 
 describe("buildRootPackageLink", function()
-	test("descends into _Index from the Packages folder for a same-realm root", function()
-		local build = buildRootPackageLink("Promise", PACKAGE_ID, MODULE_NAME, "shared", "shared")
+	-- A root is written into the Packages folder of its own realm, so its link
+	-- never crosses realms and takes no realm arguments.
+	test("descends into _Index from the Packages folder", function()
+		local build = buildRootPackageLink("Promise", PACKAGE_ID, MODULE_NAME)
 		expect(build.source).toBe(`return require(script.Parent._Index["{PACKAGE_ID}"]["{MODULE_NAME}"])`)
-	end)
-
-	test("crosses realms the same way a sibling link does", function()
-		local build = buildRootPackageLink("Promise", PACKAGE_ID, MODULE_NAME, "server", "shared")
-		expect(build.source).toBe(
-			`return require(game.ReplicatedStorage.Packages._Index["{PACKAGE_ID}"]["{MODULE_NAME}"])`
-		)
 	end)
 end)
 

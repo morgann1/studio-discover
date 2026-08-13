@@ -42,11 +42,20 @@ describe("packageId.parse", function()
 		expect(scope).toBe(nil)
 	end)
 
-	-- The split is greedy, so an underscore in the package name lands in the scope.
-	-- Wally names cannot contain underscores, so this only matters for malformed ids.
+	--[[
+		wally's own format is ambiguous once a name contains `_`, and its answer is
+		to make that unrepresentable: `validate_scope` and `validate_name` in
+		`src/package_name.rs` allow only lowercase letters, digits and `-`. So this
+		is unreachable for anything the registry can serve, and we match wally's
+		greedy split rather than inventing a rule it does not have.
+	]]
 	test("splits on the last underscore when there is more than one", function()
 		local scope, name = packageId.parse("my_scope_lib@1.0.0")
 		expect(scope).toBe("my_scope")
 		expect(name).toBe("lib")
+	end)
+
+	test("produces the same folder name wally does", function()
+		expect(packageId.format("evaera", "promise", "4.0.0")).toBe("evaera_promise@4.0.0")
 	end)
 end)
