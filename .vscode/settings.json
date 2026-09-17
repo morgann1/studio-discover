@@ -9,10 +9,10 @@
     "[luau]": {
         "editor.defaultFormatter": "JohnnyMorganz.stylua"
     },
-    "[yaml]": {
-        "editor.defaultFormatter": "redhat.vscode-yaml"
-    },
     "files.associations": {
         ".luaurc": "jsonc"
-    }
+    },
+    "emmet.includeLanguages": {
+        "nunjucks": "html"
+    },
 }
