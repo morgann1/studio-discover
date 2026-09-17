@@ -1,0 +1,17 @@
+{
+  "name": "studio-discover-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "eleventy --serve",
+    "build": "eleventy",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint ."
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "3.1.6",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "ignorePatterns": ["node_modules/**", "_site/**"],
+  "categories": {
+    "correctness": "error"
+  }
+}

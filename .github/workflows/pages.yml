@@ -1,0 +1,80 @@
+name: Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "site/**"
+      - ".github/assets/icon.png"
+      - ".github/assets/screenshot-dark.png"
+      - ".github/workflows/pages.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - ".github/assets/icon.png"
+      - ".github/assets/screenshot-dark.png"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build -- --pathprefix=/studio-discover/
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/_site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5

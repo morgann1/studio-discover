@@ -1,0 +1,428 @@
+@font-face {
+  font-family: "Builder Sans";
+  src: url("./fonts/BuilderSans-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Builder Sans";
+  src: url("./fonts/BuilderSans-SemiBold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  font-family: "Builder Sans", system-ui, sans-serif;
+  font-synthesis: none;
+  background: #000;
+  color: #fff;
+  --secondary: #acacb5;
+  --line: #29292d;
+  --accent: #ffc266;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.skip-link {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1;
+  padding: 12px 18px;
+  background: #fff;
+  color: #000;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.page {
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+.inner {
+  padding-inline: 24px;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 74px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.brand img {
+  width: 25px;
+  height: 25px;
+}
+
+.header-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.header-install {
+  display: none;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+}
+
+.source-link img {
+  width: 24px;
+  height: 24px;
+}
+
+.hero-heading {
+  padding-top: 28px;
+}
+
+h1 {
+  max-width: 16em;
+  font-size: clamp(32px, 8vw, 72px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.035;
+  text-wrap: balance;
+}
+
+.product-stage {
+  margin-top: 28px;
+  padding: 20px;
+  background: #111318;
+}
+
+.screenshot {
+  width: 100%;
+  border: 1px solid #323237;
+  border-radius: 5px;
+}
+
+.install {
+  display: grid;
+  gap: 20px;
+  padding: 25px 24px 32px;
+  border-bottom: 1px solid var(--line);
+}
+
+.intro {
+  max-width: 36em;
+  color: var(--secondary);
+  font-size: 16px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 48px;
+  padding: 13px 20px;
+  border-radius: 6px;
+  background: #fff;
+  color: #000;
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta:hover {
+  background: var(--accent);
+  color: #000;
+}
+
+.setup {
+  margin-top: 12px;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.story {
+  padding-block: 36px;
+}
+
+.section-title {
+  font-size: clamp(30px, 7vw, 58px);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.body-copy {
+  max-width: 35em;
+  margin-top: 18px;
+  color: var(--secondary);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.features {
+  margin-top: 26px;
+}
+
+.features > div {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+.features h3 {
+  margin-bottom: 6px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.features p {
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.get-started {
+  padding: 32px 24px;
+  background: var(--accent);
+  color: #000;
+}
+
+.get-started .section-title {
+  font-size: clamp(30px, 7vw, 64px);
+}
+
+.get-started .cta {
+  margin-top: 22px;
+  background: #000;
+  color: #fff;
+}
+
+.get-started .cta:hover {
+  background: #242424;
+}
+
+.get-started .cta:focus-visible {
+  outline-color: #000;
+}
+
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--line);
+  color: var(--secondary);
+  font-size: 13px;
+}
+
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.site-footer a {
+  display: inline-block;
+  padding-block: 12px;
+  text-decoration: none;
+}
+
+@media (min-width: 720px) {
+  .inner {
+    padding-inline: 60px;
+  }
+
+  .site-header {
+    min-height: 90px;
+    padding: 24px 48px;
+  }
+
+  .brand {
+    gap: 12px;
+    font-size: 18px;
+  }
+
+  .brand img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header-install {
+    display: inline-block;
+    padding-block: 12px;
+  }
+
+  .hero-heading {
+    padding-top: 52px;
+  }
+
+  h1 {
+    font-size: clamp(50px, 5.8vw, 72px);
+  }
+
+  .product-stage {
+    max-height: 610px;
+    margin-top: 40px;
+    padding: 40px 70px 0;
+    overflow: hidden;
+  }
+
+  .install {
+    grid-template-columns: minmax(0, 1.4fr) auto;
+    align-items: center;
+    gap: 60px;
+    padding: 32px 60px 42px;
+  }
+
+  .intro {
+    font-size: 18px;
+  }
+
+  .install-action {
+    justify-self: end;
+    text-align: center;
+  }
+
+  .cta {
+    min-height: 52px;
+    padding: 15px 24px;
+    font-size: 16px;
+  }
+
+  .story {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 60px;
+    padding-block: 76px;
+  }
+
+  .section-title {
+    font-size: clamp(40px, 4.8vw, 60px);
+  }
+
+  .story .section-title {
+    max-width: 12em;
+  }
+
+  .body-copy {
+    font-size: 17px;
+  }
+
+  .features {
+    margin-top: 0;
+  }
+
+  .features > div {
+    padding: 22px 0;
+  }
+
+  .features h3 {
+    margin-bottom: 10px;
+    font-size: 23px;
+  }
+
+  .features p {
+    font-size: 16px;
+  }
+
+  .get-started {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 32px;
+    padding: 58px 60px;
+  }
+
+  .get-started .section-title {
+    font-size: clamp(44px, 5vw, 64px);
+  }
+
+  .get-started .cta {
+    margin-top: 0;
+  }
+
+  .site-footer {
+    padding: 24px 48px;
+  }
+
+  .site-footer nav {
+    gap: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inner {
+    padding-inline: 20px;
+  }
+
+  .site-header,
+  .site-footer {
+    padding-inline: 20px;
+  }
+}
