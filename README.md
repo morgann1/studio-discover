@@ -16,4 +16,8 @@ Studio Discover lets you pull [Wally](https://wally.run) and [pesde](https://pes
 
 ## License
 
-Studio Discover is available under the MIT license. See [LICENSE](LICENSE) for details.
+Studio Discover's original source code is available under the [MIT license](LICENSE).
+
+Roblox's Foundation UI components retain their upstream licensing terms. A copy of Roblox's Limited Use License is included in [LICENSE-ROBLOX](LICENSE-ROBLOX). Its applicability to the bundled Foundation components has not been confirmed.
+
+Other dependencies retain their respective licenses.
