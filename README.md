@@ -12,7 +12,16 @@
 
 Studio Discover lets you pull [Wally](https://wally.run) and [pesde](https://pesde.dev/) packages into Studio without setting up a whole repository. Dependencies and types come with them.
 
-![Screenshot of Discover](.github/assets/screenshot.png)
+<table>
+  <tr>
+    <th>Dark</th>
+    <th>Light</th>
+  </tr>
+  <tr>
+    <td width="50%"><img src=".github/assets/screenshot-dark.png" alt="Discover in dark mode" width="100%"></td>
+    <td width="50%"><img src=".github/assets/screenshot-light.png" alt="Discover in light mode" width="100%"></td>
+  </tr>
+</table>
 
 ## License
 
