@@ -7,7 +7,6 @@ const React = require(StudioDiscover.Packages.React)
 
 const ToolButton = require(StudioDiscover.Source.Common.ToolButton)
 const iconName = require(StudioDiscover.Source.Util.iconName)
-const types = require(script.Parent.types)
 
 const Menu = Foundation.Menu
 const InputSize = Foundation.Enums.InputSize
@@ -15,9 +14,16 @@ const PopoverAlign = Foundation.Enums.PopoverAlign
 
 const e = React.createElement
 
+-- One entry in a "…" menu.
+export type MenuAction = {
+	read id: string,
+	read text: string,
+	read onActivated: () -> (),
+}
+
 -- The "…" button and the menu of `actions` it opens.
 const function MoreMenu(props: {
-	read actions: { types.MenuAction },
+	read actions: { MenuAction },
 	read label: string?,
 	read LayoutOrder: number?,
 })

@@ -34,9 +34,10 @@ const e = React.createElement
 -- Rows sit flush with the section headings above them.
 const UNCONTAINED = { isContained = false, hasMargin = false }
 
-const HOSTS: { [coreTypes.Registry]: string } = {
-	wally = "wally.run",
-	pesde = "pesde.dev",
+-- Who runs each registry.
+const MAINTAINERS: { [coreTypes.Registry]: string } = {
+	wally = "Uplift Games",
+	pesde = "daimond113",
 }
 
 const function setRegistryEnabled(
@@ -85,7 +86,7 @@ const function SettingsScreen()
 			-- A mark cropped out of a wordmark can't be a list accessory, so it waits for a square one.
 			leading = if mark.crop == nil then mark.image else nil,
 			title = registryLabel(registry),
-			description = HOSTS[registry],
+			description = `by {MAINTAINERS[registry]}`,
 			input = toggle(isRegistryEnabled(settings.registries, registry), function(value)
 				setRegistryEnabled(settings.registries, registry, value)
 			end),

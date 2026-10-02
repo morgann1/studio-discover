@@ -138,19 +138,6 @@ const function PackageScreen(props: {
 	const root = findRoot(roots, target)
 	const metadata = state.data
 
-	const actions: { Screen.MenuAction } = {}
-	if root ~= nil and not removal.isRunning then
-		table.insert(actions, {
-			id = "remove",
-			text = "Remove from this place",
-			onActivated = function()
-				removal.run(function()
-					return Installer.uninstallAsync(root)
-				end)
-			end,
-		})
-	end
-
 	local body: React.Node
 	if not isRegistryEnabled(settings.registries, registry) then
 		body = e(Message, {
@@ -190,17 +177,43 @@ const function PackageScreen(props: {
 		const isUpdate = root ~= nil and isNewerVersion(version, root.version)
 		const isMajor = isUpdate and root ~= nil and isBreakingUpdate(root.version, version)
 
-		local actionText = "Install"
-		if isInstalling then
-			actionText = "Installing..."
-		elseif root ~= nil and root.version == version then
-			actionText = "Installed"
-		elseif isUpdate then
-			actionText = "Update"
-		end
-
 		const function install()
 			task.spawn(Installer.installAsync, request)
+		end
+
+		-- The installed version offers its removal, so the page has a way back out.
+		local action: Head.Action
+		if isInstalling or removal.isRunning then
+			action = {
+				text = if isInstalling then "Installing..." else "Removing...",
+				isEmphasized = isInstalling,
+				isDisabled = true,
+				onActivated = function() end,
+			}
+		elseif root ~= nil and root.version == version then
+			action = {
+				text = "Remove",
+				isEmphasized = false,
+				isDisabled = isBusy,
+				onActivated = function()
+					removal.run(function()
+						return Installer.uninstallAsync(root)
+					end)
+				end,
+			}
+		else
+			action = {
+				text = if isUpdate then "Update" else "Install",
+				isEmphasized = true,
+				isDisabled = isDev or isBusy,
+				onActivated = function()
+					if settings.confirmBeforeInstall then
+						setIsConfirming(true)
+					else
+						install()
+					end
+				end,
+			}
 		end
 
 		const versionItems: { Foundation.DropdownItem } = {}
@@ -317,17 +330,7 @@ const function PackageScreen(props: {
 					versionItems = versionItems,
 					selectedVersion = version,
 					onVersionChanged = setSelectedVersion,
-					action = {
-						text = actionText,
-						isDisabled = isDev or isBusy or isInstalling or actionText == "Installed",
-						onActivated = function()
-							if settings.confirmBeforeInstall then
-								setIsConfirming(true)
-							else
-								install()
-							end
-						end,
-					},
+					action = action,
 					isWide = breakpoint ~= Breakpoint.XSmall and breakpoint ~= Breakpoint.Small,
 					onAuthorActivated = function()
 						SearchStore.setQuery(scope)
@@ -406,9 +409,7 @@ const function PackageScreen(props: {
 		})
 	end
 
-	return e(Screen, {
-		actions = actions,
-	}, {
+	return e(Screen, {}, {
 		Body = body,
 	})
 end

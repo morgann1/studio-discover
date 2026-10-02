@@ -14,28 +14,28 @@ const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const iconName = require(StudioDiscover.Source.Util.iconName)
 
 const Crumbs = require(script.Parent.Crumbs)
-const MoreMenu = require(script.Parent.MoreMenu)
 const Title = require(script.Parent.Title)
-const types = require(script.Parent.types)
 
 const HeaderBar = Foundation.HeaderBar
 const View = Foundation.View
 
 const e = React.createElement
 
+const function openSettings()
+	Navigation.resetScreen({ name = "Settings" })
+end
+
 --[[
 	The bar above every screen. A screen pushed over another shows the breadcrumb back
 		to it instead of a title.
 
-	Expanded, back and forward lead, and refresh sits beside the "…" menu. Docked,
-		the breadcrumb is the way back, the title opens the location menu, and refresh
-		moves into the "…" menu. The sidebar toggle leads whenever the user hid a
-		sidebar there is room for.
+	Expanded, back and forward lead. Docked, the breadcrumb is the way back and the
+		title opens the location menu. Refresh and Settings trail in both, and the
+		sidebar toggle leads whenever the user hid a sidebar there is room for.
 ]]
 const function Header(props: {
 	read title: string,
 	read registry: coreTypes.Registry?,
-	read actions: { types.MenuAction },
 	read onRefresh: () -> (),
 	read LayoutOrder: number?,
 })
@@ -45,11 +45,6 @@ const function Header(props: {
 	const isNested = #history.stack > 1
 	const nextLeadingOrder = createNextOrder()
 	const nextTrailingOrder = createNextOrder()
-
-	const actions = table.clone(props.actions)
-	if isDocked then
-		table.insert(actions, 1, { id = "refresh", text = "Refresh", onActivated = props.onRefresh })
-	end
 
 	return e(HeaderBar.Root, {
 		hasBackground = false,
@@ -96,14 +91,16 @@ const function Header(props: {
 			tag = "auto-xy row align-y-center gap-small",
 			LayoutOrder = 3,
 		}, {
-			Refresh = not isDocked and e(ToolButton, {
+			Refresh = e(ToolButton, {
 				icon = iconName("ArrowSpinClockwise"),
 				label = "Refresh",
 				onActivated = props.onRefresh,
 				LayoutOrder = nextTrailingOrder(),
 			}),
-			More = e(MoreMenu, {
-				actions = actions,
+			Settings = e(ToolButton, {
+				icon = iconName("Gear"),
+				label = "Settings",
+				onActivated = openSettings,
 				LayoutOrder = nextTrailingOrder(),
 			}),
 		}),

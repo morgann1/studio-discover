@@ -14,15 +14,12 @@ const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 const Header = require(script.Header)
 const routeTitle = require(script.routeTitle)
-const types = require(script.types)
 
 const SearchInput = Foundation.SearchInput
 const View = Foundation.View
 const InputSize = Foundation.Enums.InputSize
 
 const e = React.createElement
-
-export type MenuAction = types.MenuAction
 
 -- The search row a docked screen shows under its header, scoped to that screen.
 export type Search = {
@@ -36,18 +33,12 @@ const function refresh()
 	Navigation.refreshScreen()
 end
 
-const function openSettings()
-	Navigation.resetScreen({ name = "Settings" })
-end
-
 --[[
 	The shell of a screen: the header, the search row when docked, and the body.
-		`title` is RichText and defaults to the route's name. `actions` go in the "…"
-		menu, ahead of the ones every screen has.
+		`title` is RichText and defaults to the route's name.
 ]]
 const function Screen(props: {
 	read title: string?,
-	read actions: { MenuAction }?,
 	read search: Search?,
 	read children: React.Node,
 })
@@ -60,18 +51,12 @@ const function Screen(props: {
 	const search = props.search
 	const nextOrder = createNextOrder()
 
-	const actions = table.clone(props.actions or {})
-	if not layout.isDocked and route.name ~= "Settings" then
-		table.insert(actions, { id = "settings", text = "Settings", onActivated = openSettings })
-	end
-
 	return e(View, {
 		tag = "size-full col",
 	}, {
 		Header = e(Header, {
 			title = props.title or routeTitle(route, namingConvention),
 			registry = if route.name == "Source" then route.registry else nil,
-			actions = actions,
 			onRefresh = refresh,
 			LayoutOrder = nextOrder(),
 		}),

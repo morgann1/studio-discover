@@ -6,9 +6,8 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const Installer = require(StudioDiscover.Source.Installer)
-const MoreMenu = require(StudioDiscover.Source.Common.Screen.MoreMenu)
+const MoreMenu = require(StudioDiscover.Source.Common.MoreMenu)
 const Navigation = require(StudioDiscover.Source.Navigation)
-const Screen = require(StudioDiscover.Source.Common.Screen)
 const SourceLabel = require(StudioDiscover.Source.Common.SourceLabel)
 const Table = require(StudioDiscover.Source.Common.Table)
 const VersionLabel = require(StudioDiscover.Source.Common.VersionLabel)
@@ -72,7 +71,7 @@ const function RootRow(props: {
 			end,
 		})
 	else
-		const actions: { Screen.MenuAction } = {
+		const actions: { MoreMenu.MenuAction } = {
 			{ id = "open", text = "Open", onActivated = open },
 			{
 				id = "remove",

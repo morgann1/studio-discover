@@ -32,6 +32,7 @@ const WIDE_ACTIONS_WIDTH = WIDE_DROPDOWN_WIDTH + ACTIONS_GAP + WIDE_BUTTON_WIDTH
 -- What the install button says and does for the selected version.
 export type Action = {
 	read text: string,
+	read isEmphasized: boolean,
 	read isDisabled: boolean,
 	read onActivated: () -> (),
 }
@@ -132,7 +133,7 @@ const function Head(props: {
 		}),
 		Install = e(Button, {
 			text = props.action.text,
-			variant = ButtonVariant.Emphasis,
+			variant = if props.action.isEmphasized then ButtonVariant.Emphasis else ButtonVariant.Standard,
 			size = InputSize.Medium,
 			width = if isWide then UDim.new(0, WIDE_BUTTON_WIDTH) else nil,
 			isDisabled = props.action.isDisabled,

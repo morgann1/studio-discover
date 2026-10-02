@@ -17,18 +17,9 @@ const View = Foundation.View
 
 const e = React.createElement
 
-const SETTINGS: useLocations.Location = {
-	key = "Settings",
-	text = "Settings",
-	route = { name = "Settings" },
-	isCountEmphasized = false,
-	isSelected = false,
-}
-
 --[[
 	"This place" and "Sources" with their locations. The location menu separates the
-		groups with dividers and ends with Settings, which the sidebar leaves to the
-		header's menu. `onPicked` runs after a pick switches location.
+		groups with a divider. `onPicked` runs after a pick switches location.
 ]]
 const function LocationList(props: {
 	read isMenu: boolean,
@@ -95,8 +86,6 @@ const function LocationList(props: {
 		ThisPlace = group("This place", locations.thisPlace),
 		SourcesDivider = isMenu and hasSources and e(Divider, { LayoutOrder = nextOrder() }),
 		Sources = hasSources and group("Sources", locations.sources),
-		SettingsDivider = isMenu and e(Divider, { LayoutOrder = nextOrder() }),
-		Settings = isMenu and item(SETTINGS, nextOrder()),
 	})
 end
 
