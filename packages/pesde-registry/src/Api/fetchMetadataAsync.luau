@@ -41,7 +41,7 @@ export type PesdeMetadata = {
 	read versions: { VersionEntry },
 }
 
-const cache = createCache() :: createCache.Cache<PesdeMetadata>
+const cache = createCache<<PesdeMetadata>>()
 
 const function parseTarget(raw: unknown): types.Target?
 	if raw == "roblox" or raw == "roblox_server" then

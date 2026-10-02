@@ -13,7 +13,7 @@ const httpClient = require(StudioDiscover.Libraries.WallyRegistry.Api.httpClient
 const isNewerVersion = require(StudioDiscover.Libraries.Semver.isNewerVersion)
 const types = require(StudioDiscover.Libraries.Core.types)
 
-const cache = createCache() :: createCache.Cache<types.PackageMetadata>
+const cache = createCache<<types.PackageMetadata>>()
 
 -- Reads one version out of Wally's response, or returns nil when it lacks a version or realm.
 const function readPackageVersion(raw: unknown): types.PackageVersion?

@@ -14,7 +14,7 @@ const types = require(StudioDiscover.Libraries.Core.types)
 
 const logger = createLogger.createLogger("pesde.api.search")
 
-const cache = createCache() :: createCache.Cache<{ types.PackageBrief }>
+const cache = createCache<<{ types.PackageBrief }>>()
 
 const function hasRobloxTarget(targets: unknown): boolean
 	for _, rawTarget in asTable(targets) or {} do
