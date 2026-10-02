@@ -4,10 +4,8 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const React = require(StudioDiscover.Packages.React)
 
-const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
-const searchPesdeAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.searchAsync)
-const searchWallyAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.searchAsync)
+const searchRegistryAsync = require(script.Parent.searchRegistryAsync)
 
 const DEBOUNCE_SECONDS = 0.25
 const MIN_QUERY_LENGTH = 2
@@ -21,82 +19,30 @@ export type SearchState = {
 const IDLE: SearchState = { loading = false }
 const LOADING: SearchState = { loading = true }
 
--- Merges results for the same scope/name from both registries into one brief, sorted by scope/name.
-const function mergeBriefs(...: { coreTypes.PackageBrief }): { coreTypes.PackageBrief }
-	const byKey: { [string]: coreTypes.PackageBrief } = {}
-	const keys: { string } = {}
-
-	for _, briefs in { ... } do
-		for _, brief in briefs do
-			const key = `{brief.scope}/{brief.name}`
-			const existing = byKey[key]
-
-			if existing == nil then
-				byKey[key] = brief
-				table.insert(keys, key)
-				continue
-			end
-
-			const registries = table.clone(existing.registries)
-			for _, registry in brief.registries do
-				if table.find(registries, registry) == nil then
-					table.insert(registries, registry)
-				end
-			end
-
-			byKey[key] = {
-				registries = registries,
-				scope = existing.scope,
-				name = existing.name,
-				description = existing.description or brief.description,
-				latestVersion = existing.latestVersion or brief.latestVersion,
-			}
-		end
-	end
-
-	table.sort(keys)
-
-	const merged: { coreTypes.PackageBrief } = {}
-	for _, key in keys do
-		table.insert(merged, byKey[key])
-	end
-
-	return merged
-end
-
 --[[
-	Searches every enabled registry for `query`, debounced, and merges the results.
-		An error is reported only when every enabled registry failed.
+	Searches each of `registries` for `query`, debounced, and lists the results in
+		registry order. A package on two registries is listed once for each. An error is
+		reported only when every registry failed. A query under two characters stays
+		idle.
 ]]
-const function useSearchPackages(query: string): SearchState
-	const registries = SettingsStore.useSettings().registries
-	const wallyEnabled = registries.wally
-	const pesdeEnabled = registries.pesde
+const function useSearchPackages(query: string, registries: { coreTypes.Registry }): SearchState
 	const state, setState = React.useState(IDLE)
+	const registriesKey = table.concat(registries, ",")
 
 	React.useEffect(function()
 		local cancelled = false
 
 		if #query < MIN_QUERY_LENGTH then
 			setState(IDLE)
+		elseif #registries == 0 then
+			setState({ loading = false, data = {} })
 		else
+			setState(LOADING)
+
 			task.delay(DEBOUNCE_SECONDS, function()
-				if cancelled then
-					return
-				end
-
-				if not wallyEnabled and not pesdeEnabled then
-					setState({ loading = false, data = {} })
-					return
-				end
-
-				setState(LOADING)
-
-				local wallyResults: { coreTypes.PackageBrief }? = nil
-				local wallyError: string? = nil
-				local pesdeResults: { coreTypes.PackageBrief }? = nil
-				local pesdeError: string? = nil
-				local remaining = (if wallyEnabled then 1 else 0) + (if pesdeEnabled then 1 else 0)
+				const results: { [number]: { coreTypes.PackageBrief }? } = {}
+				const errors: { string } = {}
+				local remaining = #registries
 
 				const function finish()
 					remaining -= 1
@@ -104,28 +50,32 @@ const function useSearchPackages(query: string): SearchState
 						return
 					end
 
-					const wallyFailed = wallyEnabled and wallyResults == nil
-					const pesdeFailed = pesdeEnabled and pesdeResults == nil
-					if (wallyFailed or not wallyEnabled) and (pesdeFailed or not pesdeEnabled) then
-						setState({ loading = false, error = wallyError or pesdeError or "Search failed" })
+					if #errors == #registries then
+						setState({ loading = false, error = errors[1] })
 						return
 					end
 
-					setState({ loading = false, data = mergeBriefs(wallyResults or {}, pesdeResults or {}) })
+					const merged: { coreTypes.PackageBrief } = {}
+					for index = 1, #registries do
+						const briefs = results[index] or {}
+						table.move(briefs, 1, #briefs, #merged + 1, merged)
+					end
+
+					setState({ loading = false, data = merged })
 				end
 
-				if wallyEnabled then
+				for index, registry in registries do
 					task.spawn(function()
-						const results, err = searchWallyAsync(query)
-						wallyResults = results
-						wallyError = err
-						finish()
-					end)
-				end
+						if cancelled then
+							return
+						end
 
-				if pesdeEnabled then
-					task.spawn(function()
-						pesdeResults, pesdeError = searchPesdeAsync(query)
+						const briefs, err = searchRegistryAsync(registry, query)
+						results[index] = briefs
+						if briefs == nil then
+							table.insert(errors, err or "Search failed")
+						end
+
 						finish()
 					end)
 				end
@@ -135,7 +85,7 @@ const function useSearchPackages(query: string): SearchState
 		return function()
 			cancelled = true
 		end
-	end, { query, wallyEnabled, pesdeEnabled } :: { unknown })
+	end, { query, registriesKey })
 
 	return state
 end

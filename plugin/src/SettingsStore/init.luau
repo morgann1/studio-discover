@@ -10,7 +10,6 @@ const createPluginSettingsStore = require(StudioDiscover.Source.Plugin.createPlu
 const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 export type NamingConvention = "Original" | "PascalCase" | "camelCase" | "snake_case" | "kebab-case"
-export type SidebarMode = "Auto" | "Expanded" | "Compact"
 
 export type DisplayNameRule = {
 	read name: string,
@@ -26,20 +25,17 @@ export type SettingsState = {
 	read namingConvention: NamingConvention,
 	read displayNames: { DisplayNameRule },
 	read reduceMotion: boolean,
-	read sidebarMode: SidebarMode,
 	read verboseLogging: boolean,
 	read confirmBeforeInstall: boolean,
 	read registries: RegistryEnableMap,
 }
 
 const NAMING_CONVENTIONS: { NamingConvention } = { "Original", "PascalCase", "camelCase", "snake_case", "kebab-case" }
-const SIDEBAR_MODES: { SidebarMode } = { "Auto", "Expanded", "Compact" }
 
 const DEFAULTS: SettingsState = {
 	namingConvention = "Original",
 	displayNames = {},
 	reduceMotion = false,
-	sidebarMode = "Auto",
 	verboseLogging = false,
 	confirmBeforeInstall = true,
 	registries = { wally = true, pesde = true },
@@ -70,7 +66,6 @@ const VALIDATORS = {
 		[GreenTea.any()] = GreenTea.never(),
 	}))),
 	reduceMotion = check(GreenTea.boolean()),
-	sidebarMode = check(oneOf(SIDEBAR_MODES)),
 	verboseLogging = check(GreenTea.boolean()),
 	confirmBeforeInstall = check(GreenTea.boolean()),
 	registries = check(GreenTea.table({
@@ -116,7 +111,6 @@ end
 
 const SettingsStore = table.freeze({
 	NAMING_CONVENTIONS = NAMING_CONVENTIONS,
-	SIDEBAR_MODES = SIDEBAR_MODES,
 	getSettings = getSettings,
 	useSettings = useSettings,
 	setSetting = setSetting,

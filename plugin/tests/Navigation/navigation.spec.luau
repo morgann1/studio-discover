@@ -11,55 +11,87 @@ const test = JestGlobals.test
 
 const NavigationFolder = ServerScriptService.StudioDiscover.Source.Navigation
 const getScreen = require(NavigationFolder.getScreen)
-const popScreen = require(NavigationFolder.popScreen)
+const goBack = require(NavigationFolder.goBack)
+const goBackTo = require(NavigationFolder.goBackTo)
+const goForward = require(NavigationFolder.goForward)
+const historyAtom = require(NavigationFolder.historyAtom)
 const pushScreen = require(NavigationFolder.pushScreen)
+const refreshScreen = require(NavigationFolder.refreshScreen)
 const resetScreen = require(NavigationFolder.resetScreen)
-const screensAtom = require(NavigationFolder.screensAtom)
 
 const function currentRouteName(): string
-	return getScreen(screensAtom()).route.name
+	return getScreen(historyAtom()).route.name
 end
 
 beforeEach(function()
-	screensAtom({})
+	resetScreen({ name = "Installed" })
 end)
 
 describe("navigation", function()
-	test("shows Home when nothing has been pushed, and after popping the last screen", function()
-		expect(currentRouteName()).toBe("Home")
-
+	test("going back stops at the last screen", function()
 		pushScreen({ name = "Settings" })
-		popScreen()
-		popScreen()
+		goBack()
+		goBack()
 
-		expect(currentRouteName()).toBe("Home")
+		expect(currentRouteName()).toBe("Installed")
+		expect(#historyAtom().stack).toBe(1)
 	end)
 
-	test("shows the last pushed screen, and the one under it after a pop", function()
+	test("going forward returns to the screen going back left", function()
 		pushScreen({ name = "Settings" })
-		pushScreen({ name = "Registries" })
-		expect(currentRouteName()).toBe("Registries")
+		pushScreen({ name = "DisplayNames" })
+		goBack()
+		goBack()
+		expect(currentRouteName()).toBe("Installed")
 
-		popScreen()
+		goForward()
+		expect(currentRouteName()).toBe("Settings")
+
+		goForward()
+		expect(currentRouteName()).toBe("DisplayNames")
+	end)
+
+	test("pushing a new screen forgets the forward screens", function()
+		pushScreen({ name = "Settings" })
+		goBack()
+		pushScreen({ name = "Search" })
+		goForward()
+
+		expect(currentRouteName()).toBe("Search")
+	end)
+
+	test("going back to a screen pops everything above it, and forward walks back up in order", function()
+		const base = getScreen(historyAtom())
+		pushScreen({ name = "Source", registry = "wally" })
+		pushScreen({ name = "Settings" })
+		pushScreen({ name = "DisplayNames" })
+
+		goBackTo(base.id)
+		expect(currentRouteName()).toBe("Installed")
+
+		goForward()
+		expect(currentRouteName()).toBe("Source")
+
+		goForward()
 		expect(currentRouteName()).toBe("Settings")
 	end)
 
-	test("replaces the stack instead of mutating it, so subscribers see a change", function()
-		pushScreen({ name = "Settings" })
-		const before = screensAtom()
+	test("refreshing mounts the same route under a new id", function()
+		const before = getScreen(historyAtom())
+		refreshScreen()
+		const after = getScreen(historyAtom())
 
-		pushScreen({ name = "Registries" })
-
-		expect(screensAtom()).never.toBe(before)
-		expect(#before).toBe(1)
+		expect(after.route).toBe(before.route)
+		expect(after.id).never.toBe(before.id)
 	end)
 
-	test("reset leaves only the new screen", function()
+	test("reset leaves only the new screen and nothing to go forward to", function()
 		pushScreen({ name = "Settings" })
-		pushScreen({ name = "Registries" })
-		resetScreen({ name = "Manage" })
+		goBack()
+		resetScreen({ name = "Updates" })
+		goForward()
 
-		expect(#screensAtom()).toBe(1)
-		expect(currentRouteName()).toBe("Manage")
+		expect(#historyAtom().stack).toBe(1)
+		expect(currentRouteName()).toBe("Updates")
 	end)
 end)

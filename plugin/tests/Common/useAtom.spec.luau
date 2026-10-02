@@ -3,9 +3,6 @@
 const ReplicatedStorage = game:GetService("ReplicatedStorage")
 const ServerScriptService = game:GetService("ServerScriptService")
 
--- ReactRoblox only exports `act` under the mock scheduler, which it reads when it loads.
-_G.__ROACT_17_MOCK_SCHEDULER__ = true
-
 const JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
 const describe = JestGlobals.describe
 const expect = JestGlobals.expect
