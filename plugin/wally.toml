@@ -11,17 +11,12 @@ shared-packages = "game.ReplicatedStorage.Packages"
 server-packages = "game.ServerScriptService.Packages"
 
 [dependencies]
-React = "jsdotlua/react@17.2.1"
-ReactRoblox = "jsdotlua/react-roblox@17.2.1"
+React = "roblox/react@17.3.12"
+ReactRoblox = "roblox/react-roblox@17.3.12"
 zzlib = "morgann1/zzlib@0.1.0"
 Cryo = "morgann1/cryo@1.1.0"
-ReactCharm = "littensy/react-charm@0.3.0"
 Charm = "littensy/charm@0.10.0"
-Promise = "evaera/promise@4.0.0"
-SharedToolbar = "morgann1/shared-toolbar@0.3.4"
-Interposer = "morgann1/interposer@0.1.1"
-Leader = "morgann1/leader@0.1.3"
-DoCleanup = "morgann1/do-cleanup@0.1.0"
+PromiseLuau = "morgann1/promise-luau@4.1.0"
 GreenTea = "corecii/greentea@0.4.11"
 
 [dev-dependencies]

@@ -5,7 +5,6 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 local Foundation = require(StudioDiscover.Packages.Foundation)
 local Motion = require(StudioDiscover.Packages.Motion)
 local React = require(StudioDiscover.Packages.React)
-local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
 local Installer = require(StudioDiscover.Source.Installer)
 local Navigation = require(StudioDiscover.Source.Navigation)
@@ -14,6 +13,7 @@ local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 
 local Item = require(script.Item)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+local useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 local Divider = Foundation.Divider
 local IconButton = Foundation.IconButton
@@ -81,7 +81,7 @@ local function Sidebar(props: Props)
 		setSearchExpanded(false)
 	end, {})
 
-	local reduceMotion = ReactCharm.useAtom(function()
+	local reduceMotion = useAtom(function()
 		return SettingsStore.get().getStorage().reduceMotion
 	end)
 

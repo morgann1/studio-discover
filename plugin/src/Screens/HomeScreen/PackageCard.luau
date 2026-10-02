@@ -4,7 +4,6 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
-local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
 local types = require(StudioDiscover.Core.types)
 
@@ -13,6 +12,7 @@ local RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)
 local SettingsStore = require(StudioDiscover.Source.SettingsStore)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 local formatName = require(StudioDiscover.Source.Util.formatName)
+local useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 local Text = Foundation.Text
 local View = Foundation.View
@@ -31,7 +31,7 @@ type Props = {
 }
 
 local function PackageCard(props: Props)
-	local namingConvention = ReactCharm.useAtom(function()
+	local namingConvention = useAtom(function()
 		return SettingsStore.get().getStorage().namingConvention
 	end)
 
