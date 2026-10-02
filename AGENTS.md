@@ -22,7 +22,7 @@ Wally and pesde have different APIs, different archive formats, different depend
 
 ### 4. Studio-native, not Studio-adjacent
 
-The UI is built on Roblox's Foundation design system, so it inherits Studio's light and dark themes and its widget chrome. It has to be readable docked at 306px and comfortable expanded, and it shares the toolbar with peer plugins through SharedToolbar. A plugin that looks pasted in is a plugin people uninstall.
+The UI is built on Roblox's Foundation design system, so it inherits Studio's light and dark themes and its widget chrome. It has to be readable docked at 306px and comfortable expanded. A plugin that looks pasted in is a plugin people uninstall.
 
 ## A note from morgann1
 
