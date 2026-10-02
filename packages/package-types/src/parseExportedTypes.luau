@@ -26,6 +26,8 @@ local TYPE_SYNTAX_TOKENS: { [string]: boolean } = {
 	["false"] = true,
 }
 
+-- `generics` is the alias's own generic header. A type function has no header,
+-- so it gets one generic per named parameter, `<T0, T1>`, the way upstream forwards it.
 export type ExportedType = {
 	name: string,
 	generics: string,
@@ -149,7 +151,7 @@ local function stripUnknownDefaults(generics: string, resolvedTypes: { [string]:
 				table.insert(result, name or param)
 			end
 		else
-			table.insert(result, param)
+			table.insert(result, (param:gsub("^%s+", "")))
 		end
 	end
 
@@ -169,6 +171,19 @@ local function extractParamNames(generics: string): string
 		if name ~= nil then
 			local isVariadic = param:match("%.%.%.") ~= nil
 			table.insert(names, if isVariadic then name .. "..." else name)
+		end
+	end
+	return "<" .. table.concat(names, ", ") .. ">"
+end
+
+-- Turns a type function's parameter list into the generics that forward it.
+-- Variadic `...` cannot be forwarded as a generic, so it is dropped.
+local function typeFunctionGenerics(parameterList: string): string
+	local names: { string } = {}
+	for param in parameterList:sub(2, -2):gmatch("[^,]+") do
+		param = (param:gsub("^%s+", ""):gsub("%s+$", ""))
+		if param ~= "" and param ~= "..." then
+			table.insert(names, `T{#names}`)
 		end
 	end
 	return "<" .. table.concat(names, ", ") .. ">"
@@ -309,7 +324,12 @@ local function extractExportedTypes(source: string): { ExportedType }
 		local afterName = (nameEnd :: number) + 1
 		local generics = ""
 		local nextNonWs = source:find("%S", afterName)
-		if nextNonWs ~= nil and source:sub(nextNonWs, nextNonWs) == "<" then
+		if kind == "function" then
+			local parameterList = source:match("^%s*(%b())", afterName)
+			if parameterList ~= nil then
+				generics = typeFunctionGenerics(parameterList)
+			end
+		elseif nextNonWs ~= nil and source:sub(nextNonWs, nextNonWs) == "<" then
 			local genericsEnd = readBalancedAngleBrackets(source, nextNonWs)
 			if genericsEnd ~= nil then
 				generics = source:sub(nextNonWs, genericsEnd)

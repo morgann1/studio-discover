@@ -95,9 +95,7 @@ local function processLink(linkModule: ModuleScript): boolean
 
 	local resolvedTypes: { [string]: true } = {}
 	for _, info in exported do
-		if info.kind == "alias" then
-			resolvedTypes[info.name] = true
-		end
+		resolvedTypes[info.name] = true
 	end
 
 	local requirePath = `{prefix}["{linkPackageId}"]["{moduleName}"]`
@@ -105,9 +103,6 @@ local function processLink(linkModule: ModuleScript): boolean
 	table.insert(lines, `local REQUIRED_MODULE = require({requirePath})`)
 
 	for _, info in exported do
-		if info.kind ~= "alias" then
-			continue
-		end
 		if info.generics ~= "" then
 			local paramNames = extractParamNames(info.generics)
 

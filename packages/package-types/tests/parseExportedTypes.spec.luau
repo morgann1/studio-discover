@@ -15,6 +15,7 @@ local extractExportedTypes = parseExportedTypes.extractExportedTypes
 local extractDefaultType = parseExportedTypes.extractDefaultType
 local splitGenerics = parseExportedTypes.splitGenerics
 local shouldKeepDefault = parseExportedTypes.shouldKeepDefault
+local stripUnknownDefaults = parseExportedTypes.stripUnknownDefaults
 
 describe("splitGenerics", function()
 	test("returns empty list when there are no generics", function()
@@ -221,12 +222,22 @@ describe("Luau type-syntax coverage", function()
 		expect(shouldKeepDefault("number | Foo.Bar", {})).toBe(false)
 	end)
 
-	test("extractExportedTypes captures generics on export type function", function()
-		local types = extractExportedTypes("export type function Pair<T>(a: T, b: T) return a end")
+	test("extractExportedTypes forwards each type function parameter as a generic", function()
+		local types = extractExportedTypes("export type function keyof(a, b) end")
 		expect(#types).toBe(1)
-		expect(types[1].name).toBe("Pair")
+		expect(types[1].name).toBe("keyof")
 		expect(types[1].kind).toBe("function")
-		expect(types[1].generics).toBe("<T>")
+		expect(types[1].generics).toBe("<T0, T1>")
+	end)
+
+	test("extractExportedTypes drops a variadic type function parameter", function()
+		local types = extractExportedTypes("export type function keyof(a, b, ...) end")
+		expect(types[1].generics).toBe("<T0, T1>")
+	end)
+
+	test("extractExportedTypes gives a variadic-only type function empty generics", function()
+		local types = extractExportedTypes("export type function keyof(...) end")
+		expect(types[1].generics).toBe("<>")
 	end)
 
 	test("extractExportedTypes skips export type inside a short comment", function()
@@ -293,5 +304,18 @@ describe("Luau type-syntax coverage", function()
 		expect(types[1].name).toBe("Handler")
 		expect(types[1].generics:find("T%.%.%.") ~= nil).toBe(true)
 		expect(types[1].generics:find("R = %(%)") ~= nil).toBe(true)
+	end)
+end)
+
+describe("stripUnknownDefaults", function()
+	test("keeps a default that only references generics", function()
+		expect(stripUnknownDefaults("<T, S = T>", { T = true, S = true })).toBe("<T, S = T>")
+	end)
+
+	test("strips earlier defaults when a later default is unknown", function()
+		local resolvedTypes = { State = true, Dispatchers = true } :: { [string]: true }
+		expect(stripUnknownDefaults("<State = any, Dispatchers = ExternalType>", resolvedTypes)).toBe(
+			"<State, Dispatchers>"
+		)
 	end)
 end)
