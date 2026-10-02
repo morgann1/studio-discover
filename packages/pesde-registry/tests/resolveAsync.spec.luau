@@ -26,6 +26,9 @@ const REGISTRY: { [string]: { [string]: { [string]: { string } } } } = {
 	b = {
 		["1.0.0"] = { D = { "d", "^1.0.0" } },
 	},
+	c = {
+		["1.0.0"] = { D = { "d", "^1.0.0" } },
+	},
 	d = {
 		["1.0.0"] = {},
 		["1.1.0"] = {},
@@ -169,6 +172,19 @@ describe("resolveAsync", function()
 
 		expect(edgeTarget(resolved, "spec/b@1.0.0 roblox", "D")).toBe("spec/d@1.0.0 roblox")
 		expect(resolved["spec/d@1.1.0 roblox"]).toBeNil()
+	end)
+
+	it("reuses the newest version in the graph that satisfies a request", function()
+		const lock = buildLock({
+			{ name = "a", version = "1.0.0", dependencies = { D = "spec/d@1.0.0 roblox" } },
+			{ name = "b", version = "1.0.0", dependencies = { D = "spec/d@1.1.0 roblox" } },
+			{ name = "d", version = "1.0.0" },
+			{ name = "d", version = "1.1.0" },
+		})
+
+		const resolved = resolveAsync({ root("a", "shared"), root("b", "shared"), root("c", "shared") }, lock, nil)
+
+		expect(edgeTarget(resolved, "spec/c@1.0.0 roblox", "D")).toBe("spec/d@1.1.0 roblox")
 	end)
 
 	it("resolves every root to the newest match without a lock", function()

@@ -164,8 +164,8 @@ end
 		failures along the way, and the roots it could not resolve at all. Applying
 		without those roots would uninstall them, so callers stop instead.
 
-	A request reuses a version already in the graph for the same realm when it
-		satisfies it, including a locked one.
+	A request reuses the newest version already in the graph for the same realm
+		that satisfies it, including a locked one, as pesde does.
 ]]
 const function resolveAsync(
 	roots: { coreTypes.RootRequest },
@@ -267,13 +267,18 @@ const function resolveAsync(
 			return nil
 		end
 
+		local newest: PesdeResolvedPackage? = nil
 		for _, pkg in activatedByName[`{request.scope}/{request.name}`] or {} do
-			if pkg.realm == realm and satisfies(pkg.version) then
-				return pkg
+			if pkg.realm ~= realm or not satisfies(pkg.version) then
+				continue
+			end
+
+			if newest == nil or isNewerVersion(pkg.version, newest.version) then
+				newest = pkg
 			end
 		end
 
-		return nil
+		return newest
 	end
 
 	-- Adds the newest version that satisfies the request to the graph, or records why there is none.
