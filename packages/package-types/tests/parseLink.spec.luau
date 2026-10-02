@@ -19,6 +19,16 @@ describe("parseLink", function()
 		})
 	end)
 
+	it("reads a link into another realm's index", function()
+		const source = 'return require(game.ServerStorage.ServerPackages._Index["evaera_promise@4.0.0"]["promise"])'
+
+		expect(parseLink(source)).toEqual({
+			indexPath = "game.ServerStorage.ServerPackages._Index",
+			packageId = "evaera_promise@4.0.0",
+			moduleName = "promise",
+		})
+	end)
+
 	it("reads a link that forwards its target's types", function()
 		const source = table.concat({
 			'local REQUIRED_MODULE = require(script.Parent.Parent["sleitnick_signal@2.0.3"]["signal"])',
