@@ -44,7 +44,9 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
+          name: Studio Discover ${{ steps.meta.outputs.tag }}
           files: StudioDiscover.rbxm
+          fail_on_unmatched_files: true
           generate_release_notes: true
 
       - name: ☁️ Publish to Creator Store
