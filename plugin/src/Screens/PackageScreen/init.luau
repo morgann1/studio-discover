@@ -5,38 +5,51 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
-const Content = require(StudioDiscover.Source.Common.Content)
 const InstallConfirmDialog = require(StudioDiscover.Source.Installer.InstallConfirmDialog)
 const Installer = require(StudioDiscover.Source.Installer)
+const LoadError = require(StudioDiscover.Source.Common.LoadError)
+const Message = require(StudioDiscover.Source.Common.Message)
 const Navigation = require(StudioDiscover.Source.Navigation)
 const Screen = require(StudioDiscover.Source.Common.Screen)
-const Section = require(StudioDiscover.Source.Common.Section)
+const SearchStore = require(StudioDiscover.Source.SearchStore)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const capitalize = require(StudioDiscover.Source.Util.capitalize)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
-const countKeys = require(StudioDiscover.Source.Util.countKeys)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const escapeRichText = require(StudioDiscover.Source.Util.escapeRichText)
+const formatName = require(StudioDiscover.Source.Util.formatName)
 const installerTypes = require(StudioDiscover.Source.Installer.types)
+const isBreakingUpdate = require(StudioDiscover.Libraries.Semver.isBreakingUpdate)
+const isNewerVersion = require(StudioDiscover.Libraries.Semver.isNewerVersion)
+const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
+const packagesPath = require(StudioDiscover.Source.Util.packagesPath)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
+const resolveAlias = require(StudioDiscover.Source.Installer.resolveAlias)
+const useBreakpoint = require(StudioDiscover.Source.Common.useBreakpoint)
+const useOperation = require(StudioDiscover.Source.Common.useOperation)
 const usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
 
 const Dependencies = require(script.Dependencies)
-const Hero = require(script.Hero)
+const Facts = require(script.Facts)
+const Head = require(script.Head)
+const Versions = require(script.Versions)
 
-const Chip = Foundation.Chip
-const Empty = Foundation.Empty
-const Loading = Foundation.Loading
+const Alert = Foundation.Alert
+const ScrollView = Foundation.ScrollView
+const StatusBadge = Foundation.StatusBadge
+const Tabs = Foundation.Tabs
 const Text = Foundation.Text
 const View = Foundation.View
-const ChipSize = Foundation.Enums.ChipSize
+const AlertSeverity = Foundation.Enums.AlertSeverity
+const AlertVariant = Foundation.Enums.AlertVariant
+const Breakpoint = Foundation.Enums.Breakpoint
+const InputSize = Foundation.Enums.InputSize
+const StatusBadgeShape = Foundation.Enums.StatusBadgeShape
+const StatusBadgeVariant = Foundation.Enums.StatusBadgeVariant
 
 const e = React.createElement
 
-type DependencyGroup = {
-	read key: string,
-	read title: string,
-	read dependencies: coreTypes.DependencyMap,
-}
+type Tab = "description" | "versions" | "dependencies"
 
 const function findVersion(metadata: coreTypes.PackageMetadata, version: string): coreTypes.PackageVersion
 	for _, entry in metadata.versions do
@@ -48,87 +61,67 @@ const function findVersion(metadata: coreTypes.PackageMetadata, version: string)
 	return metadata.versions[1]
 end
 
-const function openRegistries()
-	Navigation.pushScreen({ name = "Registries" })
+const function findRoot(roots: { coreTypes.InstalledRoot }, target: Navigation.PackageTarget): coreTypes.InstalledRoot?
+	for _, root in roots do
+		if root.registry == target.registry and root.scope == target.scope and root.name == target.name then
+			return root
+		end
+	end
+
+	return nil
 end
 
-const function centered(children: { [string]: React.Node }): React.Node
-	return e(View, {
-		tag = "size-full align-x-center align-y-center padding-large",
-	}, children)
+-- The dependencies an install brings in, sorted. Dev dependencies never install, so they're left out.
+const function installedSpecs(version: coreTypes.PackageVersion): { string }
+	const specs: { string } = {}
+	for _, spec in version.dependencies do
+		table.insert(specs, spec)
+	end
+
+	for _, spec in version["server-dependencies"] do
+		table.insert(specs, spec)
+	end
+
+	table.sort(specs)
+
+	return specs
 end
 
-const function message(text: string): React.Node
-	return centered({
-		Message = e(Text, {
-			tag = "auto-xy text-body-medium content-muted",
-			Text = text,
-		}),
-	})
+const function openSettings()
+	Navigation.resetScreen({ name = "Settings" })
 end
 
-const function aboutRow(label: string, children: { [string]: React.Node }, layoutOrder: number): React.Node
-	const nextOrder = createNextOrder()
-
-	return e(View, {
-		tag = "size-full-0 auto-y row align-y-center gap-medium",
+const function alert(severity: Foundation.AlertSeverity, text: string, layoutOrder: number): React.Node
+	return e(Alert, {
+		variant = AlertVariant.Feedback,
+		severity = severity,
+		text = text,
 		LayoutOrder = layoutOrder,
-	}, {
-		Label = e(Text, {
-			tag = "auto-xy text-body-small content-muted",
-			Text = `{label}:`,
-			LayoutOrder = nextOrder(),
-		}),
-		Value = e(View, {
-			tag = "grow auto-y row align-y-center gap-xsmall",
-			LayoutOrder = nextOrder(),
-		}, children),
 	})
-end
-
-const function aboutText(text: string): { [string]: React.Node }
-	return {
-		Text = e(Text, {
-			tag = "size-full-0 auto-y text-body-small content-default text-align-x-left text-truncate",
-			Text = text,
-		}),
-	}
 end
 
 --[[
-	One package's details, versions, and dependencies, with the install action.
-		A package listed by more than one enabled registry gets a chip to switch
-		between them.
+	One package: what it is, where it would go, and the version to install. Installed
+		packages offer the update or the removal instead.
 ]]
 const function PackageScreen(props: {
 	read target: Navigation.PackageTarget,
 })
 	const target = props.target
-	const scope, name = target.scope, target.name
+	const registry, scope, name = target.registry, target.scope, target.name
 
 	const settings = SettingsStore.useSettings()
-	const installerState = Installer.useInstaller()
-	const installedRoots = Installer.useInstalledRoots().roots
+	const installer = Installer.useInstaller()
+	const isBusy = Installer.useIsBusy()
+	const roots = Installer.useInstalledRoots().roots
+	const state = usePackageMetadata(registry, scope, name)
+	const removal = useOperation()
 
-	const registries: { coreTypes.Registry } = {}
-	for _, registry in target.registries do
-		const enabled = if registry == "wally" then settings.registries.wally else settings.registries.pesde
-		if enabled then
-			table.insert(registries, registry)
-		end
-	end
-
-	const selectedRegistry, setSelectedRegistry = React.useState(registries[1] or target.registries[1])
 	const selectedVersion, setSelectedVersion = React.useState("")
-	const isConfirmingInstall, setIsConfirmingInstall = React.useState(false)
-	const state = usePackageMetadata(selectedRegistry, scope, name)
-
-	-- Turning a registry off in Settings moves the selection to one that is still on.
-	React.useEffect(function()
-		if #registries > 0 and table.find(registries, selectedRegistry) == nil then
-			setSelectedRegistry(registries[1])
-		end
-	end, { table.concat(registries, ",") })
+	const tab, setTab = React.useState<<Tab>>("description")
+	const isConfirming, setIsConfirming = React.useState(false)
+	const pane, setPane = React.useState<<GuiObject?>>(nil)
+	const breakpoint = useBreakpoint(pane)
 
 	React.useEffect(function()
 		const metadata = state.data
@@ -140,182 +133,283 @@ const function PackageScreen(props: {
 		setSelectedVersion(findVersion(metadata, target.version or "").package.version)
 	end, { state.data, target.version } :: { unknown })
 
-	local body: React.Node
+	const label = registryLabel(registry)
+	const displayName = formatName(name, settings.namingConvention)
+	const root = findRoot(roots, target)
 	const metadata = state.data
-	if #registries == 0 then
-		body = e(Empty, {
-			text = "This package's source registries are disabled. Enable them in Settings to install.",
-			button = {
-				text = "Open Registries",
-				onActivated = openRegistries,
-			},
+
+	local body: React.Node
+	if not isRegistryEnabled(settings.registries, registry) then
+		body = e(Message, {
+			text = `{label} is turned off.`,
+			action = { text = "Open Settings", onActivated = openSettings },
 		})
 	elseif state.loading then
-		body = centered({
-			Spinner = e(Loading, {}),
-		})
+		body = e(Message, { text = `Loading {displayName}...` })
 	elseif state.error ~= nil then
-		body = message(`Couldn't load package: {state.error}`)
+		body = e(LoadError, { text = `Couldn't load {displayName}: {state.error}` })
 	elseif metadata == nil or #metadata.versions == 0 then
-		body = message("Package not found.")
+		body = e(Message, { text = `{label} has no package {scope}/{name}.` })
 	else
 		const selected = findVersion(metadata, selectedVersion)
 		const pkg = selected.package
-		const version = if selectedVersion ~= "" then selectedVersion else pkg.version
-
-		const description = pkg.description
-		const descriptionText = if description ~= nil and string.match(description, "%S") ~= nil
-			then description
-			else `{capitalize(name)} has no provided description.`
-
-		const versionItems: { Foundation.DropdownItem } = {}
-		for i, entry in metadata.versions do
-			const itemVersion = entry.package.version
-			table.insert(versionItems, {
-				id = itemVersion,
-				text = if i == 1 then `v{itemVersion} (latest)` else `v{itemVersion}`,
-			})
-		end
+		const version = pkg.version
+		const realm: coreTypes.Realm = if pkg.realm == "server" then "server" else "shared"
+		const isDev = pkg.realm == "dev"
 
 		const request: installerTypes.InstallRequest = {
-			registry = selectedRegistry,
+			registry = registry,
 			scope = scope,
 			name = name,
 			version = version,
-			realm = if pkg.realm == "server" then "server" else "shared",
+			realm = realm,
 		}
+
+		-- The installer's state belongs to whichever package it last ran for.
+		const installTarget = installer.target
+		const isInstallerTarget = installTarget ~= nil
+			and installTarget.scope == scope
+			and installTarget.name == name
+			and installTarget.version == version
+		const isInstalling = isInstallerTarget and installer.status == "running"
+		const installError = if isInstallerTarget and installer.status == "error" then installer.message else nil
+
+		const isUpdate = root ~= nil and isNewerVersion(version, root.version)
+		const isMajor = isUpdate and root ~= nil and isBreakingUpdate(root.version, version)
 
 		const function install()
 			task.spawn(Installer.installAsync, request)
 		end
 
-		const function onInstall()
-			if settings.confirmBeforeInstall then
-				setIsConfirmingInstall(true)
-			else
-				install()
-			end
+		-- The installed version offers its removal, so the page has a way back out.
+		local action: Head.Action
+		if isInstalling or removal.isRunning then
+			action = {
+				text = if isInstalling then "Installing..." else "Removing...",
+				isEmphasized = isInstalling,
+				isDisabled = true,
+				onActivated = function() end,
+			}
+		elseif root ~= nil and root.version == version then
+			action = {
+				text = "Remove",
+				isEmphasized = false,
+				isDisabled = isBusy,
+				onActivated = function()
+					removal.run(function()
+						return Installer.uninstallAsync(root)
+					end)
+				end,
+			}
+		else
+			action = {
+				text = if isUpdate then "Update" else "Install",
+				isEmphasized = true,
+				isDisabled = isDev or isBusy,
+				onActivated = function()
+					if settings.confirmBeforeInstall then
+						setIsConfirming(true)
+					else
+						install()
+					end
+				end,
+			}
 		end
 
-		const function onConfirmInstall()
-			setIsConfirmingInstall(false)
-			install()
+		const versionItems: { Foundation.DropdownItem } = {}
+		const versionList: { string } = {}
+		for index, entry in metadata.versions do
+			const itemVersion = entry.package.version
+			table.insert(versionList, itemVersion)
+			table.insert(versionItems, {
+				id = itemVersion,
+				text = if index == 1 then `v{itemVersion} (latest)` else `v{itemVersion}`,
+			})
 		end
 
-		const function onCancelInstall()
-			setIsConfirmingInstall(false)
+		local notice: string
+		if isInstalling then
+			notice = escapeRichText(installer.message or "Installing...")
+		elseif root ~= nil then
+			notice =
+				`Installed as <b>{escapeRichText(root.alias)}</b> in {packagesPath(registry, root.realm)}, version {root.version}`
+		else
+			notice =
+				`Adds <b>{escapeRichText(resolveAlias(name))}</b> to {packagesPath(registry, realm)} as {scope}/{name} {version}`
 		end
 
-		-- The installer's state belongs to whichever package it last ran for.
-		const installTarget = installerState.target
-		const isInstallerTarget = installTarget ~= nil
-			and installTarget.scope == scope
-			and installTarget.name == name
-			and installTarget.version == version
-
-		local isInstalled = false
-		for _, root in installedRoots do
-			if
-				root.registry == selectedRegistry
-				and root.scope == scope
-				and root.name == name
-				and root.version == version
-			then
-				isInstalled = true
-				break
-			end
-		end
-
-		local installStatus: installerTypes.InstallStatus = "idle"
-		local installMessage: string? = nil
-		if isInstallerTarget and (installerState.status == "running" or installerState.status == "error") then
-			installStatus = installerState.status
-			installMessage = installerState.message
-		elseif isInstalled then
-			installStatus = "success"
-		end
-
+		const specs = installedSpecs(selected)
+		const description = pkg.description
 		const nextOrder = createNextOrder()
-		const nextAboutOrder = createNextOrder()
 
-		const about: { [string]: React.Node } = {
-			License = aboutRow("License", aboutText(pkg.license or "Unknown"), nextAboutOrder()),
-			Realm = aboutRow("Realm", aboutText(capitalize(pkg.realm)), nextAboutOrder()),
-			Versions = aboutRow("Versions", aboutText(tostring(#metadata.versions)), nextAboutOrder()),
+		const facts: { Facts.Fact } = {
+			{
+				label = "Version",
+				value = e(View, {
+					tag = "auto-xy row align-y-center gap-small",
+				}, {
+					Version = e(Text, {
+						tag = "auto-xy text-body-medium content-emphasis",
+						Text = version,
+						LayoutOrder = 1,
+					}),
+					Major = isMajor and e(StatusBadge, {
+						text = "Major",
+						variant = StatusBadgeVariant.Warning,
+						shape = StatusBadgeShape.Box,
+						LayoutOrder = 2,
+					}),
+				}),
+			},
+			{
+				label = "License",
+				value = e(Text, {
+					tag = "auto-xy text-body-medium content-emphasis",
+					Text = pkg.license or "Unknown",
+				}),
+			},
+			{
+				label = "Realm",
+				value = e(Text, {
+					tag = "auto-xy text-body-medium content-emphasis",
+					Text = capitalize(pkg.realm),
+				}),
+			},
+			{
+				label = "Versions",
+				value = e(Text, {
+					tag = "auto-xy text-body-medium content-emphasis",
+					Text = tostring(#metadata.versions),
+				}),
+			},
 		}
 
-		if #registries > 1 then
-			const nextChipOrder = createNextOrder()
-			const chips: { [string]: React.Node } = {}
-
-			for _, registry in registries do
-				chips[registry] = e(Chip, {
-					text = registryLabel(registry),
-					size = ChipSize.Small,
-					isChecked = selectedRegistry == registry,
-					onActivated = function()
-						setSelectedRegistry(registry)
-					end,
-					LayoutOrder = nextChipOrder(),
+		local tabBody: React.Node
+		if tab == "versions" then
+			tabBody = e(Versions, {
+				versions = versionList,
+				selected = version,
+				installed = if root ~= nil then root.version else nil,
+				onSelected = setSelectedVersion,
+			})
+		elseif tab == "dependencies" then
+			tabBody = if #specs > 0
+				then e(Dependencies, {
+					specs = specs,
+					registry = registry,
 				})
-			end
-
-			about.Registry = aboutRow("Registry", chips, nextAboutOrder())
+				else e(Text, {
+					tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left",
+					Text = `{displayName} {version} has no dependencies.`,
+				})
+		else
+			tabBody = e(Text, {
+				tag = "size-full-0 auto-y text-body-medium content-default text-align-x-left text-wrap",
+				Text = if description ~= nil and string.match(description, "%S") ~= nil
+					then description
+					else `{displayName} has no description.`,
+			})
 		end
 
-		const children: { [string]: React.Node } = {
-			Hero = e(Hero, {
-				scope = scope,
-				name = name,
-				authors = pkg.authors,
-				description = descriptionText,
-				selectedVersion = version,
-				versionItems = versionItems,
-				onVersionChanged = setSelectedVersion,
-				installStatus = installStatus,
-				installMessage = installMessage,
-				isInstallBlocked = pkg.realm == "dev",
-				onInstall = onInstall,
-				LayoutOrder = nextOrder(),
-			}),
-			About = e(Section, {
-				title = "About",
-				LayoutOrder = nextOrder(),
-			}, about),
-			ConfirmInstallDialog = isConfirmingInstall and e(InstallConfirmDialog, {
-				request = request,
-				onConfirm = onConfirmInstall,
-				onCancel = onCancelInstall,
-			}),
-		}
-
-		const groups: { DependencyGroup } = {
-			{ key = "Shared", title = "Shared dependencies", dependencies = selected.dependencies },
-			{ key = "Server", title = "Server dependencies", dependencies = selected["server-dependencies"] },
-			{ key = "Dev", title = "Dev dependencies", dependencies = selected["dev-dependencies"] },
-		}
-
-		for _, group in groups do
-			if countKeys(group.dependencies) > 0 then
-				children[group.key] = e(Section, {
-					title = group.title,
+		body = e(ScrollView, {
+			tag = "size-full",
+			scroll = {
+				AutomaticCanvasSize = Enum.AutomaticSize.Y,
+				CanvasSize = UDim2.fromScale(0, 0),
+				ScrollingDirection = Enum.ScrollingDirection.Y,
+			},
+		}, {
+			Pane = e(View, {
+				tag = "size-full-0 auto-y col gap-large padding-x-large padding-bottom-large",
+				ref = setPane,
+			}, {
+				Head = e(Head, {
+					name = displayName,
+					scope = scope,
+					registry = registry,
+					versionItems = versionItems,
+					selectedVersion = version,
+					onVersionChanged = setSelectedVersion,
+					action = action,
+					isWide = breakpoint ~= Breakpoint.XSmall and breakpoint ~= Breakpoint.Small,
+					onAuthorActivated = function()
+						SearchStore.setQuery(scope)
+						Navigation.resetScreen({ name = "Search" })
+					end,
+					LayoutOrder = nextOrder(),
+				}),
+				DevAlert = isDev and alert(
+					AlertSeverity.Warning,
+					`{version} is a dev package, which Discover doesn't install.`,
+					nextOrder()
+				),
+				InstallError = installError ~= nil and alert(AlertSeverity.Error, installError, nextOrder()),
+				RemovalError = removal.error ~= nil and alert(AlertSeverity.Error, removal.error, nextOrder()),
+				MajorAlert = isMajor and root ~= nil and alert(
+					AlertSeverity.Warning,
+					`{version} is a major version. Code that uses {root.alias} may need changes.`,
+					nextOrder()
+				),
+				Notice = e(View, {
+					tag = "size-full-0 auto-y padding-medium bg-surface-200 radius-medium",
 					LayoutOrder = nextOrder(),
 				}, {
-					List = e(Dependencies, {
-						dependencies = group.dependencies,
-						registry = selectedRegistry,
+					Text = e(Text, {
+						tag = "size-full-0 auto-y text-body-medium content-default text-align-x-left text-wrap",
+						Text = if removal.isRunning then "Removing..." else notice,
+						RichText = true,
 					}),
-				})
-			end
-		end
-
-		body = e(Content, {}, children)
+				}),
+				Facts = e(Facts, {
+					facts = facts,
+					columns = if breakpoint == Breakpoint.XSmall then 2 else 4,
+					LayoutOrder = nextOrder(),
+				}),
+				Tabs = e(View, {
+					tag = "size-full-0 auto-y col gap-medium",
+					LayoutOrder = nextOrder(),
+				}, {
+					Tabs = e(Tabs, {
+						activeTabId = tab,
+						onActivated = function(id: string | number)
+							if id == "versions" or id == "dependencies" or id == "description" then
+								setTab(id)
+							end
+						end,
+						tabs = {
+							{ id = "description", text = "Description" },
+							{ id = "versions", text = "Versions" },
+							{
+								id = "dependencies",
+								text = "Dependencies",
+								indicator = if #specs > 0 then { value = #specs } else nil,
+							},
+						},
+						size = if breakpoint == Breakpoint.XSmall then InputSize.Small else InputSize.Medium,
+						LayoutOrder = 1,
+					}),
+					Body = e(View, {
+						tag = "size-full-0 auto-y col",
+						LayoutOrder = 2,
+					}, {
+						Content = tabBody,
+					}),
+				}),
+				ConfirmDialog = isConfirming and e(InstallConfirmDialog, {
+					request = request,
+					onConfirm = function()
+						setIsConfirming(false)
+						install()
+					end,
+					onCancel = function()
+						setIsConfirming(false)
+					end,
+				}),
+			}),
+		})
 	end
 
-	return e(Screen, {
-		title = `{scope}/{name}`,
-		onBack = Navigation.popScreen,
-	}, {
+	return e(Screen, {}, {
 		Body = body,
 	})
 end

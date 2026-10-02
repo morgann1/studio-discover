@@ -6,76 +6,112 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const Navigation = require(StudioDiscover.Source.Navigation)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
+const formatName = require(StudioDiscover.Source.Util.formatName)
+const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
-const Button = Foundation.Button
+const parseDependency = require(script.Parent.parseDependency)
+
+const Divider = Foundation.Divider
+const Icon = Foundation.Icon
+const Link = Foundation.Link
+const Text = Foundation.Text
 const View = Foundation.View
-const ButtonVariant = Foundation.Enums.ButtonVariant
+const IconName = Foundation.Enums.IconName
+const IconSize = Foundation.Enums.IconSize
 const InputSize = Foundation.Enums.InputSize
 
 const e = React.createElement
 
--- Splits "scope/name@constraint" into its parts, with the constraint's version number.
-const function parseDependency(spec: string): (string?, string?, string?)
-	local scopeName, version = string.match(spec, "(.+/.+)@[^%d]+([%d%.]+)")
-	if scopeName == nil then
-		scopeName, version = string.match(spec, "(.+/.+)@([%d%.]+)")
-	end
+const ROW_HEIGHT = 56
 
-	if scopeName == nil then
-		return nil, nil, nil
-	end
-
-	const scope, name = string.match(scopeName, "^(.+)/(.+)$")
-	return scope, name, version
-end
-
--- Links to each dependency's package screen. A spec that does not parse shows as disabled text.
+--[[
+	Each dependency's name, with its scope and range under it, opening the
+		dependency's page. A spec that doesn't parse shows as written, inert.
+]]
 const function Dependencies(props: {
-	read dependencies: coreTypes.DependencyMap,
+	read specs: { string },
 	read registry: coreTypes.Registry,
 	read LayoutOrder: number?,
 })
+	const namingConvention = useAtom(function()
+		return SettingsStore.getSettings().namingConvention
+	end)
+
 	const uniqueKey = createUniqueKey()
 	const nextOrder = createNextOrder()
-	const children: { [string]: React.Node } = {}
+	const rows: { [string]: React.Node } = {}
 
-	for _, spec in props.dependencies do
-		const scope, name, version = parseDependency(spec)
-		local label = spec
-		local onActivated: (() -> ())? = nil
+	for _, spec in props.specs do
+		const dependency = parseDependency(spec)
+		const nextRowOrder = createNextOrder()
 
-		if scope ~= nil and name ~= nil then
-			label = if version ~= nil then `{scope}/{name}@{version}` else `{scope}/{name}`
-			onActivated = function()
+		const open = if dependency ~= nil
+			then function()
 				Navigation.pushScreen({
 					name = "Package",
 					target = {
-						registries = { props.registry },
-						scope = scope,
-						name = name,
-						version = version,
+						registry = props.registry,
+						scope = dependency.scope,
+						name = dependency.name,
+						version = dependency.version,
 					},
 				})
 			end
-		end
+			else nil
 
-		children[uniqueKey(label)] = e(Button, {
-			text = label,
-			variant = ButtonVariant.Link,
-			size = InputSize.Small,
-			isDisabled = onActivated == nil,
-			onActivated = onActivated or function() end,
+		rows[uniqueKey(spec)] = e(View, {
+			tag = "size-full-0 auto-y col",
 			LayoutOrder = nextOrder(),
+		}, {
+			Body = e(View, {
+				tag = "size-full-0 row align-y-center gap-medium",
+				Size = UDim2.new(1, 0, 0, ROW_HEIGHT),
+				onActivated = open,
+				LayoutOrder = nextRowOrder(),
+			}, {
+				Text = e(View, {
+					tag = "grow auto-y col gap-xxsmall",
+					LayoutOrder = 1,
+				}, {
+					Name = if dependency ~= nil and open ~= nil
+						then e(Link, {
+							text = formatName(dependency.name, namingConvention),
+							size = InputSize.Medium,
+							onActivated = open,
+							LayoutOrder = 1,
+						})
+						else e(Text, {
+							tag = "size-full-0 auto-y text-body-medium content-default text-align-x-left text-truncate-end",
+							Text = spec,
+							LayoutOrder = 1,
+						}),
+					Detail = dependency ~= nil
+						and e(Text, {
+							tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left text-truncate-end",
+							Text = `{dependency.scope} · {dependency.range}`,
+							LayoutOrder = 2,
+						}),
+				}),
+				Chevron = dependency ~= nil and e(Icon, {
+					name = IconName.ChevronSmallRight,
+					size = IconSize.Small,
+					LayoutOrder = 2,
+				}),
+			}),
+			Divider = e(Divider, {
+				LayoutOrder = nextRowOrder(),
+			}),
 		})
 	end
 
 	return e(View, {
-		tag = "size-full-0 auto-y col align-x-left",
+		tag = "size-full-0 auto-y col",
 		LayoutOrder = props.LayoutOrder,
-	}, children)
+	}, rows)
 end
 
 return Dependencies

@@ -5,38 +5,28 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
-const CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 const ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
 const DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
-const HomeScreen = require(StudioDiscover.Source.Screens.HomeScreen)
+const InstalledScreen = require(StudioDiscover.Source.Screens.InstalledScreen)
 const Installer = require(StudioDiscover.Source.Installer)
-const ManageScreen = require(StudioDiscover.Source.Screens.ManageScreen)
+const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const Navigation = require(StudioDiscover.Source.Navigation)
 const PackageScreen = require(StudioDiscover.Source.Screens.PackageScreen)
-const RegistriesScreen = require(StudioDiscover.Source.Screens.RegistriesScreen)
+const SearchScreen = require(StudioDiscover.Source.Screens.SearchScreen)
 const SettingsScreen = require(StudioDiscover.Source.Screens.SettingsScreen)
-const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const Sidebar = require(StudioDiscover.Source.Common.Sidebar)
-const UpdatesScreen = require(StudioDiscover.Source.Screens.UpdatesScreen)
+const SidebarStore = require(StudioDiscover.Source.SidebarStore)
+const SourceScreen = require(StudioDiscover.Source.Screens.SourceScreen)
 const buildConfig = require(StudioDiscover.Source.buildConfig)
-const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-const useAtom = require(StudioDiscover.Source.Common.useAtom)
-const useIsCompact = require(StudioDiscover.Source.Common.useIsCompact)
+const exhaustiveMatch = require(StudioDiscover.Libraries.Core.exhaustiveMatch)
+const useBreakpoint = require(StudioDiscover.Source.Common.useBreakpoint)
 
 const Divider = Foundation.Divider
 const View = Foundation.View
+const Breakpoint = Foundation.Enums.Breakpoint
 const Orientation = Foundation.Enums.Orientation
 
 const e = React.createElement
-
-const SCREENS: { [Navigation.ScreenName]: React.ComponentType<{}> } = {
-	Home = HomeScreen,
-	Manage = ManageScreen,
-	Updates = UpdatesScreen,
-	Settings = SettingsScreen,
-	DisplayNames = DisplayNamesScreen,
-	Registries = RegistriesScreen,
-}
 
 -- Keyed by the screen's id, so pushing a screen over one of the same kind mounts it fresh.
 const CurrentScreen = React.memo(function()
@@ -45,23 +35,41 @@ const CurrentScreen = React.memo(function()
 
 	if route.name == "Package" then
 		return e(PackageScreen, { key = screen.id, target = route.target })
+	elseif route.name == "Source" then
+		return e(SourceScreen, { key = screen.id, registry = route.registry })
+	elseif route.name == "Installed" then
+		return e(InstalledScreen, { key = screen.id, onlyUpdates = false })
+	elseif route.name == "Updates" then
+		return e(InstalledScreen, { key = screen.id, onlyUpdates = true })
+	elseif route.name == "Search" then
+		return e(SearchScreen, { key = screen.id })
+	elseif route.name == "Settings" then
+		return e(SettingsScreen, { key = screen.id })
+	elseif route.name == "DisplayNames" then
+		return e(DisplayNamesScreen, { key = screen.id })
 	end
 
-	return e(SCREENS[route.name], { key = screen.id })
+	return exhaustiveMatch(route.name)
 end)
 
--- The root of the widget: the sidebar beside the screen on top of the navigation stack.
+--[[
+	The root of the widget. Above Foundation's Small breakpoint the sidebar sits
+		beside the screen, unless the user hid it; otherwise the screen fills the
+		widget and its header carries the location menu.
+]]
 const function App(props: {
 	read widget: DockWidgetPluginGui,
 })
 	const widget = props.widget
-	const nextOrder = createNextOrder()
-	const isWidgetNarrow = useIsCompact(widget)
-	const sidebarMode = useAtom(function()
-		return SettingsStore.getSettings().sidebarMode
-	end)
+	const breakpoint = useBreakpoint(widget)
+	const isCollapsed = SidebarStore.useIsCollapsed()
 
-	const isCompact = if sidebarMode == "Auto" then isWidgetNarrow else sidebarMode == "Compact"
+	const isWide = breakpoint ~= Breakpoint.XSmall and breakpoint ~= Breakpoint.Small
+	const isDocked = not isWide or isCollapsed
+
+	const layout = React.useMemo(function(): LayoutContext.Layout
+		return { isWide = isWide, isDocked = isDocked }
+	end, { isWide, isDocked } :: { unknown })
 
 	const updatesCount = #Installer.useUpdates().updates
 	React.useEffect(function()
@@ -73,25 +81,22 @@ const function App(props: {
 	return e(ContextProviders, {
 		overlayGui = widget,
 	}, {
-		CompactScope = e(CompactContext.Provider, {
-			value = isCompact,
+		Layout = e(LayoutContext.Provider, {
+			value = layout,
 		}, {
 			Root = e(View, {
-				tag = "size-full row",
+				tag = "size-full row bg-surface-100",
 			}, {
-				Sidebar = e(Sidebar, {
-					LayoutOrder = nextOrder(),
-					compact = isCompact,
+				Sidebar = not isDocked and e(Sidebar, {
+					LayoutOrder = 1,
 				}),
-
-				Divider = e(Divider, {
+				Divider = not isDocked and e(Divider, {
 					orientation = Orientation.Vertical,
-					LayoutOrder = nextOrder(),
+					LayoutOrder = 2,
 				}),
-
 				Content = e(View, {
 					tag = "size-0-full grow",
-					LayoutOrder = nextOrder(),
+					LayoutOrder = 3,
 				}, {
 					Screen = e(CurrentScreen),
 				}),

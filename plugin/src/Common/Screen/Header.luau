@@ -5,49 +5,104 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
+const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const SidebarStore = require(StudioDiscover.Source.SidebarStore)
+const ToolButton = require(StudioDiscover.Source.Common.ToolButton)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const iconName = require(StudioDiscover.Source.Util.iconName)
 
-const Button = Foundation.Button
-const Divider = Foundation.Divider
-const Text = Foundation.Text
+const Crumbs = require(script.Parent.Crumbs)
+const Title = require(script.Parent.Title)
+
+const HeaderBar = Foundation.HeaderBar
 const View = Foundation.View
-const ButtonVariant = Foundation.Enums.ButtonVariant
-const IconName = Foundation.Enums.IconName
-const InputSize = Foundation.Enums.InputSize
 
 const e = React.createElement
 
+const function openSettings()
+	Navigation.resetScreen({ name = "Settings" })
+end
+
+--[[
+	The bar above every screen. A screen pushed over another shows the breadcrumb back
+		to it instead of a title.
+
+	Expanded, back and forward lead. Docked, the breadcrumb is the way back and the
+		title opens the location menu. Refresh and Settings trail in both, and the
+		sidebar toggle leads whenever the user hid a sidebar there is room for.
+]]
 const function Header(props: {
 	read title: string,
-	read onBack: (() -> ())?,
+	read registry: coreTypes.Registry?,
+	read onRefresh: () -> (),
 	read LayoutOrder: number?,
 })
-	const nextOrder = createNextOrder()
+	const layout = LayoutContext.useLayout()
+	const history = Navigation.useHistory()
+	const isDocked = layout.isDocked
+	const isNested = #history.stack > 1
+	const nextLeadingOrder = createNextOrder()
+	const nextTrailingOrder = createNextOrder()
 
-	return e(View, {
-		tag = "size-full-0 auto-y bg-surface-100 col gap-small padding-small",
+	return e(HeaderBar.Root, {
+		hasBackground = false,
 		LayoutOrder = props.LayoutOrder,
-		ZIndex = 2,
 	}, {
-		TitleRow = e(View, {
-			tag = "size-full-1000 row align-y-center gap-small padding-left-large",
-			LayoutOrder = nextOrder(),
-		}, {
-			Back = props.onBack ~= nil and e(Button, {
-				text = "Back",
-				icon = IconName.ChevronLargeLeft,
-				variant = ButtonVariant.Utility,
-				size = InputSize.Small,
-				onActivated = props.onBack,
+		Leading = e(HeaderBar.Leading, nil, {
+			Toggle = layout.isWide and isDocked and e(ToolButton, {
+				icon = iconName("Sidebar"),
+				label = "Show sidebar",
+				onActivated = SidebarStore.toggleCollapsed,
+				LayoutOrder = nextLeadingOrder(),
 			}),
-			Title = e(Text, {
-				tag = "auto-y grow text-align-x-left text-title-large content-emphasis",
-				Text = props.title,
+			Back = not isDocked and e(ToolButton, {
+				icon = iconName("ChevronLargeLeft"),
+				label = "Back",
+				isDisabled = not isNested,
+				onActivated = Navigation.goBack,
+				LayoutOrder = nextLeadingOrder(),
+			}),
+			Forward = not isDocked and e(ToolButton, {
+				icon = iconName("ChevronLargeRight"),
+				label = "Forward",
+				isDisabled = #history.forward == 0,
+				onActivated = Navigation.goForward,
+				LayoutOrder = nextLeadingOrder(),
+			}),
+			Title = e(View, {
+				tag = "auto-xy row align-y-center padding-left-xsmall",
+				LayoutOrder = nextLeadingOrder(),
+			}, {
+				Title = if isNested
+					then e(Crumbs, {
+						stack = history.stack,
+					})
+					else e(Title, {
+						text = props.title,
+						registry = props.registry,
+						hasMenu = isDocked,
+					}),
 			}),
 		}),
-
-		Divider = e(Divider, {
-			LayoutOrder = nextOrder(),
+		-- Sized to its tools, so the leading slot keeps the rest of the row for the title.
+		Trailing = e(View, {
+			tag = "auto-xy row align-y-center gap-small",
+			LayoutOrder = 3,
+		}, {
+			Refresh = e(ToolButton, {
+				icon = iconName("ArrowSpinClockwise"),
+				label = "Refresh",
+				onActivated = props.onRefresh,
+				LayoutOrder = nextTrailingOrder(),
+			}),
+			Settings = e(ToolButton, {
+				icon = iconName("Gear"),
+				label = "Settings",
+				onActivated = openSettings,
+				LayoutOrder = nextTrailingOrder(),
+			}),
 		}),
 	})
 end

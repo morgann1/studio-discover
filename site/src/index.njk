@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="dark">
-    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" content="#121215" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
     <title>{{ site.title }}</title>
     <meta name="description" content="{{ site.description }}">
     <link rel="canonical" href="{{ site.url }}">
@@ -12,90 +13,112 @@
     <link rel="stylesheet" href="{{ "/assets/styles.css" | url }}">
     <link rel="preload" href="{{ "/assets/fonts/BuilderSans-Regular.woff2" | url }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ "/assets/fonts/BuilderSans-SemiBold.woff2" | url }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ "/assets/fonts/BuilderIcons-Subset.woff2" | url }}" as="font" type="font/woff2" crossorigin>
+    <script type="module" src="{{ "/assets/demo.js" | url }}"></script>
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Studio Discover">
     <meta property="og:title" content="{{ site.title }}">
     <meta property="og:description" content="{{ site.description }}">
     <meta property="og:url" content="{{ site.url }}">
-    <meta property="og:image" content="{{ site.url }}assets/screenshot-dark.png">
-    <meta property="og:image:alt" content="Studio Discover browsing Wally and pesde packages in Roblox Studio.">
+    <meta property="og:image" content="{{ site.url }}assets/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Studio Discover showing the packages installed in a place, beside the headline Your package manager. Right inside Studio.">
     <meta name="twitter:card" content="summary_large_image">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <div class="page">
-      <header class="site-header">
-        <a class="brand" href="{{ "/" | url }}" aria-label="Studio Discover home">
-          <img src="{{ "/assets/icon.png" | url }}" alt="" width="64" height="64">
+    <header class="site-header">
+      <div class="inner header-row">
+        <a class="brand" href="{{ "/" | url }}">
+          <img src="{{ "/assets/icon.png" | url }}" alt="" width="32" height="32">
           <span>Studio Discover</span>
         </a>
-        <nav class="header-links" aria-label="Get Studio Discover">
-          <a class="header-install" href="{{ site.creatorStore }}">Get the plugin</a>
-          <a class="source-link" href="{{ site.github }}" aria-label="Studio Discover on GitHub">
-            <img src="{{ "/assets/github.svg" | url }}" alt="" width="24" height="24">
+        <a class="github" href="{{ site.github }}" aria-label="Studio Discover on GitHub">
+          <svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true">
+            <path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+          </svg>
+        </a>
+        <a class="primary small" href="{{ site.creatorStore }}">Get the plugin</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero inner" aria-labelledby="hero-heading">
+        <h1 id="hero-heading">Your package manager.<br>Right inside Studio.</h1>
+        <p class="subline">Browse and install Wally and pesde packages in the place you have open. Dependencies and types come with them.</p>
+        <div class="actions">
+          <a class="primary" href="{{ site.creatorStore }}">Get Studio Discover <span aria-hidden="true">&#8599;</span></a>
+          <a class="text-link" href="{{ site.github }}">View on GitHub</a>
+        </div>
+        <p class="proof">Free on the Creator Store. No terminal, no Rokit, no repository setup.</p>
+      </section>
+
+      <section class="stage inner" aria-label="Demo">
+        <p class="visually-hidden">A demonstration of Studio Discover. It browses Wally, docks to a narrow width, switches to Installed through the title menu, updates two packages, switches to the light theme, and widens again.</p>
+        <div class="frame" aria-hidden="true">
+          <div class="scale">{% include "demo.njk" %}</div>
+        </div>
+        <p class="caption">Every install can be undone with Ctrl+Z.</p>
+      </section>
+
+      <section class="features inner" aria-label="What it does">
+        <div>
+          <h2>Wally and pesde, side by side.</h2>
+          <p>Search both registries from one box, or browse each on its own. Packages from both land in the same place, with the folders each one expects.</p>
+        </div>
+        <div>
+          <h2>Fits wherever you dock it.</h2>
+          <p>Docked at 306px or spread across a second monitor, Discover lays itself out for the space it has, and follows Studio's light and dark themes.</p>
+        </div>
+        <div>
+          <h2>Updates in one click.</h2>
+          <p>Installed packages show when a newer version is out. Update one, or all of them, and Discover warns you before a major version that might need code changes.</p>
+        </div>
+        <div>
+          <h2>Every install can be undone.</h2>
+          <p>Discover writes the whole tree in one Studio change, so Ctrl+Z takes an install back out. If anything fails partway, nothing is left half-applied.</p>
+        </div>
+      </section>
+
+      <section class="sources inner" aria-labelledby="sources-heading">
+        <h2 class="small-heading" id="sources-heading">Works with the registries you already use</h2>
+        <div class="source-list">
+          <a class="source" href="https://wally.run">
+            <img src="{{ "/assets/wally.png" | url }}" alt="" width="40" height="40">
+            <span><b>Wally</b><span>by Uplift Games</span></span>
           </a>
-        </nav>
-      </header>
+          <a class="source" href="https://pesde.dev">
+            <img src="{{ "/assets/pesde.png" | url }}" alt="" width="40" height="40">
+            <span><b>pesde</b><span>by daimond113</span></span>
+          </a>
+        </div>
+      </section>
 
-      <main id="main">
-        <section class="hero" aria-labelledby="hero-heading">
-          <div class="hero-heading inner">
-            <h1 id="hero-heading">Your package manager.<br>Right inside Studio.</h1>
-          </div>
-          <figure class="product-stage">
-            <img
-              class="screenshot"
-              src="{{ "/assets/screenshot-dark.png" | url }}"
-              alt="The Studio Discover package manager running in Roblox Studio, showing packages from Wally and pesde."
-              width="947"
-              height="700"
-              fetchpriority="high"
-            >
-          </figure>
-          <div class="install">
-            <p class="intro">Install Wally and pesde packages in the place you have open. Discover brings the dependencies and types with them.</p>
-            <div class="install-action">
-              <a class="cta" href="{{ site.creatorStore }}">Get Studio Discover <span aria-hidden="true">&#8599;</span></a>
-              <p class="setup">No terminal. No repository setup.</p>
-            </div>
-          </div>
-        </section>
+      <section class="how inner" aria-labelledby="how-heading">
+        <h2 class="small-heading" id="how-heading">How it works</h2>
+        <ol>
+          <li><h3>Find a package.</h3><p>Search every source, or browse one.</p></li>
+          <li><h3>Pick a version.</h3><p>Discover resolves the dependency graph in Studio, with no external tools.</p></li>
+          <li><h3>Install.</h3><p>The package, its dependencies, and its types are written into your place in one undoable change.</p></li>
+        </ol>
+      </section>
 
-        <section class="story inner" aria-labelledby="story-heading">
-          <div>
-            <h2 class="section-title" id="story-heading">Made for the way<br>you build.</h2>
-            <p class="body-copy">Search for a package, install it, and get back to your game.</p>
-          </div>
-          <div class="features">
-            <div>
-              <h3>Two registries in one place.</h3>
-              <p>Browse <a href="https://wally.run">Wally</a> and <a href="https://pesde.dev">pesde</a> without switching tools.</p>
-            </div>
-            <div>
-              <h3>Manage it where you use it.</h3>
-              <p>View installed packages, check for updates, and uninstall from Studio.</p>
-            </div>
-            <div>
-              <h3>Fits your Studio.</h3>
-              <p>A dockable plugin with Studio's light and dark themes.</p>
-            </div>
-          </div>
-        </section>
+      <section class="get-started inner" aria-labelledby="get-started-heading">
+        <h2 id="get-started-heading">Open Studio. Find your next package.</h2>
+        <a class="primary" href="{{ site.creatorStore }}">Get Studio Discover <span aria-hidden="true">&#8599;</span></a>
+      </section>
+    </main>
 
-        <section class="get-started" aria-labelledby="get-started-heading">
-          <h2 class="section-title" id="get-started-heading">Open Studio.<br>Find your next package.</h2>
-          <a class="cta" href="{{ site.creatorStore }}">Get Studio Discover <span aria-hidden="true">&#8599;</span></a>
-        </section>
-      </main>
-
-      <footer class="site-footer">
+    <footer class="site-footer">
+      <div class="inner footer-row">
         <span>Studio Discover</span>
         <nav aria-label="Project links">
           <a href="{{ site.github }}">Source</a>
           <a href="{{ site.github }}/releases">Releases</a>
           <a href="{{ "/assets/fonts/LICENSE.txt" | url }}">Font license</a>
         </nav>
-      </footer>
-    </div>
+      </div>
+    </footer>
   </body>
 </html>

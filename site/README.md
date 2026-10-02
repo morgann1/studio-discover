@@ -19,7 +19,8 @@ npm run lint
 npm run build -- --pathprefix=/studio-discover/
 ```
 
-Eleventy writes the static site to `_site/`. The page has no browser JavaScript.
+Eleventy writes the static site to `_site/`. The page has one small script, `src/assets/demo.js`,
+which plays the product demo. Without it, the demo shows its final frame.
 
 ## Publish to GitHub Pages
 
@@ -30,11 +31,27 @@ without deploying.
 
 ## Assets
 
-The build copies the icon and screenshot from `.github/assets/` in the repository.
+The build copies the plugin icon from `.github/assets/` in the repository.
 
-The white GitHub mark in `src/assets/github.svg` comes from
-[SVGL](https://svgl.app/library/github_dark.svg). Its use is subject to
-[GitHub's brand guidelines](https://brand.github.com/).
+The demo is the plugin's widget rebuilt in HTML and CSS. Its packages live in
+`src/_data/demo.json`, and its markup in `src/_includes/demo.njk`.
+
+The GitHub mark in the header comes from [SVGL](https://svgl.app/library/github_dark.svg).
+Its use is subject to [GitHub's brand guidelines](https://brand.github.com/).
+
+`src/assets/wally.png` and `src/assets/pesde.png` are the favicons of
+[wally.run](https://wally.run) and [pesde.dev](https://pesde.dev), the same marks the plugin uses.
+
+`src/assets/fonts/BuilderIcons-Subset.woff2` is a subset of Roblox's BuilderIcons font with only
+the glyphs the demo draws.
+
+`src/assets/og.png` is the social image. It is `og/og.html` rendered at 1200x630, so it follows
+the README's dark screenshot. After that screenshot changes, render it again with Chrome from
+`site/`:
+
+```sh
+chrome --headless=new --hide-scrollbars --window-size=1200,630 --screenshot=src/assets/og.png og/og.html
+```
 
 Builder Sans Regular and SemiBold are self-hosted in `src/assets/fonts/`. The files
 come from Roblox's Foundation CDN:

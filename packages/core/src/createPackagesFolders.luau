@@ -24,6 +24,8 @@ export type PackagesFolders = {
 	read findIndex: (realm: types.Realm) -> Instance?,
 	-- Returns the realm's index, creating it and the packages folder above it.
 	read getIndex: (realm: types.Realm) -> Folder,
+	-- Returns where the realm.s packages folder is, as the user would find it, such as "ReplicatedStorage.Packages".
+	read path: (realm: types.Realm) -> string,
 }
 
 --[[
@@ -63,11 +65,17 @@ const function createPackagesFolders(names: Names): PackagesFolders
 		return getOrCreateFolder(get(realm), names.index)
 	end
 
+	const function path(realm: types.Realm): string
+		const parent, name = location(realm)
+		return `{parent.Name}.{name}`
+	end
+
 	return table.freeze({
 		find = find,
 		get = get,
 		findIndex = findIndex,
 		getIndex = getIndex,
+		path = path,
 	})
 end
 

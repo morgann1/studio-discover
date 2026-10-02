@@ -6,7 +6,7 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const Content = require(StudioDiscover.Source.Common.Content)
-const Navigation = require(StudioDiscover.Source.Navigation)
+const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const Screen = require(StudioDiscover.Source.Common.Screen)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
@@ -14,6 +14,7 @@ const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const Row = require(script.Row)
 
 const Button = Foundation.Button
+const Text = Foundation.Text
 const View = Foundation.View
 const ButtonVariant = Foundation.Enums.ButtonVariant
 const IconName = Foundation.Enums.IconName
@@ -49,13 +50,21 @@ end
 -- Edits the rules that give specific packages a fixed alias when installed.
 const function DisplayNamesScreen()
 	const rules = SettingsStore.useSettings().displayNames
+	const layout = LayoutContext.useLayout()
 	const nextOrder = createNextOrder()
-	const children: { [string]: React.Node } = {}
+	const children: { [string]: React.Node } = {
+		Intro = e(Text, {
+			tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left text-wrap",
+			Text = "A package listed here installs under its display name instead of a name from the naming convention.",
+			LayoutOrder = nextOrder(),
+		}),
+	}
 
 	for index, rule in rules do
 		children[`Rule_{index}`] = e(Row, {
 			name = rule.name,
 			displayName = rule.displayName,
+			isStacked = not layout.isWide,
 			onNameChanged = function(name: string)
 				setRule(rules, index, { name = name, displayName = rule.displayName })
 			end,
@@ -74,27 +83,25 @@ const function DisplayNamesScreen()
 		LayoutOrder = nextOrder(),
 	}, {
 		AddButton = e(Button, {
-			text = "Add entry",
-			icon = IconName.Plus,
-			variant = ButtonVariant.Utility,
-			size = InputSize.Medium,
+			text = "Add name",
+			icon = IconName.PlusSmall,
+			variant = ButtonVariant.Standard,
+			size = InputSize.Small,
 			onActivated = function()
 				addRule(rules)
 			end,
+			LayoutOrder = 1,
 		}),
 		ClearButton = #rules > 0 and e(Button, {
 			text = "Clear all",
-			icon = IconName.Trash,
-			variant = ButtonVariant.Alert,
-			size = InputSize.Medium,
+			variant = ButtonVariant.Utility,
+			size = InputSize.Small,
 			onActivated = clearRules,
+			LayoutOrder = 2,
 		}),
 	})
 
-	return e(Screen, {
-		title = "Display Names",
-		onBack = Navigation.popScreen,
-	}, {
+	return e(Screen, {}, {
 		Body = e(Content, {}, children),
 	})
 end

@@ -3,160 +3,82 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const Foundation = require(StudioDiscover.Packages.Foundation)
-const Motion = require(StudioDiscover.Packages.Motion)
 const React = require(StudioDiscover.Packages.React)
 
-const Installer = require(StudioDiscover.Source.Installer)
+const LocationList = require(StudioDiscover.Source.Common.Locations.LocationList)
 const Navigation = require(StudioDiscover.Source.Navigation)
 const SearchStore = require(StudioDiscover.Source.SearchStore)
-const SettingsStore = require(StudioDiscover.Source.SettingsStore)
-
-const Item = require(script.Item)
+const SidebarStore = require(StudioDiscover.Source.SidebarStore)
+const ToolButton = require(StudioDiscover.Source.Common.ToolButton)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-const useAtom = require(StudioDiscover.Source.Common.useAtom)
-const useTokens = require(StudioDiscover.Source.Common.useTokens)
+const iconName = require(StudioDiscover.Source.Util.iconName)
 
-const Divider = Foundation.Divider
-const IconButton = Foundation.IconButton
+const ScrollView = Foundation.ScrollView
 const SearchInput = Foundation.SearchInput
 const View = Foundation.View
-const ButtonVariant = Foundation.Enums.ButtonVariant
-const IconName = Foundation.Enums.IconName
 const InputSize = Foundation.Enums.InputSize
-
-const TransitionPreset = Motion.TransitionPreset
-const useMotion = Motion.useMotion
 
 const e = React.createElement
 
-type ItemDef = {
-	read name: Navigation.ScreenName,
-	read text: string,
-	read icon: string,
-}
+const WIDTH = 232
 
-const ITEMS: { ItemDef } = {
-	{ name = "Home", text = "Home", icon = IconName.House },
-	{ name = "Manage", text = "Installed", icon = IconName.Folder },
-	{ name = "Updates", text = "Updates", icon = IconName.ArrowRotateRight },
-	{ name = "Settings", text = "Settings", icon = IconName.Gear },
-}
+-- Typing a query shows the results across every source, wherever the user was.
+const function onSearchChanged(text: string)
+	SearchStore.setQuery(text)
 
-const EXPANDED_WIDTH = 252
-const COMPACT_WIDTH = 56
+	if text ~= "" and Navigation.getRoute().name ~= "Search" then
+		Navigation.resetScreen({ name = "Search" })
+	end
+end
 
---[[
-	The search box and the top-level screens. Compact shows icons only, and the
-		search icon expands the sidebar until the search box loses focus.
-]]
+-- The sidebar toggle, the search across sources, and the locations.
 const function Sidebar(props: {
-	read compact: boolean,
 	read LayoutOrder: number?,
 })
-	const tokens = useTokens()
-	const current = Navigation.useScreen().route.name
-	const searchText = SearchStore.useQuery()
-	const searchExpanded, setSearchExpanded = React.useState(false)
-	const searchBoxRef = React.useRef(nil :: Foundation.TextInputRef?)
-	const updatesCount = #Installer.useUpdates().updates
-	const reduceMotion = useAtom(function()
-		return SettingsStore.getSettings().reduceMotion
-	end)
-
-	const compact = props.compact and not searchExpanded
-
-	React.useEffect(function()
-		const searchBox = searchBoxRef.current
-		if searchExpanded and searchBox ~= nil then
-			searchBox.focus()
-		end
-	end, { searchExpanded })
-
-	-- Results only render on Home, so typing a query from another screen goes there.
-	React.useEffect(function()
-		if searchText ~= "" and current ~= "Home" then
-			Navigation.resetScreen({ name = "Home" })
-		end
-	end, { searchText })
-
-	const onSearchIconActivated = React.useCallback(function()
-		setSearchExpanded(true)
-	end, {})
-
-	const onSearchFocusLost = React.useCallback(function()
-		setSearchExpanded(false)
-	end, {})
-
-	const states = React.useMemo(function()
-		const duration = if reduceMotion then 0 else tokens.Time.Time_200
-		const transition = Motion.transition(TransitionPreset.Default, { duration = duration })
-
-		return {
-			Expanded = Motion.createState({ width = EXPANDED_WIDTH }, { default = transition }),
-			Compact = Motion.createState({ width = COMPACT_WIDTH }, { default = transition }),
-		}
-	end, { tokens, reduceMotion } :: { unknown })
-
-	const values, animate = useMotion(states.Expanded)
-
-	React.useEffect(function()
-		animate(if compact then states.Compact else states.Expanded)
-	end, { compact, states } :: { unknown })
-
+	const query = SearchStore.useQuery()
 	const nextOrder = createNextOrder()
-	const nextItemOrder = createNextOrder()
-
-	const items: { [string]: React.Node } = {}
-	for _, item in ITEMS do
-		items[item.name] = e(Item, {
-			text = item.text,
-			icon = item.icon,
-			isActive = current == item.name,
-			compact = compact,
-			badge = if item.name == "Updates" then updatesCount else nil,
-			LayoutOrder = nextItemOrder(),
-			onActivated = function()
-				Navigation.resetScreen({ name = item.name })
-			end,
-		})
-	end
 
 	return e(View, {
-		tag = "col gap-small padding-small bg-surface-100",
-		Size = values.width:map(function(width: number)
-			return UDim2.new(0, width, 1, 0)
-		end),
+		tag = "size-0-full col gap-medium padding-small",
+		Size = UDim2.new(0, WIDTH, 1, 0),
 		LayoutOrder = props.LayoutOrder,
-		ZIndex = 3,
 	}, {
-		Search = if compact
-			then e(IconButton, {
-				icon = IconName.MagnifyingGlass,
-				size = InputSize.Medium,
-				variant = ButtonVariant.Utility,
-				onActivated = onSearchIconActivated,
-				LayoutOrder = nextOrder(),
-			})
-			else e(SearchInput, {
-				ref = searchBoxRef,
-				text = searchText,
-				placeholder = "Search",
-				size = InputSize.Medium,
-				width = UDim.new(1, 0),
-				onChanged = SearchStore.setQuery,
-				onFocusLost = onSearchFocusLost,
-				LayoutOrder = nextOrder(),
+		Top = e(View, {
+			tag = "size-full-0 auto-y row align-y-center gap-small",
+			LayoutOrder = nextOrder(),
+		}, {
+			Toggle = e(ToolButton, {
+				icon = iconName("Sidebar"),
+				label = "Hide sidebar",
+				onActivated = SidebarStore.toggleCollapsed,
+				LayoutOrder = 1,
 			}),
-
-		Divider = e(Divider, {
-			LayoutOrder = nextOrder(),
+			Search = e(View, {
+				tag = "grow auto-y",
+				LayoutOrder = 2,
+			}, {
+				Input = e(SearchInput, {
+					text = query,
+					placeholder = "Search all sources",
+					size = InputSize.Small,
+					width = UDim.new(1, 0),
+					onChanged = onSearchChanged,
+				}),
+			}),
 		}),
-
-		Nav = e(View, {
-			tag = "grow col",
-			Size = UDim2.fromScale(1, 0),
+		Locations = e(ScrollView, {
+			tag = "size-full-0 grow",
+			scroll = {
+				AutomaticCanvasSize = Enum.AutomaticSize.Y,
+				CanvasSize = UDim2.fromScale(0, 0),
+				ScrollingDirection = Enum.ScrollingDirection.Y,
+			},
 			LayoutOrder = nextOrder(),
-		}, items),
+		}, {
+			List = e(LocationList, {
+				isMenu = false,
+			}),
+		}),
 	})
 end
 

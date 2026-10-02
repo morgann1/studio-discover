@@ -11,10 +11,10 @@ const InputSize = Foundation.Enums.InputSize
 const e = React.createElement
 
 --[[
-	A dropdown for a `Setting` row's control. Each option is shown as its own text,
+	A dropdown for a settings row, `width` wide. Each option is shown as its own text,
 		and `onChange` receives the option itself rather than the dropdown's string id.
 ]]
-const function settingDropdown<T>(value: T, options: { T }, onChange: (value: T) -> ()): React.Node
+const function settingDropdown<T>(value: T, options: { T }, onChange: (value: T) -> (), width: UDim): React.Node
 	const items: { Foundation.DropdownItem } = {}
 	for _, option in options do
 		table.insert(items, { id = tostring(option), text = tostring(option) })
@@ -33,7 +33,7 @@ const function settingDropdown<T>(value: T, options: { T }, onChange: (value: T)
 			end
 		end,
 		size = InputSize.Small,
-		width = UDim.new(0, 200),
+		width = width,
 	})
 end
 

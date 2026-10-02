@@ -62,8 +62,8 @@ The most common defect in this repo is a change that works on the path you teste
 
 - **Registries.** Wally and pesde each have their own package, and they never call each other. Fixing the Wally path is not fixing the feature, and reaching across from one into the other is not the fix either. If both need the same thing, it belongs in `packages/core/`.
 - **Realms.** `shared` and `server` resolve to different folders, different lockfile entries, and different alias collision sets.
-- **Screens.** Home, Package, Manage, Updates, Settings, Display Names, Registries. Behavior reachable from the package page is usually also reachable from Manage and Updates.
-- **Sidebar modes.** Expanded, Compact, and Auto, which flips on widget width. Every screen has to survive the 306px minimum.
+- **Screens.** Installed, Updates, each source, Search, Package, Settings, Display names. Behavior reachable from the package page is usually also reachable from Installed and Updates.
+- **Layouts.** Above Foundation's Small breakpoint the sidebar shows unless the user hides it; at Small and below the widget is docked and the header carries the location menu. Columns follow the widget's width, and the header follows whether the sidebar shows. Every screen has to survive the 306px minimum.
 - **Themes.** Foundation gives you light and dark for free, and only if you use its tokens. Never hardcode a color.
 - **Settings.** Behavior a user might want off belongs in `SettingsStore`: a default, a GreenTea validator, and a row on the Settings screen. A corrupt saved value must fall back to the default, not crash the plugin.
 - **Reverse states.** If you added a way in, add the way out and the way to see it. Install needs uninstall. A one-way door is a bug.
@@ -112,7 +112,7 @@ Semver: dependency bumps and small fixes are PATCH, new user-visible features ar
 
 ## How it works
 
-Search and metadata go through a per-registry HTTP client that is rate limited, honors `Retry-After` on a 429, and caches responses for five minutes. Installing resolves the requested roots against the lockfile in `ServerStorage`, downloads each archive, unzips or untars it in memory, and applies the whole tree into the place inside a single ChangeHistory recording. Roots get an alias ModuleScript in `Packages` pointing at the real content under `Packages/_Index`. UI state is Charm atoms read through `Common/useAtom`; navigation is a screen stack in one atom.
+Search and metadata go through a per-registry HTTP client that is rate limited, honors `Retry-After` on a 429, and caches responses for five minutes. Installing resolves the requested roots against the lockfile in `ServerStorage`, downloads each archive, unzips or untars it in memory, and applies the whole tree into the place inside a single ChangeHistory recording. Roots get an alias ModuleScript in `Packages` pointing at the real content under `Packages/_Index`. UI state is Charm atoms read through `Common/useAtom`; navigation is a back and forward history of screens in one atom.
 
 ## Where code lives
 
@@ -130,7 +130,7 @@ Three rules hold the shape together. A package requires its siblings through `St
 - `plugin/src/Installer/` - orchestration only: the ChangeHistory recording, the busy lock, install/update/uninstall, the Charm atoms and the `use*` hooks. The resolve and apply engines live in the registry packages. Most of the risk in this repo lives here.
 - `plugin/src/Screens/` - one folder per screen, `init.luau` plus its local pieces.
 - `plugin/src/Common/` - shells and hooks shared across screens.
-- `plugin/src/Navigation/`, `SettingsStore/`, `SearchStore/` - Charm-backed state, one file per operation.
+- `plugin/src/Navigation/`, `SettingsStore/`, `SearchStore/`, `SidebarStore/` - Charm-backed state, one file per operation.
 - `plugin/src/Util/` - one function per file, file named for the function. Anything a package would also want belongs in `packages/core/` instead.
 - `plugin/src/Plugin/` - Studio-facing glue: the plugin handle, widget mounting, settings persistence.
 - `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` - generated, gitignored, never edited by hand.

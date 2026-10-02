@@ -1,17 +1,18 @@
 --!strict
 
 const createScreen = require(script.Parent.createScreen)
-const screensAtom = require(script.Parent.screensAtom)
+const historyAtom = require(script.Parent.historyAtom)
 const types = require(script.Parent.types)
 
+-- Shows a new screen over the current one. Going somewhere new forgets the forward screens.
 const function pushScreen(route: types.Route)
 	const screen = createScreen(route)
 
-	screensAtom(function(stack)
-		const nextStack = table.clone(stack)
-		table.insert(nextStack, screen)
+	historyAtom(function(history)
+		const stack = table.clone(history.stack)
+		table.insert(stack, screen)
 
-		return nextStack
+		return { stack = stack, forward = {} }
 	end)
 end
 

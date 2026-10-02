@@ -5,57 +5,76 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
-const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const ToolButton = require(StudioDiscover.Source.Common.ToolButton)
+const iconName = require(StudioDiscover.Source.Util.iconName)
 
-const Button = Foundation.Button
+const Divider = Foundation.Divider
 const TextInput = Foundation.TextInput
 const View = Foundation.View
-const ButtonVariant = Foundation.Enums.ButtonVariant
-const IconName = Foundation.Enums.IconName
 const InputSize = Foundation.Enums.InputSize
 
 const e = React.createElement
 
--- One display-name rule: the package name, the alias to give it, and a Remove button.
+--[[
+	One display-name rule: the package name, the name to give it, and a remove button.
+		With `isStacked`, the two inputs stack so the row fits a docked widget.
+]]
 const function Row(props: {
 	read name: string,
 	read displayName: string,
+	read isStacked: boolean,
 	read onNameChanged: (string) -> (),
 	read onDisplayNameChanged: (string) -> (),
 	read onRemove: () -> (),
 	read LayoutOrder: number?,
 })
-	const nextOrder = createNextOrder()
+	const isStacked = props.isStacked
+	const inputWidth = if isStacked then UDim.new(1, 0) else UDim.new(0.5, -4)
 
 	return e(View, {
-		tag = "size-full-0 auto-y row align-y-center gap-small",
+		tag = "size-full-0 auto-y col gap-medium",
 		LayoutOrder = props.LayoutOrder,
 	}, {
-		Name = e(TextInput, {
-			text = props.name,
-			label = "",
-			placeholder = "Package name",
-			size = InputSize.Medium,
-			width = UDim.new(0.5, -50),
-			onChanged = props.onNameChanged,
-			LayoutOrder = nextOrder(),
+		Row = e(View, {
+			tag = "size-full-0 auto-y row align-y-center gap-small",
+			LayoutOrder = 1,
+		}, {
+			Inputs = e(View, {
+				tag = {
+					["grow auto-y gap-small"] = true,
+					["col"] = isStacked,
+					["row"] = not isStacked,
+				},
+				LayoutOrder = 1,
+			}, {
+				Name = e(TextInput, {
+					text = props.name,
+					label = "",
+					placeholder = "Package name",
+					size = InputSize.Medium,
+					width = inputWidth,
+					onChanged = props.onNameChanged,
+					LayoutOrder = 1,
+				}),
+				DisplayName = e(TextInput, {
+					text = props.displayName,
+					label = "",
+					placeholder = "Display name",
+					size = InputSize.Medium,
+					width = inputWidth,
+					onChanged = props.onDisplayNameChanged,
+					LayoutOrder = 2,
+				}),
+			}),
+			Remove = e(ToolButton, {
+				icon = iconName("TrashCan"),
+				label = "Remove",
+				onActivated = props.onRemove,
+				LayoutOrder = 2,
+			}),
 		}),
-		DisplayName = e(TextInput, {
-			text = props.displayName,
-			label = "",
-			placeholder = "Display name",
-			size = InputSize.Medium,
-			width = UDim.new(0.5, -50),
-			onChanged = props.onDisplayNameChanged,
-			LayoutOrder = nextOrder(),
-		}),
-		Remove = e(Button, {
-			text = "Remove",
-			icon = IconName.Trash,
-			size = InputSize.Medium,
-			variant = ButtonVariant.Utility,
-			onActivated = props.onRemove,
-			LayoutOrder = nextOrder(),
+		Divider = isStacked and e(Divider, {
+			LayoutOrder = 2,
 		}),
 	})
 end
