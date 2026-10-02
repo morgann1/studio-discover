@@ -1,25 +1,19 @@
 --!strict
 
-local MESSAGE = "Discover needs script injection permission to modify packages. "
-	.. "Retry the action — Studio should now prompt you to allow it. "
+const MESSAGE = "Discover needs script injection permission to modify packages. "
+	.. "Retry the action, and Studio should prompt you to allow it. "
 	.. "If the permission was previously denied, grant it from Plugin → Manage Plugins → Discover."
 
-local function isPermissionError(err: any): boolean
-	if typeof(err) ~= "string" then
-		return false
-	end
-	return string.find(err, "denied script injection permission", 1, true) ~= nil
-end
-
-local function describe(err: any): string
-	if isPermissionError(err) then
+--[[
+	Describes an error thrown while writing to the place. Studio's script injection
+		denial becomes instructions for granting it, and anything else is passed through.
+]]
+const function permissionError(err: unknown): string
+	if typeof(err) == "string" and string.find(err, "denied script injection permission", 1, true) ~= nil then
 		return MESSAGE
 	end
+
 	return tostring(err)
 end
 
-return table.freeze({
-	isPermissionError = isPermissionError,
-	describe = describe,
-	MESSAGE = MESSAGE,
-})
+return permissionError

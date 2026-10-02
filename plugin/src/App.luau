@@ -1,41 +1,36 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
-local ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
-local DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
-local HomeScreen = require(StudioDiscover.Source.Screens.HomeScreen)
-local Installer = require(StudioDiscover.Source.Installer)
-local ManageScreen = require(StudioDiscover.Source.Screens.ManageScreen)
-local Navigation = require(StudioDiscover.Source.Navigation)
-local PackageScreen = require(StudioDiscover.Source.Screens.PackageScreen)
-local RegistriesScreen = require(StudioDiscover.Source.Screens.RegistriesScreen)
-local SettingsScreen = require(StudioDiscover.Source.Screens.SettingsScreen)
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local Sidebar = require(StudioDiscover.Source.Common.Sidebar)
-local UpdatesScreen = require(StudioDiscover.Source.Screens.UpdatesScreen)
-local buildConfig = require(StudioDiscover.Generated.buildConfig)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-local useAtom = require(StudioDiscover.Source.Common.useAtom)
-local useIsCompact = require(StudioDiscover.Source.Common.useIsCompact)
+const CompactContext = require(StudioDiscover.Source.Common.CompactContext)
+const ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
+const DisplayNamesScreen = require(StudioDiscover.Source.Screens.DisplayNamesScreen)
+const HomeScreen = require(StudioDiscover.Source.Screens.HomeScreen)
+const Installer = require(StudioDiscover.Source.Installer)
+const ManageScreen = require(StudioDiscover.Source.Screens.ManageScreen)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const PackageScreen = require(StudioDiscover.Source.Screens.PackageScreen)
+const RegistriesScreen = require(StudioDiscover.Source.Screens.RegistriesScreen)
+const SettingsScreen = require(StudioDiscover.Source.Screens.SettingsScreen)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const Sidebar = require(StudioDiscover.Source.Common.Sidebar)
+const UpdatesScreen = require(StudioDiscover.Source.Screens.UpdatesScreen)
+const buildConfig = require(StudioDiscover.Generated.buildConfig)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const useAtom = require(StudioDiscover.Source.Common.useAtom)
+const useIsCompact = require(StudioDiscover.Source.Common.useIsCompact)
 
-local Divider = Foundation.Divider
-local View = Foundation.View
-local Orientation = Foundation.Enums.Orientation
+const Divider = Foundation.Divider
+const View = Foundation.View
+const Orientation = Foundation.Enums.Orientation
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	plugin: Plugin,
-	overlayGui: DockWidgetPluginGui,
-}
-
-local SCREENS: { [string]: React.ComponentType<any> } = {
-	Package = PackageScreen,
+const SCREENS: { [Navigation.ScreenName]: React.ComponentType<{}> } = {
+	Home = HomeScreen,
 	Manage = ManageScreen,
 	Updates = UpdatesScreen,
 	Settings = SettingsScreen,
@@ -43,30 +38,40 @@ local SCREENS: { [string]: React.ComponentType<any> } = {
 	Registries = RegistriesScreen,
 }
 
-local CurrentScreen = React.memo(function()
-	local screen = Navigation.useScreen()
-	return e(SCREENS[screen.name] or HomeScreen)
+-- Keyed by the screen's id, so pushing a screen over one of the same kind mounts it fresh.
+const CurrentScreen = React.memo(function()
+	const screen = Navigation.useScreen()
+	const route = screen.route
+
+	if route.name == "Package" then
+		return e(PackageScreen, { key = screen.id, target = route.target })
+	end
+
+	return e(SCREENS[route.name], { key = screen.id })
 end)
 
-local function App(props: Props)
-	local nextOrder = createNextOrder()
-	local auto = useIsCompact(props.overlayGui)
-	local sidebarMode = useAtom(function()
-		return SettingsStore.get().getStorage().sidebarMode
+-- The root of the widget: the sidebar beside the screen on top of the navigation stack.
+const function App(props: {
+	read widget: DockWidgetPluginGui,
+})
+	const widget = props.widget
+	const nextOrder = createNextOrder()
+	const isWidgetNarrow = useIsCompact(widget)
+	const sidebarMode = useAtom(function()
+		return SettingsStore.getSettings().sidebarMode
 	end)
 
-	local isCompact = if sidebarMode == "Expanded" then false elseif sidebarMode == "Compact" then true else auto
+	const isCompact = if sidebarMode == "Auto" then isWidgetNarrow else sidebarMode == "Compact"
 
-	local updatesCount = #Installer.useUpdates().updates
-	local widget = props.overlayGui
+	const updatesCount = #Installer.useUpdates().updates
 	React.useEffect(function()
 		widget.Title = if updatesCount > 0
 			then `{buildConfig.widgetTitle} · {updatesCount} update{if updatesCount == 1 then "" else "s"}`
 			else buildConfig.widgetTitle
-	end, { widget, updatesCount } :: { any })
+	end, { widget, updatesCount } :: { unknown })
 
 	return e(ContextProviders, {
-		overlayGui = props.overlayGui :: GuiBase2d,
+		overlayGui = widget,
 	}, {
 		CompactScope = e(CompactContext.Provider, {
 			value = isCompact,

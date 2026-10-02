@@ -1,31 +1,22 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
+const React = require(StudioDiscover.Packages.React)
 
-local COMPACT_THRESHOLD = 600
+const COMPACT_THRESHOLD = 600
 
-local function useIsCompact(instance: GuiBase2d?): boolean
-	local isCompact, setIsCompact = React.useState(true)
-	local isCompactRef = React.useRef(true)
+-- Returns whether `instance` is narrower than the width where the sidebar collapses.
+const function useIsCompact(instance: GuiBase2d): boolean
+	const isCompact, setIsCompact = React.useState(instance.AbsoluteSize.X < COMPACT_THRESHOLD)
 
-	React.useEffect(function(): (() -> ())?
-		if instance == nil then
-			return nil
-		end
-
-		local function update()
-			local next_ = instance.AbsoluteSize.X < COMPACT_THRESHOLD
-			if next_ == isCompactRef.current then
-				return
-			end
-			isCompactRef.current = next_
-			setIsCompact(next_)
+	React.useEffect(function()
+		const function update()
+			setIsCompact(instance.AbsoluteSize.X < COMPACT_THRESHOLD)
 		end
 
 		update()
-		local connection = instance:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
+		const connection = instance:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
 
 		return function()
 			connection:Disconnect()

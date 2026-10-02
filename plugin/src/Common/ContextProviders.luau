@@ -1,24 +1,20 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local useThemeName = require(StudioDiscover.Source.Common.useThemeName)
+const useThemeName = require(StudioDiscover.Source.Common.useThemeName)
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	overlayGui: GuiBase2d?,
-	children: React.ReactNode,
-}
-
-local function ContextProviders(props: Props)
-	local themeName = useThemeName()
-
+const function ContextProviders(props: {
+	read overlayGui: GuiBase2d,
+	read children: React.Node,
+})
 	return e(Foundation.FoundationProvider, {
-		theme = themeName,
+		theme = useThemeName(),
 		overlayGui = props.overlayGui,
 	}, props.children)
 end

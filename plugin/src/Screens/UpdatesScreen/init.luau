@@ -1,33 +1,34 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local Installer = require(StudioDiscover.Source.Installer)
-local Screen = require(StudioDiscover.Source.Common.Screen)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const Content = require(StudioDiscover.Source.Common.Content)
+const Installer = require(StudioDiscover.Source.Installer)
+const RootRow = require(StudioDiscover.Source.Common.RootRow)
+const Screen = require(StudioDiscover.Source.Common.Screen)
+const capitalize = require(StudioDiscover.Source.Util.capitalize)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Row = require(script.Row)
+const Button = Foundation.Button
+const Empty = Foundation.Empty
+const Loading = Foundation.Loading
+const Text = Foundation.Text
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const InputSize = Foundation.Enums.InputSize
 
-local Button = Foundation.Button
-local Empty = Foundation.Empty
-local Loading = Foundation.Loading
-local Text = Foundation.Text
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local InputSize = Foundation.Enums.InputSize
+const e = React.createElement
 
-local e = React.createElement
-
-local function UpdatesScreen()
-	local state = Installer.useUpdates()
-	local isBusy = Installer.useIsBusy()
-	local isUpdatingAll, setIsUpdatingAll = React.useState(false)
-	local errorText: string?, setErrorText = React.useState(nil :: string?)
-	local mountedRef = React.useRef(true)
+-- Lists the installed roots with a newer version, each with its own Update button and one for all.
+const function UpdatesScreen()
+	const state = Installer.useUpdates()
+	const isBusy = Installer.useIsBusy()
+	const isUpdatingAll, setIsUpdatingAll = React.useState(false)
+	const errorText, setErrorText = React.useState(nil :: string?)
+	const mountedRef = React.useRef(true)
 
 	React.useEffect(function()
 		return function()
@@ -35,35 +36,24 @@ local function UpdatesScreen()
 		end
 	end, {})
 
-	local onUpdateAll = React.useCallback(function()
-		if #state.updates == 0 then
-			return
-		end
-		local payload = {}
-		for _, entry in state.updates do
-			table.insert(payload, {
-				scope = entry.scope,
-				name = entry.name,
-				realm = entry.realm,
-				version = entry.latestVersion,
-				registry = entry.registry,
-			})
-		end
+	const function onUpdateAll()
 		setIsUpdatingAll(true)
 		setErrorText(nil)
+
 		task.spawn(function()
-			local result = Installer.updateAllAsync(payload)
+			const result = Installer.updateAllAsync(state.updates)
 			if not mountedRef.current then
 				return
 			end
+
 			setIsUpdatingAll(false)
 			if not result.ok then
-				setErrorText(result.error or "Update failed")
+				setErrorText(result.error)
 			end
 		end)
-	end, { state.updates } :: { any })
+	end
 
-	local body: React.ReactNode
+	local body: React.Node
 	if state.loading then
 		body = e(View, {
 			tag = "size-full align-x-center align-y-center",
@@ -79,43 +69,42 @@ local function UpdatesScreen()
 			}),
 		})
 	else
-		local nextOrder = createNextOrder()
-		local children: { [string]: any } = {}
-
-		children.Toolbar = e(View, {
-			tag = "size-full-0 auto-y row align-y-center gap-medium",
-			LayoutOrder = nextOrder(),
-		}, {
-			Count = e(Text, {
-				tag = "grow auto-y text-body-medium content-muted text-align-x-left",
-				Text = `{#state.updates} update(s) available`,
+		const nextOrder = createNextOrder()
+		const children: { [string]: React.Node } = {
+			Toolbar = e(View, {
+				tag = "size-full-0 auto-y row align-y-center gap-medium",
+				LayoutOrder = nextOrder(),
+			}, {
+				Count = e(Text, {
+					tag = "grow auto-y text-body-medium content-muted text-align-x-left",
+					Text = `{#state.updates} update(s) available`,
+				}),
+				UpdateAll = e(Button, {
+					text = if isUpdatingAll then "Updating…" else "Update All",
+					variant = ButtonVariant.Emphasis,
+					size = InputSize.Medium,
+					isDisabled = isBusy,
+					onActivated = onUpdateAll,
+				}),
 			}),
-			UpdateAll = e(Button, {
-				text = if isUpdatingAll then "Updating…" else "Update All",
-				variant = ButtonVariant.Emphasis,
-				size = InputSize.Medium,
-				isDisabled = isBusy,
-				onActivated = onUpdateAll,
-			}),
-		})
-
-		if errorText ~= nil then
-			children.Error = e(Text, {
+			Error = errorText ~= nil and e(Text, {
 				tag = "size-full-0 auto-y text-body-small content-alert text-align-x-left text-wrap",
 				Text = errorText,
 				LayoutOrder = nextOrder(),
-			})
-		end
+			}),
+		}
 
-		for _, entry in state.updates do
-			local key = `{entry.registry}::{entry.realm}::{entry.scope}/{entry.name}`
-			children[key] = e(Row, {
-				scope = entry.scope,
-				name = entry.name,
-				realm = entry.realm,
-				registry = entry.registry,
-				installedVersion = entry.installedVersion,
-				latestVersion = entry.latestVersion,
+		for _, update in state.updates do
+			children[`{update.registry}::{update.realm}::{update.scope}/{update.name}`] = e(RootRow, {
+				registry = update.registry,
+				scope = update.scope,
+				name = update.name,
+				meta = `v{update.installedVersion}  →  v{update.latestVersion} · {capitalize(update.realm)}`,
+				actionText = "Update",
+				isDestructive = false,
+				runActionAsync = function()
+					return Installer.updateAllAsync({ update })
+				end,
 				LayoutOrder = nextOrder(),
 			})
 		end

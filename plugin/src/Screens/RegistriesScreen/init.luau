@@ -1,39 +1,23 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local Navigation = require(StudioDiscover.Source.Navigation)
-local Screen = require(StudioDiscover.Source.Common.Screen)
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local Setting = require(StudioDiscover.Source.Screens.SettingsScreen.Setting)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const Content = require(StudioDiscover.Source.Common.Content)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const Screen = require(StudioDiscover.Source.Common.Screen)
+const Setting = require(StudioDiscover.Source.Screens.SettingsScreen.Setting)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const settingToggle = require(StudioDiscover.Source.Screens.SettingsScreen.settingToggle)
 
-local e = React.createElement
+const e = React.createElement
 
-type RegistryKey = "wally" | "pesde"
-
-local function setRegistry(prev: SettingsStore.RegistryEnableMap, registry: RegistryKey, enabled: boolean)
-	local next_ = table.clone(prev)
-	next_[registry] = enabled
-	SettingsStore.setSetting("registries", next_)
-end
-
-local function RegistriesScreen()
-	local settings = SettingsStore.useSettings()
-	local registries = settings.registries
-
-	local onWallyChange = React.useCallback(function(value: any)
-		setRegistry(registries, "wally", value)
-	end, { registries } :: { any })
-
-	local onPesdeChange = React.useCallback(function(value: any)
-		setRegistry(registries, "pesde", value)
-	end, { registries } :: { any })
-
-	local nextOrder = createNextOrder()
+-- Turns each registry on or off for search, metadata, and installs.
+const function RegistriesScreen()
+	const registries = SettingsStore.useSettings().registries
+	const nextOrder = createNextOrder()
 
 	return e(Screen, {
 		title = "Registries",
@@ -43,16 +27,18 @@ local function RegistriesScreen()
 			Wally = e(Setting, {
 				name = "Wally",
 				description = "Browse and install packages from the Wally registry (wally.run).",
-				value = registries.wally,
-				onChange = onWallyChange,
+				control = settingToggle(registries.wally, function(enabled)
+					SettingsStore.setSetting("registries", { wally = enabled, pesde = registries.pesde })
+				end),
 				LayoutOrder = nextOrder(),
 			}),
 
 			Pesde = e(Setting, {
 				name = "pesde",
 				description = "Browse and install packages from the pesde registry (pesde.dev).",
-				value = registries.pesde,
-				onChange = onPesdeChange,
+				control = settingToggle(registries.pesde, function(enabled)
+					SettingsStore.setSetting("registries", { wally = registries.wally, pesde = enabled })
+				end),
 				LayoutOrder = nextOrder(),
 			}),
 		}),

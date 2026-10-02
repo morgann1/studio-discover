@@ -1,127 +1,102 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const CompactContext = require(StudioDiscover.Source.Common.CompactContext)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const installerTypes = require(StudioDiscover.Source.Installer.types)
 
-local Button = Foundation.Button
-local Dropdown = Foundation.Dropdown
-local Progress = Foundation.Progress
-local Text = Foundation.Text
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local InputSize = Foundation.Enums.InputSize
-local ProgressShape = Foundation.Enums.ProgressShape
-local ProgressSize = Foundation.Enums.ProgressSize
+const Button = Foundation.Button
+const Dropdown = Foundation.Dropdown
+const Progress = Foundation.Progress
+const Text = Foundation.Text
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const InputSize = Foundation.Enums.InputSize
+const ProgressShape = Foundation.Enums.ProgressShape
+const ProgressSize = Foundation.Enums.ProgressSize
 
-local e = React.createElement
+const e = React.createElement
 
-local ACTIONS_WIDTH = 180
+const ACTIONS_WIDTH = 180
 
-type InstallStatus = "idle" | "running" | "success" | "error"
-
-type Props = {
-	scope: string,
-	name: string,
-	authors: { string }?,
-	description: string,
-	selectedVersion: string,
-	versionItems: { Foundation.DropdownItem },
-	onVersionChanged: (id: string) -> (),
-	installStatus: InstallStatus,
-	installMessage: string?,
-	isInstallBlocked: boolean,
-	onInstall: () -> (),
-	LayoutOrder: number?,
-}
-
-local function joinAuthors(authors: { string }): string
-	local names: { string } = {}
-	for _, raw in authors do
-		local stripped = raw:gsub("%s*<[^>]*>%s*", "")
-		local trimmed = stripped:match("^%s*(.-)%s*$") or ""
+-- Joins author names as prose, dropping the "<email>" part a manifest may include.
+const function joinAuthors(authors: { string }): string
+	const names: { string } = {}
+	for _, author in authors do
+		const stripped = string.gsub(author, "%s*<[^>]*>%s*", "")
+		const trimmed = string.match(stripped, "^%s*(.-)%s*$") or ""
 		if trimmed ~= "" then
 			table.insert(names, trimmed)
 		end
 	end
+
 	if #names == 0 then
 		return "unknown author"
-	end
-	if #names == 1 then
+	elseif #names == 1 then
 		return names[1]
-	end
-	if #names == 2 then
+	elseif #names == 2 then
 		return `{names[1]} and {names[2]}`
 	end
-	local head = table.concat({ table.unpack(names, 1, #names - 1) }, ", ")
-	return `{head}, and {names[#names]}`
+
+	return `{table.concat(names, ", ", 1, #names - 1)}, and {names[#names]}`
 end
 
-local function buttonText(status: InstallStatus): string
+const function buttonText(status: installerTypes.InstallStatus): string
 	if status == "success" then
 		return "Installed"
 	elseif status == "error" then
 		return "Retry"
 	end
+
 	return "Install"
 end
 
-local function Hero(props: Props)
-	local compact = CompactContext.useCompact()
+--[[
+	The top of the package screen: name, authors, and description beside the version
+		picker and install button. Stacks vertically when the sidebar is compact.
+]]
+const function Hero(props: {
+	read scope: string,
+	read name: string,
+	read authors: { string },
+	read description: string,
+	read selectedVersion: string,
+	read versionItems: { Foundation.DropdownItem },
+	read onVersionChanged: (id: string) -> (),
+	read installStatus: installerTypes.InstallStatus,
+	read installMessage: string?,
+	read isInstallBlocked: boolean,
+	read onInstall: () -> (),
+	read LayoutOrder: number?,
+})
+	const compact = CompactContext.useCompact()
+	const isRunning = props.installStatus == "running"
+	const nextIdentityOrder = createNextOrder()
 
-	local isRunning = props.installStatus == "running"
+	const identity: { [string]: React.Node } = {
+		Title = e(Text, {
+			tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left text-wrap",
+			Text = `{props.scope}/{props.name}`,
+			LayoutOrder = nextIdentityOrder(),
+		}),
+		Author = e(Text, {
+			tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left text-wrap",
+			Text = if #props.authors > 0 then `by {joinAuthors(props.authors)}` else `by {props.scope}`,
+			LayoutOrder = nextIdentityOrder(),
+		}),
+		Description = e(Text, {
+			tag = "size-full-0 auto-y text-body-medium content-default text-align-x-left text-wrap",
+			Text = props.description,
+			LayoutOrder = nextIdentityOrder(),
+		}),
+	}
 
-	local authorText: string
-	if props.authors ~= nil and #props.authors > 0 then
-		authorText = `by {joinAuthors(props.authors)}`
-	else
-		authorText = `by {props.scope}`
-	end
-
-	local nextTitleOrder = createNextOrder()
-
-	local title = e(Text, {
-		tag = "size-full-0 auto-y text-title-large content-emphasis text-align-x-left text-wrap",
-		Text = `{props.scope}/{props.name}`,
-		LayoutOrder = nextTitleOrder(),
-	})
-
-	local author = e(Text, {
-		tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left text-wrap",
-		Text = authorText,
-		LayoutOrder = nextTitleOrder(),
-	})
-
-	local description = e(Text, {
-		tag = "size-full-0 auto-y text-body-medium content-default text-align-x-left text-wrap",
-		Text = props.description,
-		LayoutOrder = nextTitleOrder(),
-	})
-
-	local installSlot: React.ReactNode
-	if isRunning then
-		installSlot = e(Progress, {
-			shape = ProgressShape.Bar,
-			size = ProgressSize.Medium,
-			width = UDim.new(1, 0),
-		})
-	else
-		installSlot = e(Button, {
-			text = buttonText(props.installStatus),
-			variant = ButtonVariant.Emphasis,
-			size = InputSize.Medium,
-			width = UDim.new(1, 0),
-			isDisabled = props.isInstallBlocked or props.installStatus == "success",
-			onActivated = props.onInstall,
-		})
-	end
-
-	local nextActionOrder = createNextOrder()
-	local actions = e(View, {
+	const nextActionOrder = createNextOrder()
+	const actions = e(View, {
 		tag = "size-full-0 auto-y col gap-xsmall",
 	}, {
 		Dropdown = e(Dropdown.Root, {
@@ -139,50 +114,58 @@ local function Hero(props: Props)
 			tag = "size-full-0 auto-y row align-y-center",
 			LayoutOrder = nextActionOrder(),
 		}, {
-			Content = installSlot,
+			Content = if isRunning
+				then e(Progress, {
+					shape = ProgressShape.Bar,
+					size = ProgressSize.Medium,
+					width = UDim.new(1, 0),
+				})
+				else e(Button, {
+					text = buttonText(props.installStatus),
+					variant = ButtonVariant.Emphasis,
+					size = InputSize.Medium,
+					width = UDim.new(1, 0),
+					isDisabled = props.isInstallBlocked or props.installStatus == "success",
+					onActivated = props.onInstall,
+				}),
 		}),
 	})
 
-	local statusLine: React.ReactNode = nil
-	if props.installMessage ~= nil and props.installMessage ~= "" then
-		statusLine = e(Text, {
+	const installMessage = props.installMessage
+	const status = installMessage ~= nil
+		and installMessage ~= ""
+		and e(Text, {
 			tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left text-truncate",
-			Text = props.installMessage,
+			Text = installMessage,
 		})
-	end
 
 	if compact then
-		local nextStackOrder = createNextOrder()
+		const nextOrder = createNextOrder()
+
 		return e(View, {
 			tag = "size-full-0 auto-y col gap-medium padding-large bg-surface-100 radius-medium",
 			LayoutOrder = props.LayoutOrder,
 		}, {
 			Identity = e(View, {
 				tag = "size-full-0 auto-y col gap-xsmall",
-				LayoutOrder = nextStackOrder(),
-			}, {
-				TitleText = title,
-				Author = author,
-				Description = description,
-			}),
+				LayoutOrder = nextOrder(),
+			}, identity),
 			Actions = e(View, {
 				tag = "size-full-0 auto-y row align-y-center",
-				LayoutOrder = nextStackOrder(),
+				LayoutOrder = nextOrder(),
 			}, {
 				Content = actions,
 			}),
-			Status = if statusLine ~= nil
-				then e(View, {
-					tag = "size-full-0 auto-y row",
-					LayoutOrder = nextStackOrder(),
-				}, {
-					Content = statusLine,
-				})
-				else nil,
+			Status = status and e(View, {
+				tag = "size-full-0 auto-y row",
+				LayoutOrder = nextOrder(),
+			}, {
+				Content = status,
+			}),
 		})
 	end
 
-	local nextRowOrder = createNextOrder()
+	const nextOrder = createNextOrder()
 
 	return e(View, {
 		tag = "size-full-0 auto-y row align-y-top gap-large padding-large bg-surface-100 radius-medium",
@@ -190,19 +173,15 @@ local function Hero(props: Props)
 	}, {
 		Left = e(View, {
 			tag = "grow auto-y col gap-xsmall",
-			LayoutOrder = nextRowOrder(),
-		}, {
-			TitleText = title,
-			Author = author,
-			Description = description,
-		}),
+			LayoutOrder = nextOrder(),
+		}, identity),
 		Right = e(View, {
 			tag = "auto-y col gap-xsmall",
 			Size = UDim2.fromOffset(ACTIONS_WIDTH, 0),
-			LayoutOrder = nextRowOrder(),
+			LayoutOrder = nextOrder(),
 		}, {
 			Actions = actions,
-			Status = statusLine,
+			Status = status,
 		}),
 	})
 end

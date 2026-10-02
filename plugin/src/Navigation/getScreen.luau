@@ -1,15 +1,15 @@
 --!strict
 
-local types = require(script.Parent.types)
+const types = require(script.Parent.types)
 
-local BASE_SCREEN: types.Screen = table.freeze({
+const HOME_SCREEN: types.Screen = {
 	id = "base",
-	name = "base",
-	options = table.freeze({}) :: { [string]: any },
-})
+	route = { name = "Home" },
+}
 
-local function getScreen(screens: { types.Screen }): types.Screen
-	return screens[#screens] or BASE_SCREEN
+-- Returns the screen on top of the stack, or Home when the stack is empty.
+const function getScreen(screens: { types.Screen }): types.Screen
+	return screens[#screens] or HOME_SCREEN
 end
 
 return getScreen

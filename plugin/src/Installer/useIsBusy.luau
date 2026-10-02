@@ -1,12 +1,14 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
-local useAtom = require(StudioDiscover.Source.Common.useAtom)
+const busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
+const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
-local function useIsBusy(): boolean
-	return useAtom(busyAtom)
+const function useIsBusy(): boolean
+	return useAtom(function()
+		return busyAtom()
+	end)
 end
 
 return useIsBusy

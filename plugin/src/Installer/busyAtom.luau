@@ -1,9 +1,10 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Charm = require(StudioDiscover.Packages.Charm)
+const Charm = require(StudioDiscover.Packages.Charm)
 
-local busyAtom = Charm.atom(false)
+-- Whether an installer operation is running. Only `runWithBusyLock` writes it.
+const busyAtom = Charm.atom(false)
 
 return busyAtom

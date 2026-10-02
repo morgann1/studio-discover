@@ -14,6 +14,7 @@ const project = table.freeze({
 	PLUGIN_PATH = "plugin",
 	PLUGIN_BIN_PATH = "plugin/bin",
 	PLUGIN_SRC_PATH = "plugin/src",
+	PLUGIN_TESTS_PATH = "plugin/tests",
 
 	PROJECT_PATH = "plugin/default.project.json",
 	TESTS_PROJECT_PATH = "plugin/test.project.json",

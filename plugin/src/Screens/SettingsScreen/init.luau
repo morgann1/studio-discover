@@ -1,126 +1,57 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local Navigation = require(StudioDiscover.Source.Navigation)
-local Screen = require(StudioDiscover.Source.Common.Screen)
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const Content = require(StudioDiscover.Source.Common.Content)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const Screen = require(StudioDiscover.Source.Common.Screen)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Setting = require(script.Setting)
+const Setting = require(script.Setting)
+const settingDropdown = require(script.settingDropdown)
+const settingToggle = require(script.settingToggle)
 
-local Button = Foundation.Button
-local Dialog = Foundation.Dialog
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local DialogSize = Foundation.Enums.DialogSize
-local IconName = Foundation.Enums.IconName
-local InputSize = Foundation.Enums.InputSize
-local Orientation = Foundation.Enums.Orientation
+const Button = Foundation.Button
+const Dialog = Foundation.Dialog
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const DialogSize = Foundation.Enums.DialogSize
+const IconName = Foundation.Enums.IconName
+const InputSize = Foundation.Enums.InputSize
+const Orientation = Foundation.Enums.Orientation
 
-local e = React.createElement
+const e = React.createElement
 
-local NAMING_CONVENTIONS: { string } =
-	table.freeze({ "Original", "PascalCase", "camelCase", "snake_case", "kebab-case" })
-local SIDEBAR_MODES: { string } = table.freeze({ "Auto", "Expanded", "Compact" })
+const function editButton(text: string, onActivated: () -> ()): React.Node
+	return e(Button, {
+		text = text,
+		icon = IconName.Pencil,
+		variant = ButtonVariant.Utility,
+		size = InputSize.Small,
+		onActivated = onActivated,
+	})
+end
 
-local function SettingsScreen()
-	local state = SettingsStore.useSettings()
-	local nextOrder = createNextOrder()
+const function SettingsScreen()
+	const settings = SettingsStore.useSettings()
+	const isConfirmingReset, setIsConfirmingReset = React.useState(false)
+	const nextOrder = createNextOrder()
 
-	local isConfirmingReset, setIsConfirmingReset = React.useState(false)
-
-	local onResetRequest = React.useCallback(function()
+	const function onResetRequest()
 		setIsConfirmingReset(true)
-	end, {})
+	end
 
-	local onResetCancel = React.useCallback(function()
+	const function onResetCancel()
 		setIsConfirmingReset(false)
-	end, {})
+	end
 
-	local onResetConfirm = React.useCallback(function()
+	const function onResetConfirm()
 		SettingsStore.resetToDefaults()
 		setIsConfirmingReset(false)
-	end, {})
-
-	local onNamingConventionChange = React.useCallback(function(value: any)
-		SettingsStore.setSetting("namingConvention", value)
-	end, {})
-
-	local onReduceMotionChange = React.useCallback(function(value: any)
-		SettingsStore.setSetting("reduceMotion", value)
-	end, {})
-
-	local onSidebarModeChange = React.useCallback(function(value: any)
-		SettingsStore.setSetting("sidebarMode", value)
-	end, {})
-
-	local onVerboseLoggingChange = React.useCallback(function(value: any)
-		SettingsStore.setSetting("verboseLogging", value)
-	end, {})
-
-	local onConfirmBeforeInstallChange = React.useCallback(function(value: any)
-		SettingsStore.setSetting("confirmBeforeInstall", value)
-	end, {})
-
-	local onEditDisplayNames = React.useCallback(function()
-		Navigation.pushScreen("DisplayNames")
-	end, {})
-
-	local onEditRegistries = React.useCallback(function()
-		Navigation.pushScreen("Registries")
-	end, {})
-
-	local editButton: React.ReactNode = e(Button, {
-		text = "Edit",
-		icon = IconName.Pencil,
-		variant = ButtonVariant.Utility,
-		size = InputSize.Small,
-		onActivated = onEditDisplayNames,
-	})
-
-	local resetButton: React.ReactNode = e(Button, {
-		text = "Reset",
-		variant = ButtonVariant.Utility,
-		size = InputSize.Small,
-		onActivated = onResetRequest,
-	})
-
-	local editRegistriesButton: React.ReactNode = e(Button, {
-		text = "Edit",
-		icon = IconName.Pencil,
-		variant = ButtonVariant.Utility,
-		size = InputSize.Small,
-		onActivated = onEditRegistries,
-	})
-
-	local confirmDialog: React.ReactNode = nil
-	if isConfirmingReset then
-		confirmDialog = e(Dialog.Root, {
-			size = DialogSize.Small,
-			hasBackdrop = true,
-			onClose = onResetCancel,
-		}, {
-			DialogTitle = e(Dialog.Title, {
-				text = "Reset settings?",
-			}),
-			DialogContent = e(Dialog.Content, {}, {
-				Body = e(Dialog.Text, {
-					Text = "This restores every setting to its default and clears any display name overrides. This can't be undone.",
-				}),
-			}),
-			DialogActions = e(Dialog.Actions, {
-				orientation = Orientation.Horizontal,
-				actions = {
-					{ text = "Cancel", variant = ButtonVariant.Standard, onActivated = onResetCancel },
-					{ text = "Reset", variant = ButtonVariant.Alert, onActivated = onResetConfirm },
-				},
-			}),
-		})
 	end
 
 	return e(Screen, { title = "Settings" }, {
@@ -131,67 +62,109 @@ local function SettingsScreen()
 				DisplayNames = e(Setting, {
 					name = "Display Names",
 					description = "Customize how specific packages are labeled across the plugin",
-					input = editButton,
+					control = editButton("Edit", function()
+						Navigation.pushScreen({ name = "DisplayNames" })
+					end),
 					LayoutOrder = nextOrder(),
 				}),
 
 				NamingConvention = e(Setting, {
 					name = "Naming Convention",
 					description = "How package names are displayed in lists and detail views",
-					value = state.namingConvention,
-					onChange = onNamingConventionChange,
-					options = NAMING_CONVENTIONS,
+					control = settingDropdown(
+						settings.namingConvention,
+						SettingsStore.NAMING_CONVENTIONS,
+						function(value: SettingsStore.NamingConvention)
+							SettingsStore.setSetting("namingConvention", value)
+						end
+					),
 					LayoutOrder = nextOrder(),
 				}),
 
 				ReduceMotion = e(Setting, {
 					name = "Reduce Motion",
 					description = "Disable UI animations. Foundation components still animate.",
-					value = state.reduceMotion,
-					onChange = onReduceMotionChange,
+					control = settingToggle(settings.reduceMotion, function(value)
+						SettingsStore.setSetting("reduceMotion", value)
+					end),
 					LayoutOrder = nextOrder(),
 				}),
 
 				SidebarDisplay = e(Setting, {
 					name = "Sidebar Display",
 					description = "Auto adjusts with widget width. Expanded shows labels; Compact is icon-only.",
-					value = state.sidebarMode,
-					onChange = onSidebarModeChange,
-					options = SIDEBAR_MODES,
+					control = settingDropdown(
+						settings.sidebarMode,
+						SettingsStore.SIDEBAR_MODES,
+						function(value: SettingsStore.SidebarMode)
+							SettingsStore.setSetting("sidebarMode", value)
+						end
+					),
 					LayoutOrder = nextOrder(),
 				}),
 
 				VerboseLogging = e(Setting, {
 					name = "Verbose Logging",
 					description = "Enable detailed diagnostic logging in the Output window",
-					value = state.verboseLogging,
-					onChange = onVerboseLoggingChange,
+					control = settingToggle(settings.verboseLogging, function(value)
+						SettingsStore.setSetting("verboseLogging", value)
+					end),
 					LayoutOrder = nextOrder(),
 				}),
 
 				ConfirmBeforeInstall = e(Setting, {
 					name = "Confirm Before Install",
 					description = "Show a confirmation dialog before installing a package",
-					value = state.confirmBeforeInstall,
-					onChange = onConfirmBeforeInstallChange,
+					control = settingToggle(settings.confirmBeforeInstall, function(value)
+						SettingsStore.setSetting("confirmBeforeInstall", value)
+					end),
 					LayoutOrder = nextOrder(),
 				}),
 
 				Registries = e(Setting, {
 					name = "Registries",
 					description = "Choose which registries Studio Discover will browse and install from",
-					input = editRegistriesButton,
+					control = editButton("Edit", function()
+						Navigation.pushScreen({ name = "Registries" })
+					end),
 					LayoutOrder = nextOrder(),
 				}),
 
 				ResetAll = e(Setting, {
 					name = "Reset to Defaults",
 					description = "Restore every setting to its default and clear display name overrides",
-					input = resetButton,
+					control = e(Button, {
+						text = "Reset",
+						variant = ButtonVariant.Utility,
+						size = InputSize.Small,
+						onActivated = onResetRequest,
+					}),
 					LayoutOrder = nextOrder(),
 				}),
 			}),
-			ConfirmResetDialog = confirmDialog,
+
+			ConfirmResetDialog = isConfirmingReset
+				and e(Dialog.Root, {
+					size = DialogSize.Small,
+					hasBackdrop = true,
+					onClose = onResetCancel,
+				}, {
+					DialogTitle = e(Dialog.Title, {
+						text = "Reset settings?",
+					}),
+					DialogContent = e(Dialog.Content, {}, {
+						Body = e(Dialog.Text, {
+							Text = "This restores every setting to its default and clears any display name overrides. This can't be undone.",
+						}),
+					}),
+					DialogActions = e(Dialog.Actions, {
+						orientation = Orientation.Horizontal,
+						actions = {
+							{ text = "Cancel", variant = ButtonVariant.Standard, onActivated = onResetCancel },
+							{ text = "Reset", variant = ButtonVariant.Alert, onActivated = onResetConfirm },
+						},
+					}),
+				}),
 		}),
 	})
 end

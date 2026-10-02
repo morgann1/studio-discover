@@ -1,44 +1,30 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local coreTypes = require(StudioDiscover.Core.types)
+const capitalize = require(StudioDiscover.Source.Util.capitalize)
+const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
+const types = require(StudioDiscover.Source.Installer.types)
 
-local capitalize = require(StudioDiscover.Source.Util.capitalize)
+const Dialog = Foundation.Dialog
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const DialogSize = Foundation.Enums.DialogSize
+const Orientation = Foundation.Enums.Orientation
 
-local Dialog = Foundation.Dialog
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local DialogSize = Foundation.Enums.DialogSize
-local Orientation = Foundation.Enums.Orientation
+const e = React.createElement
 
-local e = React.createElement
-
-type Realm = coreTypes.Realm
-type Registry = coreTypes.Registry
-
-local REGISTRY_LABELS: { [Registry]: string } = {
-	wally = "Wally",
-	pesde = "pesde",
-}
-
-type Props = {
-	scope: string,
-	name: string,
-	version: string,
-	registry: Registry,
-	realm: Realm,
-	onConfirm: () -> (),
-	onCancel: () -> (),
-}
-
-local function InstallConfirmDialog(props: Props)
-	local registryLabel = REGISTRY_LABELS[props.registry] or props.registry
-	local realmLabel = capitalize(props.realm)
-	local body = `Install {props.scope}/{props.name} v{props.version} from {registryLabel}? `
-		.. `Luau source will be fetched and written into the {realmLabel} packages folder of this place.`
+-- Asks the user to confirm an install before anything is fetched or written.
+const function InstallConfirmDialog(props: {
+	read request: types.InstallRequest,
+	read onConfirm: () -> (),
+	read onCancel: () -> (),
+})
+	const request = props.request
+	const body = `Install {request.scope}/{request.name} v{request.version} from {registryLabel(request.registry)}? `
+		.. `Luau source will be fetched and written into the {capitalize(request.realm)} packages folder of this place.`
 
 	return e(Dialog.Root, {
 		size = DialogSize.Small,

@@ -1,16 +1,19 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
+const React = require(StudioDiscover.Packages.React)
 
-local Context = React.createContext(false)
+-- Whether the sidebar is compact, which screens use to pick a one-column layout.
+const Context = React.createContext(false)
 
-local function useCompact(): boolean
+const function useCompact(): boolean
 	return React.useContext(Context)
 end
 
-return table.freeze({
+const CompactContext = table.freeze({
 	Provider = Context.Provider,
 	useCompact = useCompact,
 })
+
+return CompactContext

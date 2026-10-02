@@ -1,29 +1,33 @@
 --!strict
 
-local RunService = game:GetService("RunService")
-local StudioService = game:GetService("StudioService")
+const RunService = game:GetService("RunService")
+const StudioService = game:GetService("StudioService")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
-local buildConfig = require(StudioDiscover.Generated.buildConfig)
-local createLogger = require(StudioDiscover.Core.createLogger)
+const buildConfig = require(StudioDiscover.Generated.buildConfig)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const pluginAtom = require(StudioDiscover.Source.Plugin.pluginAtom)
 
-local logger = createLogger.createLogger("plugin.bootstrap")
+const logger = createLogger.createLogger("plugin.bootstrap")
 
-local WIDGET_INFO = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 936, 702, 306, 306)
+const WIDGET_INFO = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 936, 702, 306, 306)
 
-local TOOLBAR_NAME = "morganissocoollike"
+const TOOLBAR_NAME = "morganissocoollike"
 
 -- Picks the toolbar icon that contrasts with the ribbon in the current Studio theme.
-local function pickToolbarIcon(): string
-	local ribbonBackground = settings().Studio.Theme:GetColor(Enum.StudioStyleGuideColor.MainBackground)
-	local isDark = ribbonBackground.R + ribbonBackground.G + ribbonBackground.B < 1.5
+const function pickToolbarIcon(): string
+	const ribbonBackground = settings().Studio.Theme:GetColor(Enum.StudioStyleGuideColor.MainBackground)
+	const isDark = ribbonBackground.R + ribbonBackground.G + ribbonBackground.B < 1.5
 
 	return if isDark then buildConfig.icons.dark else buildConfig.icons.light
 end
 
-local function setupPlugin(plugin: Plugin): ()
+--[[
+	Creates the toolbar button and the dock widget. The app mounts the first time the
+		widget opens, so React and the screens only load once someone uses Discover.
+]]
+const function setupPlugin(plugin: Plugin)
 	if RunService:IsRunning() then
 		return
 	end
@@ -34,26 +38,26 @@ local function setupPlugin(plugin: Plugin): ()
 	end
 
 	plugin.Name = buildConfig.pluginName
+	pluginAtom(plugin)
 
-	PluginStore.get().setPlugin(plugin)
-
-	local widget = plugin:CreateDockWidgetPluginGuiAsync(buildConfig.widgetId, WIDGET_INFO)
+	const widget = plugin:CreateDockWidgetPluginGuiAsync(buildConfig.widgetId, WIDGET_INFO)
 	widget.Title = buildConfig.widgetTitle
 	widget.Name = buildConfig.widgetName
 	widget.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	local destroyApp: (() -> ())? = nil
+	local unmountApp: (() -> ())? = nil
 
-	local function mount()
-		if destroyApp ~= nil then
+	const function mount()
+		if unmountApp ~= nil then
 			return
 		end
-		local mountApp = require(StudioDiscover.Source.Plugin.mountApp)
-		destroyApp = mountApp(plugin, widget)
+
+		const mountApp = require(StudioDiscover.Source.Plugin.mountApp)
+		unmountApp = mountApp(widget)
 	end
 
-	local toolbar = plugin:CreateToolbar(TOOLBAR_NAME)
-	local button = toolbar:CreateButton(
+	const toolbar = plugin:CreateToolbar(TOOLBAR_NAME)
+	const button = toolbar:CreateButton(
 		buildConfig.buttonId,
 		buildConfig.buttonTooltip,
 		pickToolbarIcon(),
@@ -61,16 +65,17 @@ local function setupPlugin(plugin: Plugin): ()
 	)
 	button.ClickableWhenViewportHidden = true
 
-	local clickConn = button.Click:Connect(function()
+	const clickConnection = button.Click:Connect(function()
 		widget.Enabled = not widget.Enabled
 	end)
 
-	local themeConn = settings().Studio.ThemeChanged:Connect(function()
+	const themeConnection = settings().Studio.ThemeChanged:Connect(function()
 		button.Icon = pickToolbarIcon()
 	end)
 
-	local enabledConn = widget:GetPropertyChangedSignal("Enabled"):Connect(function()
+	const enabledConnection = widget:GetPropertyChangedSignal("Enabled"):Connect(function()
 		button:SetActive(widget.Enabled)
+
 		if widget.Enabled then
 			mount()
 		end
@@ -82,12 +87,13 @@ local function setupPlugin(plugin: Plugin): ()
 	end
 
 	plugin.Unloading:Connect(function()
-		clickConn:Disconnect()
-		themeConn:Disconnect()
-		enabledConn:Disconnect()
-		if destroyApp ~= nil then
-			destroyApp()
-			destroyApp = nil
+		clickConnection:Disconnect()
+		themeConnection:Disconnect()
+		enabledConnection:Disconnect()
+
+		if unmountApp ~= nil then
+			unmountApp()
+			unmountApp = nil
 		end
 	end)
 end

@@ -1,88 +1,69 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local Navigation = require(StudioDiscover.Source.Navigation)
-local Screen = require(StudioDiscover.Source.Common.Screen)
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const Content = require(StudioDiscover.Source.Common.Content)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const Screen = require(StudioDiscover.Source.Common.Screen)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Row = require(script.Row)
+const Row = require(script.Row)
 
-local Button = Foundation.Button
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local IconName = Foundation.Enums.IconName
-local InputSize = Foundation.Enums.InputSize
+const Button = Foundation.Button
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const IconName = Foundation.Enums.IconName
+const InputSize = Foundation.Enums.InputSize
 
-local e = React.createElement
+const e = React.createElement
 
 type DisplayNameRule = SettingsStore.DisplayNameRule
 
-local function setRules(rules: { DisplayNameRule })
-	SettingsStore.setSetting("displayNames", rules)
+const function setRule(rules: { DisplayNameRule }, index: number, rule: DisplayNameRule)
+	const nextRules = table.clone(rules)
+	nextRules[index] = rule
+	SettingsStore.setSetting("displayNames", nextRules)
 end
 
-local function updateName(rules: { DisplayNameRule }, index: number, name: string)
-	local next_ = table.clone(rules)
-	local rule = table.clone(next_[index])
-	rule.name = name
-	next_[index] = rule
-	setRules(next_)
+const function removeRule(rules: { DisplayNameRule }, index: number)
+	const nextRules = table.clone(rules)
+	table.remove(nextRules, index)
+	SettingsStore.setSetting("displayNames", nextRules)
 end
 
-local function updateDisplayName(rules: { DisplayNameRule }, index: number, displayName: string)
-	local next_ = table.clone(rules)
-	local rule = table.clone(next_[index])
-	rule.displayName = displayName
-	next_[index] = rule
-	setRules(next_)
+const function addRule(rules: { DisplayNameRule })
+	const nextRules = table.clone(rules)
+	table.insert(nextRules, { name = "", displayName = "" })
+	SettingsStore.setSetting("displayNames", nextRules)
 end
 
-local function removeRule(rules: { DisplayNameRule }, index: number)
-	local next_ = table.clone(rules)
-	table.remove(next_, index)
-	setRules(next_)
+const function clearRules()
+	const noRules: { DisplayNameRule } = {}
+	SettingsStore.setSetting("displayNames", noRules)
 end
 
-local function addRule(rules: { DisplayNameRule })
-	local next_ = table.clone(rules)
-	table.insert(next_, { name = "", displayName = "" })
-	setRules(next_)
-end
-
-local function DisplayNamesScreen()
-	local settings = SettingsStore.useSettings()
-	local rules = settings.displayNames
-
-	local onAdd = React.useCallback(function()
-		addRule(rules)
-	end, { rules } :: { any })
-
-	local onClear = React.useCallback(function()
-		setRules({})
-	end, {})
-
-	local nextOrder = createNextOrder()
-	local children: { [string]: any } = {}
+-- Edits the rules that give specific packages a fixed alias when installed.
+const function DisplayNamesScreen()
+	const rules = SettingsStore.useSettings().displayNames
+	const nextOrder = createNextOrder()
+	const children: { [string]: React.Node } = {}
 
 	for index, rule in rules do
-		local capturedIndex = index
 		children[`Rule_{index}`] = e(Row, {
 			name = rule.name,
 			displayName = rule.displayName,
-			onNameChanged = function(value: string)
-				updateName(rules, capturedIndex, value)
+			onNameChanged = function(name: string)
+				setRule(rules, index, { name = name, displayName = rule.displayName })
 			end,
-			onDisplayNameChanged = function(value: string)
-				updateDisplayName(rules, capturedIndex, value)
+			onDisplayNameChanged = function(displayName: string)
+				setRule(rules, index, { name = rule.name, displayName = displayName })
 			end,
 			onRemove = function()
-				removeRule(rules, capturedIndex)
+				removeRule(rules, index)
 			end,
 			LayoutOrder = nextOrder(),
 		})
@@ -97,14 +78,16 @@ local function DisplayNamesScreen()
 			icon = IconName.Plus,
 			variant = ButtonVariant.Utility,
 			size = InputSize.Medium,
-			onActivated = onAdd,
+			onActivated = function()
+				addRule(rules)
+			end,
 		}),
 		ClearButton = #rules > 0 and e(Button, {
 			text = "Clear all",
 			icon = IconName.Trash,
 			variant = ButtonVariant.Alert,
 			size = InputSize.Medium,
-			onActivated = onClear,
+			onActivated = clearRules,
 		}),
 	})
 

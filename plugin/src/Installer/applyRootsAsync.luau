@@ -1,77 +1,86 @@
 --!strict
 
-local ChangeHistoryService = game:GetService("ChangeHistoryService")
+const ChangeHistoryService = game:GetService("ChangeHistoryService")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local applyAsync = require(StudioDiscover.WallyRegistry.applyAsync)
-local coreTypes = require(StudioDiscover.Core.types)
-local createLogger = require(StudioDiscover.Core.createLogger)
-local lockfile = require(StudioDiscover.WallyRegistry.lockfile)
-local permissionError = require(StudioDiscover.Source.Installer.permissionError)
-local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
-local types = require(StudioDiscover.WallyRegistry.types)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const permissionError = require(StudioDiscover.Source.Installer.permissionError)
+const refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
+const types = require(StudioDiscover.Source.Installer.types)
 
-local logger = createLogger.createLogger("wally.installer.applyRoots")
+const logger = createLogger.createLogger("installer.applyRoots")
 
-type ResolvedPackage = types.ResolvedPackage
-type ProgressCallback = coreTypes.ProgressCallback
+const function hasPrefix(failures: { string }, prefix: string): boolean
+	for _, failure in failures do
+		if string.sub(failure, 1, #prefix) == prefix then
+			return true
+		end
+	end
 
-export type ApplyRootsResult = {
-	ok: boolean,
-	error: string?,
-	failures: { string },
-}
+	return false
+end
 
-local function applyRootsAsync(
-	resolved: { [string]: ResolvedPackage },
-	rootAliases: { [string]: string },
+--[[
+	Runs one registry's apply inside a single ChangeHistory recording, so the user can
+		undo the whole operation. `applyAsync` writes the tree and the lockfile, and
+		returns the non-fatal failures, each prefixed with the package it came from.
+
+	When `applyAsync` throws, or a failure starts with `rootFailurePrefix`, the
+		recording is cancelled and the place is left as it was. Every install,
+		uninstall, and update for both registries goes through here.
+]]
+const function applyRootsAsync(
 	recordLabel: string,
-	progress: ProgressCallback?,
-	decideCommit: (({ string }) -> boolean)?
-): ApplyRootsResult
-	local recordingId = ChangeHistoryService:TryBeginRecording(recordLabel)
+	applyAsync: () -> { string },
+	rootFailurePrefix: string?
+): types.OperationResult
+	const recordingId = ChangeHistoryService:TryBeginRecording(recordLabel)
 	if recordingId == nil then
 		logger.warn(`could not begin ChangeHistory recording for "{recordLabel}"; will not be undoable`)
 	end
 
-	local applySuccess, applyOutcome = pcall(function()
-		local failures = applyAsync(resolved, rootAliases, progress)
-		lockfile.save(resolved)
-		return failures
-	end)
+	const applySuccess, applyOutcome = pcall(applyAsync)
 
 	if not applySuccess then
 		logger.error(`apply threw for "{recordLabel}": {applyOutcome}`)
+
 		if recordingId ~= nil then
 			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
 		end
+
 		return {
 			ok = false,
-			error = permissionError.describe(applyOutcome),
+			error = permissionError(applyOutcome),
 			failures = {},
 		}
 	end
 
-	local applyFailures: { string } = applyOutcome :: { string }
-	for _, failure in applyFailures do
+	for _, failure in applyOutcome do
 		logger.warn(`apply failure: {failure}`)
 	end
 
-	local shouldCommit = if decideCommit ~= nil then decideCommit(applyFailures) else true
+	const rootFailed = rootFailurePrefix ~= nil and hasPrefix(applyOutcome, rootFailurePrefix)
 	if recordingId ~= nil then
-		local op = if shouldCommit then Enum.FinishRecordingOperation.Commit else Enum.FinishRecordingOperation.Cancel
-		ChangeHistoryService:FinishRecording(recordingId, op)
+		const operation = if rootFailed
+			then Enum.FinishRecordingOperation.Cancel
+			else Enum.FinishRecordingOperation.Commit
+		ChangeHistoryService:FinishRecording(recordingId, operation)
 	end
 
-	if shouldCommit then
-		refreshInstalledRoots()
+	if rootFailed then
+		return {
+			ok = false,
+			error = "the requested package did not apply, so nothing was changed",
+			failures = applyOutcome,
+		}
 	end
+
+	refreshInstalledRoots()
 
 	return {
-		ok = shouldCommit,
-		error = if shouldCommit then nil else "Root package did not apply",
-		failures = applyFailures,
+		ok = true,
+		failures = applyOutcome,
 	}
 end
 

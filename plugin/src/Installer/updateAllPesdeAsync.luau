@@ -1,96 +1,63 @@
 --!strict
 
-local ChangeHistoryService = game:GetService("ChangeHistoryService")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const types = require(StudioDiscover.Source.Installer.types)
 
-local createLogger = require(StudioDiscover.Core.createLogger)
-local permissionError = require(StudioDiscover.Source.Installer.permissionError)
-local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
+const pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
+const pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
+const pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
+const pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
 
-local pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
-local pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
-local pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
-local pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
+const logger = createLogger.createLogger("pesde.installer.updateAll")
 
-local sharedTypes = require(StudioDiscover.Core.types)
+const function findUpdate(
+	updates: { types.UpdateInfo },
+	snapshot: pesdeSnapshotRoots.PesdeRootSnapshot
+): types.UpdateInfo?
+	if snapshot.kind ~= "pesde" then
+		return nil
+	end
 
-local logger = createLogger.createLogger("pesde.installer.updateAll")
-
-type Realm = sharedTypes.Realm
-
-export type PesdeUpdateRequest = {
-	scope: string,
-	name: string,
-	realm: Realm,
-	version: string,
-}
-
-export type UpdateAllResult = {
-	ok: boolean,
-	error: string?,
-	failures: { string },
-}
-
-local function findMatch(
-	updates: { PesdeUpdateRequest },
-	scope: string,
-	name: string,
-	realm: Realm
-): PesdeUpdateRequest?
 	for _, update in updates do
-		if update.realm == realm and update.scope == scope and update.name == name then
+		if update.realm == snapshot.realm and update.scope == snapshot.scope and update.name == snapshot.name then
 			return update
 		end
 	end
+
 	return nil
 end
 
-local function updateAllPesdeAsync(updates: { PesdeUpdateRequest }): UpdateAllResult
-	if #updates == 0 then
-		return { ok = true, error = nil, failures = {} }
-	end
-
+--[[
+	The pesde half of `updateAllAsync`, which runs it under the busy lock. Moves each
+		matching pesde root to its latest version in one resolve and apply.
+]]
+const function updateAllPesdeAsync(updates: { types.UpdateInfo }): types.OperationResult
 	logger.info(`updateAll starting ({#updates} pesde package(s))`)
 
-	local priorSnapshots = pesdeSnapshotRoots()
-	local nextRoots: { pesdeResolveAsync.RootRequest } = {}
+	const nextRoots: { pesdeResolveAsync.RootRequest } = {}
 	local appliedCount = 0
-	for _, prior in priorSnapshots do
-		if prior.kind ~= "pesde" then
-			table.insert(nextRoots, {
-				scope = prior.scope,
-				name = prior.name,
-				version = prior.version,
-				realm = prior.realm,
-				alias = prior.alias,
-			})
-			continue
-		end
-		local match = findMatch(updates, prior.scope, prior.name, prior.realm)
-		if match ~= nil then
-			logger.info(`bumping {prior.scope}/{prior.name} {prior.version} -> {match.version}`)
-			table.insert(nextRoots, {
-				scope = prior.scope,
-				name = prior.name,
-				version = match.version,
-				realm = prior.realm,
-				alias = prior.alias,
-			})
+	for _, prior in pesdeSnapshotRoots() do
+		const update = findUpdate(updates, prior)
+		if update ~= nil then
+			logger.info(`bumping {prior.scope}/{prior.name} {prior.version} -> {update.latestVersion}`)
 			appliedCount += 1
-		else
-			table.insert(nextRoots, {
-				scope = prior.scope,
-				name = prior.name,
-				version = prior.version,
-				realm = prior.realm,
-				alias = prior.alias,
-			})
 		end
+
+		table.insert(nextRoots, {
+			scope = prior.scope,
+			name = prior.name,
+			version = if update ~= nil then update.latestVersion else prior.version,
+			realm = prior.realm,
+			alias = prior.alias,
+		})
 	end
 
 	if appliedCount == 0 then
 		logger.warn("updateAll pesde: no installed roots matched")
+
 		return {
 			ok = false,
 			error = "No installed pesde packages matched the update list",
@@ -98,53 +65,17 @@ local function updateAllPesdeAsync(updates: { PesdeUpdateRequest }): UpdateAllRe
 		}
 	end
 
-	local resolved, rootAliases, resolutionFailures = pesdeResolveAsync(nextRoots, nil)
+	const resolved, rootAliases, resolutionFailures = pesdeResolveAsync(nextRoots, nil)
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
-	local recordLabel = `Update {appliedCount} pesde package(s)`
-	local recordingId = ChangeHistoryService:TryBeginRecording(recordLabel)
-
-	local applySuccess, applyOutcome = pcall(function()
-		local failures = pesdeApplyAsync(resolved, rootAliases, nil)
+	return applyRootsAsync(`Update {appliedCount} pesde package(s)`, function()
+		const failures = pesdeApplyAsync(resolved, rootAliases, nil)
 		pesdeLockfile.save(resolved)
+
 		return failures
 	end)
-
-	if not applySuccess then
-		logger.error(`apply threw: {applyOutcome}`)
-		if recordingId ~= nil then
-			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
-		end
-		return {
-			ok = false,
-			error = permissionError.describe(applyOutcome),
-			failures = resolutionFailures,
-		}
-	end
-
-	if recordingId ~= nil then
-		ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Commit)
-	end
-
-	refreshInstalledRoots()
-
-	local applyFailures: { string } = applyOutcome :: { string }
-	local all: { string } = {}
-	for _, f in resolutionFailures do
-		table.insert(all, f)
-	end
-	for _, f in applyFailures do
-		table.insert(all, f)
-	end
-
-	logger.info(`updateAll pesde succeeded ({appliedCount} package(s), {#all} warning(s))`)
-	return {
-		ok = true,
-		error = nil,
-		failures = all,
-	}
 end
 
 return updateAllPesdeAsync

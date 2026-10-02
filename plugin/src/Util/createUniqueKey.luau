@@ -1,19 +1,30 @@
 --!strict
 
-local function createUniqueKey(): (string) -> string
-	local names = {}
-	return function(name)
-		if names[name] == nil then
-			names[name] = 1
-			return name
-		else
-			while true do
-				names[name] += 1
-				local finalName = `{name}_{names[name]}`
+--[[
+	Returns a function that hands back `name` the first time it sees it, then
+		`name_2`, `name_3`, and so on. Create one per render and use it for every
+		dynamic child key.
+]]
+const function createUniqueKey(): (string) -> string
+	const counts: { [string]: number? } = {}
 
-				if names[finalName] == nil then
-					return finalName
-				end
+	return function(name)
+		local count = counts[name]
+
+		if count == nil then
+			counts[name] = 1
+			return name
+		end
+
+		-- Record every key handed out, so a later "Dog_2" can't clash with a generated one.
+		while true do
+			count += 1
+			const key = `{name}_{count}`
+
+			if counts[key] == nil then
+				counts[name] = count
+				counts[key] = 1
+				return key
 			end
 		end
 	end

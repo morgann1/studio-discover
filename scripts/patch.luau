@@ -10,7 +10,7 @@
 	Install applies the patches after every package install.
 
 	Usage: lute scripts/patch.luau <package-path>
-		e.g. lute scripts/patch.luau plugin/Packages/_Index/jsdotlua_jest@3.10.0
+		e.g. lute scripts/patch.luau plugin/Packages/_Index/roblox_react-shared@17.3.12
 ]]
 
 const fs = require("@std/fs")

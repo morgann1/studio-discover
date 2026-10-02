@@ -1,194 +1,158 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
+const React = require(StudioDiscover.Packages.React)
 
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local searchPackagesAsync = require(StudioDiscover.WallyRegistry.Api.searchAsync)
-local searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
-local coreTypes = require(StudioDiscover.Core.types)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const coreTypes = require(StudioDiscover.Core.types)
+const searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
+const searchWallyAsync = require(StudioDiscover.WallyRegistry.Api.searchAsync)
+const wallyTypes = require(StudioDiscover.WallyRegistry.types)
 
-local types = require(StudioDiscover.WallyRegistry.types)
-
-local DEBOUNCE_SECONDS = 0.25
-local MIN_QUERY_LENGTH = 2
+const DEBOUNCE_SECONDS = 0.25
+const MIN_QUERY_LENGTH = 2
 
 export type SearchState = {
-	loading: boolean,
-	data: { coreTypes.PackageBrief }?,
-	error: string?,
+	read loading: boolean,
+	read data: { coreTypes.PackageBrief }?,
+	read error: string?,
 }
 
-local EMPTY: SearchState = table.freeze({
-	loading = false,
-	data = nil,
-	error = nil,
-})
+const IDLE: SearchState = { loading = false }
+const LOADING: SearchState = { loading = true }
 
-local function briefsFromWally(wallyResults: { types.WallyPackageBrief }): { coreTypes.PackageBrief }
-	local briefs: { coreTypes.PackageBrief } = {}
-	for _, pkg in wallyResults do
-		table.insert(briefs, {
-			registries = { "wally" :: coreTypes.Registry },
+const function briefsFromWally(results: { wallyTypes.WallyPackageBrief }): { coreTypes.PackageBrief }
+	const briefs: { coreTypes.PackageBrief } = {}
+	for _, pkg in results do
+		const brief: coreTypes.PackageBrief = {
+			registries = { "wally" },
 			scope = pkg.scope,
 			name = pkg.name,
 			description = pkg.description,
 			latestVersion = pkg.versions[1],
-		})
+		}
+		table.insert(briefs, brief)
 	end
+
 	return briefs
 end
 
-local function hasRegistry(registries: { coreTypes.Registry }, target: coreTypes.Registry): boolean
-	for _, r in registries do
-		if r == target then
-			return true
-		end
-	end
-	return false
-end
+-- Merges results for the same scope/name from both registries into one brief, sorted by scope/name.
+const function mergeBriefs(...: { coreTypes.PackageBrief }): { coreTypes.PackageBrief }
+	const byKey: { [string]: coreTypes.PackageBrief } = {}
+	const keys: { string } = {}
 
-local function mergeBriefs(
-	left: { coreTypes.PackageBrief },
-	right: { coreTypes.PackageBrief }
-): { coreTypes.PackageBrief }
-	local byKey: { [string]: coreTypes.PackageBrief } = {}
-	local order: { string } = {}
+	for _, briefs in { ... } do
+		for _, brief in briefs do
+			const key = `{brief.scope}/{brief.name}`
+			const existing = byKey[key]
 
-	local function absorb(brief: coreTypes.PackageBrief)
-		local key = `{brief.scope}/{brief.name}`
-		local existing = byKey[key]
-		if existing == nil then
-			byKey[key] = {
-				registries = table.clone(brief.registries),
-				scope = brief.scope,
-				name = brief.name,
-				description = brief.description,
-				latestVersion = brief.latestVersion,
-			}
-			table.insert(order, key)
-			return
-		end
-		for _, registry: coreTypes.Registry in brief.registries do
-			if not hasRegistry(existing.registries, registry) then
-				table.insert(existing.registries, registry)
+			if existing == nil then
+				byKey[key] = {
+					registries = table.clone(brief.registries),
+					scope = brief.scope,
+					name = brief.name,
+					description = brief.description,
+					latestVersion = brief.latestVersion,
+				}
+				table.insert(keys, key)
+				continue
 			end
-		end
-		if existing.description == nil then
-			existing.description = brief.description
-		end
-		if existing.latestVersion == nil then
-			existing.latestVersion = brief.latestVersion
+
+			for _, registry in brief.registries do
+				if table.find(existing.registries, registry) == nil then
+					table.insert(existing.registries, registry)
+				end
+			end
+
+			existing.description = existing.description or brief.description
+			existing.latestVersion = existing.latestVersion or brief.latestVersion
 		end
 	end
 
-	for _, brief in left do
-		absorb(brief)
-	end
-	for _, brief in right do
-		absorb(brief)
+	table.sort(keys)
+
+	const merged: { coreTypes.PackageBrief } = {}
+	for _, key in keys do
+		table.insert(merged, byKey[key])
 	end
 
-	local out: { coreTypes.PackageBrief } = {}
-	for _, key in order do
-		table.insert(out, byKey[key])
-	end
-	return out
+	return merged
 end
 
-local function sortBriefs(briefs: { coreTypes.PackageBrief })
-	table.sort(briefs, function(a, b)
-		return `{a.scope}/{a.name}` < `{b.scope}/{b.name}`
-	end)
-end
+--[[
+	Searches every enabled registry for `query`, debounced, and merges the results.
+		An error is reported only when every enabled registry failed.
+]]
+const function useSearchPackages(query: string): SearchState
+	const registries = SettingsStore.useSettings().registries
+	const wallyEnabled = registries.wally
+	const pesdeEnabled = registries.pesde
+	const state, setState = React.useState(IDLE)
 
-local function useSearchPackages(query: string): SearchState
-	local registries = SettingsStore.useSettings().registries
-	local wallyEnabled = registries.wally
-	local pesdeEnabled = registries.pesde
-	local state: SearchState, setState = React.useState(EMPTY)
-
-	React.useEffect(function(): (() -> ())?
-		if #query < MIN_QUERY_LENGTH then
-			setState(EMPTY)
-			return nil
-		end
-
+	React.useEffect(function()
 		local cancelled = false
 
-		task.delay(DEBOUNCE_SECONDS, function()
-			if cancelled then
-				return
-			end
-
-			if not wallyEnabled and not pesdeEnabled then
-				setState({ loading = false, data = {}, error = nil })
-				return
-			end
-
-			setState({ loading = true, data = nil, error = nil })
-
-			local wallyResults: { types.WallyPackageBrief }? = nil
-			local wallyErr: string? = nil
-			local pesdeResults: { coreTypes.PackageBrief }? = nil
-			local pesdeErr: string? = nil
-			local remaining = 0
-			if wallyEnabled then
-				remaining += 1
-			end
-			if pesdeEnabled then
-				remaining += 1
-			end
-
-			local function done()
-				remaining -= 1
-				if remaining > 0 or cancelled then
+		if #query < MIN_QUERY_LENGTH then
+			setState(IDLE)
+		else
+			task.delay(DEBOUNCE_SECONDS, function()
+				if cancelled then
 					return
 				end
 
-				local wallyBriefs = if wallyResults ~= nil then briefsFromWally(wallyResults) else {}
-				local pesdeBriefs = pesdeResults or {}
-				local merged = mergeBriefs(wallyBriefs, pesdeBriefs)
-				sortBriefs(merged)
-
-				local finalError: string? = nil
-				local wallyMissing = wallyEnabled and wallyResults == nil
-				local pesdeMissing = pesdeEnabled and pesdeResults == nil
-				if wallyMissing and pesdeMissing then
-					finalError = wallyErr or pesdeErr or "Search failed"
-				elseif wallyMissing and not pesdeEnabled then
-					finalError = wallyErr or "Search failed"
-				elseif pesdeMissing and not wallyEnabled then
-					finalError = pesdeErr or "Search failed"
+				if not wallyEnabled and not pesdeEnabled then
+					setState({ loading = false, data = {} })
+					return
 				end
 
-				setState({
-					loading = false,
-					data = if finalError ~= nil then nil else merged,
-					error = finalError,
-				})
-			end
+				setState(LOADING)
 
-			if wallyEnabled then
-				task.spawn(function()
-					wallyResults, wallyErr = searchPackagesAsync(query)
-					done()
-				end)
-			end
+				local wallyResults: { coreTypes.PackageBrief }? = nil
+				local wallyError: string? = nil
+				local pesdeResults: { coreTypes.PackageBrief }? = nil
+				local pesdeError: string? = nil
+				local remaining = (if wallyEnabled then 1 else 0) + (if pesdeEnabled then 1 else 0)
 
-			if pesdeEnabled then
-				task.spawn(function()
-					pesdeResults, pesdeErr = searchPesdeAsync(query)
-					done()
-				end)
-			end
-		end)
+				const function finish()
+					remaining -= 1
+					if remaining > 0 or cancelled then
+						return
+					end
+
+					const wallyFailed = wallyEnabled and wallyResults == nil
+					const pesdeFailed = pesdeEnabled and pesdeResults == nil
+					if (wallyFailed or not wallyEnabled) and (pesdeFailed or not pesdeEnabled) then
+						setState({ loading = false, error = wallyError or pesdeError or "Search failed" })
+						return
+					end
+
+					setState({ loading = false, data = mergeBriefs(wallyResults or {}, pesdeResults or {}) })
+				end
+
+				if wallyEnabled then
+					task.spawn(function()
+						const results, err = searchWallyAsync(query)
+						wallyResults = if results ~= nil then briefsFromWally(results) else nil
+						wallyError = err
+						finish()
+					end)
+				end
+
+				if pesdeEnabled then
+					task.spawn(function()
+						pesdeResults, pesdeError = searchPesdeAsync(query)
+						finish()
+					end)
+				end
+			end)
+		end
 
 		return function()
 			cancelled = true
 		end
-	end, { query, wallyEnabled, pesdeEnabled } :: { any })
+	end, { query, wallyEnabled, pesdeEnabled } :: { unknown })
 
 	return state
 end

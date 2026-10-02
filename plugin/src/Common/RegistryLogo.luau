@@ -1,37 +1,29 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Core.types)
 
-local Image = Foundation.Image
+const Image = Foundation.Image
 
-local e = React.createElement
+const e = React.createElement
 
-type Registry = types.Registry
-
-local LOGOS: { [Registry]: string } = {
+const LOGOS: { [types.Registry]: string } = {
 	wally = "rbxassetid://87427394631506",
 	pesde = "rbxassetid://125159874176259",
 }
 
-type Props = {
-	registry: Registry,
-	width: number?,
-	height: number?,
-	LayoutOrder: number?,
-}
-
-local function RegistryLogo(props: Props)
-	local width = props.width or 56
-	local height = props.height or 22
+const function RegistryLogo(props: {
+	read registry: types.Registry,
+	read LayoutOrder: number?,
+})
 	return e(Image, {
 		Image = LOGOS[props.registry],
 		ScaleType = Enum.ScaleType.Fit,
-		Size = UDim2.fromOffset(width, height),
+		Size = UDim2.fromOffset(56, 22),
 		LayoutOrder = props.LayoutOrder,
 	})
 end

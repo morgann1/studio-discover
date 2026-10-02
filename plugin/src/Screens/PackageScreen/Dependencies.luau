@@ -1,73 +1,73 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local coreTypes = require(StudioDiscover.Core.types)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const coreTypes = require(StudioDiscover.Core.types)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
 
-local Navigation = require(StudioDiscover.Source.Navigation)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-local createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
+const Button = Foundation.Button
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const InputSize = Foundation.Enums.InputSize
 
-local Button = Foundation.Button
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local InputSize = Foundation.Enums.InputSize
+const e = React.createElement
 
-local e = React.createElement
-
-type Props = {
-	deps: coreTypes.DependencyMap,
-	registry: coreTypes.Registry,
-	LayoutOrder: number?,
-}
-
-local function parseDepSpec(spec: string): (string?, string?, string?)
+-- Splits "scope/name@constraint" into its parts, with the constraint's version number.
+const function parseDependency(spec: string): (string?, string?, string?)
 	local scopeName, version = string.match(spec, "(.+/.+)@[^%d]+([%d%.]+)")
 	if scopeName == nil then
 		scopeName, version = string.match(spec, "(.+/.+)@([%d%.]+)")
 	end
+
 	if scopeName == nil then
 		return nil, nil, nil
 	end
-	local scope, name = string.match(scopeName, "^(.+)/(.+)$")
+
+	const scope, name = string.match(scopeName, "^(.+)/(.+)$")
 	return scope, name, version
 end
 
-local function Dependencies(props: Props)
-	local uniqueKey = createUniqueKey()
-	local nextOrder = createNextOrder()
+-- Links to each dependency's package screen. A spec that does not parse shows as disabled text.
+const function Dependencies(props: {
+	read dependencies: coreTypes.DependencyMap,
+	read registry: coreTypes.Registry,
+	read LayoutOrder: number?,
+})
+	const uniqueKey = createUniqueKey()
+	const nextOrder = createNextOrder()
+	const children: { [string]: React.Node } = {}
 
-	local children: { [string]: any } = {}
+	for _, spec in props.dependencies do
+		const scope, name, version = parseDependency(spec)
+		local label = spec
+		local onActivated: (() -> ())? = nil
 
-	for _, spec in props.deps do
-		local scope, name, version = parseDepSpec(spec)
-
-		local label: string
-		local onActivated: () -> ()
 		if scope ~= nil and name ~= nil then
 			label = if version ~= nil then `{scope}/{name}@{version}` else `{scope}/{name}`
 			onActivated = function()
-				Navigation.pushScreen("Package", {
-					scope = scope,
-					name = name,
-					version = version,
-					registry = props.registry,
+				Navigation.pushScreen({
+					name = "Package",
+					target = {
+						registries = { props.registry },
+						scope = scope,
+						name = name,
+						version = version,
+					},
 				})
 			end
-		else
-			label = spec
-			onActivated = function() end
 		end
 
 		children[uniqueKey(label)] = e(Button, {
 			text = label,
 			variant = ButtonVariant.Link,
 			size = InputSize.Small,
-			isDisabled = scope == nil,
-			onActivated = onActivated,
+			isDisabled = onActivated == nil,
+			onActivated = onActivated or function() end,
 			LayoutOrder = nextOrder(),
 		})
 	end

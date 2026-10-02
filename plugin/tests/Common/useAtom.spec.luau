@@ -1,23 +1,23 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+const ReplicatedStorage = game:GetService("ReplicatedStorage")
+const ServerScriptService = game:GetService("ServerScriptService")
 
 -- ReactRoblox only exports `act` under the mock scheduler, which it reads when it loads.
 _G.__ROACT_17_MOCK_SCHEDULER__ = true
 
-local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
-local describe = JestGlobals.describe
-local expect = JestGlobals.expect
-local test = JestGlobals.test
+const JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
+const describe = JestGlobals.describe
+const expect = JestGlobals.expect
+const test = JestGlobals.test
 
-local StudioDiscover = ServerScriptService:WaitForChild("StudioDiscover") :: Folder
-local Charm = require(StudioDiscover.Packages.Charm)
-local React = require(StudioDiscover.Packages.React)
-local ReactRoblox = require(StudioDiscover.Packages.ReactRoblox)
-local useAtom = require(StudioDiscover.Source.Common.useAtom)
+const StudioDiscover = ServerScriptService.StudioDiscover
+const Charm = require(StudioDiscover.Packages.Charm)
+const React = require(StudioDiscover.Packages.React)
+const ReactRoblox = require(StudioDiscover.Packages.ReactRoblox)
+const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
-local e = React.createElement
+const e = React.createElement
 
 type Probe = {
 	read container: Folder,
@@ -26,12 +26,12 @@ type Probe = {
 }
 
 -- Mounts a TextLabel that shows the atom's value, and counts its renders.
-local function mountProbe(atom: () -> number): Probe
-	local container = Instance.new("Folder")
-	local root = ReactRoblox.createRoot(container)
+const function mountProbe(atom: () -> number): Probe
+	const container = Instance.new("Folder")
+	const root = ReactRoblox.createRoot(container)
 	local renders = 0
 
-	local function Probe()
+	const function Probe()
 		renders += 1
 		return e("TextLabel", { Text = tostring(useAtom(atom)) })
 	end
@@ -49,21 +49,21 @@ local function mountProbe(atom: () -> number): Probe
 	}
 end
 
-local function readText(probe: Probe): string?
-	local label = probe.container:FindFirstChildOfClass("TextLabel")
+const function readText(probe: Probe): string?
+	const label = probe.container:FindFirstChildOfClass("TextLabel")
 	return if label ~= nil then label.Text else nil
 end
 
 describe("useAtom", function()
 	test("renders the atom's current value", function()
-		local probe = mountProbe(Charm.atom(1))
+		const probe = mountProbe(Charm.atom(1))
 
 		expect(readText(probe)).toBe("1")
 	end)
 
 	test("re-renders when the atom changes", function()
-		local atom = Charm.atom(1)
-		local probe = mountProbe(atom)
+		const atom = Charm.atom(1)
+		const probe = mountProbe(atom)
 
 		ReactRoblox.act(function()
 			atom(2)
@@ -73,8 +73,8 @@ describe("useAtom", function()
 	end)
 
 	test("re-renders when a selector's result changes", function()
-		local atom = Charm.atom({ count = 1 })
-		local probe = mountProbe(function()
+		const atom = Charm.atom({ count = 1 })
+		const probe = mountProbe(function()
 			return atom().count
 		end)
 
@@ -86,13 +86,13 @@ describe("useAtom", function()
 	end)
 
 	test("stops rendering after unmount", function()
-		local atom = Charm.atom(1)
-		local probe = mountProbe(atom)
+		const atom = Charm.atom(1)
+		const probe = mountProbe(atom)
 
 		ReactRoblox.act(function()
 			probe.root:unmount()
 		end)
-		local rendersAtUnmount = probe.renders()
+		const rendersAtUnmount = probe.renders()
 
 		ReactRoblox.act(function()
 			atom(2)

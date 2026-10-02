@@ -1,42 +1,33 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Header = require(script.Header)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const Header = require(script.Header)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local View = Foundation.View
+const View = Foundation.View
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	title: string?,
-	onBack: (() -> ())?,
-	header: React.ReactNode?,
-	children: React.ReactNode?,
-}
-
-local function Screen(props: Props)
-	local nextOrder = createNextOrder()
-
-	local headerElement = props.header
-	if headerElement == nil and props.title ~= nil then
-		headerElement = e(Header, {
-			title = props.title,
-			onBack = props.onBack,
-			LayoutOrder = nextOrder(),
-		})
-	else
-		nextOrder()
-	end
+-- The shell of a screen: a header with the title and an optional back button, and the body below.
+const function Screen(props: {
+	read title: string,
+	read onBack: (() -> ())?,
+	read children: React.Node,
+})
+	const nextOrder = createNextOrder()
 
 	return e(View, {
 		tag = "size-full col",
 	}, {
-		Header = headerElement,
+		Header = e(Header, {
+			title = props.title,
+			onBack = props.onBack,
+			LayoutOrder = nextOrder(),
+		}),
 		Content = e(View, {
 			tag = "size-full-0 grow",
 			LayoutOrder = nextOrder(),

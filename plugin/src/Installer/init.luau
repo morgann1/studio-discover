@@ -1,14 +1,14 @@
 --!strict
 
-local installAsync = require(script.installAsync)
-local uninstallAsync = require(script.uninstallAsync)
-local updateAllAsync = require(script.updateAllAsync)
-local useInstalledRoots = require(script.useInstalledRoots)
-local useInstaller = require(script.useInstaller)
-local useIsBusy = require(script.useIsBusy)
-local useUpdates = require(script.useUpdates)
+const installAsync = require(script.installAsync)
+const uninstallAsync = require(script.uninstallAsync)
+const updateAllAsync = require(script.updateAllAsync)
+const useInstalledRoots = require(script.useInstalledRoots)
+const useInstaller = require(script.useInstaller)
+const useIsBusy = require(script.useIsBusy)
+const useUpdates = require(script.useUpdates)
 
-return table.freeze({
+const Installer = table.freeze({
 	installAsync = installAsync,
 	uninstallAsync = uninstallAsync,
 	updateAllAsync = updateAllAsync,
@@ -17,3 +17,5 @@ return table.freeze({
 	useIsBusy = useIsBusy,
 	useUpdates = useUpdates,
 })
+
+return Installer

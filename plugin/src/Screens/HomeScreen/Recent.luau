@@ -1,47 +1,31 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local types = require(StudioDiscover.Core.types)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const PackageGrid = require(script.Parent.PackageGrid)
+const useRecent = require(script.Parent.useRecent)
 
-local PackageCard = require(script.Parent.PackageCard)
-local useRecent = require(script.Parent.useRecent)
+const Loading = Foundation.Loading
+const Text = Foundation.Text
+const View = Foundation.View
 
-local Loading = Foundation.Loading
-local Text = Foundation.Text
-local View = Foundation.View
+const e = React.createElement
 
-local e = React.createElement
+-- The latest pesde packages, shown on Home when pesde is enabled.
+const function Recent(props: {
+	read LayoutOrder: number?,
+})
+	const state = useRecent()
+	const nextOrder = createNextOrder()
+	const headingOrder = nextOrder()
+	const bodyOrder = nextOrder()
 
-type Props = {
-	LayoutOrder: number?,
-}
-
-local function renderCard(pkg: types.PackageBrief): any
-	return e(PackageCard, {
-		registries = pkg.registries,
-		scope = pkg.scope,
-		name = pkg.name,
-		description = pkg.description,
-		latestVersion = pkg.latestVersion,
-	})
-end
-
-local function Recent(props: Props)
-	local state = useRecent()
-	local compact = CompactContext.useCompact()
-
-	local sectionOrder = createNextOrder()
-	local headingOrder = sectionOrder()
-	local bodyOrder = sectionOrder()
-
-	local body: React.ReactNode
+	local body: React.Node
 	if state.loading then
 		body = e(View, {
 			tag = "size-full-0 auto-y align-x-center padding-medium",
@@ -56,47 +40,10 @@ local function Recent(props: Props)
 			LayoutOrder = bodyOrder,
 		})
 	else
-		local cards: { [string]: any } = {}
-		if compact then
-			local cardOrder = createNextOrder()
-			for _, pkg in state.packages do
-				cards[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
-					registries = pkg.registries,
-					scope = pkg.scope,
-					name = pkg.name,
-					description = pkg.description,
-					latestVersion = pkg.latestVersion,
-					LayoutOrder = cardOrder(),
-				})
-			end
-		else
-			local rowOrder = createNextOrder()
-			for i = 1, #state.packages, 2 do
-				local pkgA = state.packages[i]
-				local pkgB = state.packages[i + 1]
-				local cellOrder = createNextOrder()
-				local cells: { [string]: any } = {
-					Left = e(View, {
-						tag = "grow auto-y",
-						LayoutOrder = cellOrder(),
-					}, {
-						Card = renderCard(pkgA),
-					}),
-					Right = e(View, {
-						tag = "grow auto-y",
-						LayoutOrder = cellOrder(),
-					}, if pkgB ~= nil then { Card = renderCard(pkgB) } else nil),
-				}
-				cards[`row_{i}`] = e(View, {
-					tag = "size-full-0 auto-y row align-y-top gap-medium",
-					LayoutOrder = rowOrder(),
-				}, cells)
-			end
-		end
-		body = e(View, {
-			tag = "size-full-0 auto-y col gap-medium",
+		body = e(PackageGrid, {
+			packages = state.packages,
 			LayoutOrder = bodyOrder,
-		}, cards)
+		})
 	end
 
 	return e(View, {

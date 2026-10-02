@@ -1,26 +1,25 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Divider = Foundation.Divider
-local Text = Foundation.Text
-local View = Foundation.View
+const Divider = Foundation.Divider
+const Text = Foundation.Text
+const View = Foundation.View
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	title: string,
-	children: React.ReactNode?,
-	LayoutOrder: number?,
-}
-
-local function Section(props: Props)
-	local nextOrder = createNextOrder()
+-- A titled block of a screen's content, separated from the one above by a divider.
+const function Section(props: {
+	read title: string,
+	read children: React.Node,
+	read LayoutOrder: number?,
+})
+	const nextOrder = createNextOrder()
 
 	return e(View, {
 		tag = "size-full-0 auto-y col gap-small",

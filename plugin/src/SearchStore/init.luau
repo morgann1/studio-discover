@@ -1,21 +1,27 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Charm = require(StudioDiscover.Packages.Charm)
-local useAtom = require(StudioDiscover.Source.Common.useAtom)
+const Charm = require(StudioDiscover.Packages.Charm)
 
-local queryAtom = Charm.atom("")
+const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
-local function useQuery(): string
-	return useAtom(queryAtom)
+-- The sidebar's search text, which Home reads to show results.
+const queryAtom = Charm.atom("")
+
+const function useQuery(): string
+	return useAtom(function()
+		return queryAtom()
+	end)
 end
 
-local function setQuery(value: string)
+const function setQuery(value: string)
 	queryAtom(value)
 end
 
-return table.freeze({
+const SearchStore = table.freeze({
 	useQuery = useQuery,
 	setQuery = setQuery,
 })
+
+return SearchStore

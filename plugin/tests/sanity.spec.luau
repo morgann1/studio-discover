@@ -1,11 +1,11 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+const ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
-local describe = JestGlobals.describe
-local expect = JestGlobals.expect
-local test = JestGlobals.test
+const JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
+const describe = JestGlobals.describe
+const expect = JestGlobals.expect
+const test = JestGlobals.test
 
 describe("sanity", function()
 	test("arithmetic works", function()

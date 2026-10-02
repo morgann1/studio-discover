@@ -1,7 +1,7 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local setupPlugin = require(StudioDiscover.Source.Plugin.setupPlugin)
+const setupPlugin = require(StudioDiscover.Source.Plugin.setupPlugin)
 
 setupPlugin(plugin)

@@ -1,91 +1,73 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
-local createLogger = require(StudioDiscover.Core.createLogger)
-local lockfile = require(StudioDiscover.WallyRegistry.lockfile)
-local resolveAsync = require(StudioDiscover.WallyRegistry.resolveAsync)
-local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
-local snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
-local types = require(StudioDiscover.Core.types)
-local uninstallPesdeAsync = require(StudioDiscover.Source.Installer.uninstallPesdeAsync)
+const applyAsync = require(StudioDiscover.WallyRegistry.applyAsync)
+const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+const coreTypes = require(StudioDiscover.Core.types)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const lockfile = require(StudioDiscover.WallyRegistry.lockfile)
+const resolveAsync = require(StudioDiscover.WallyRegistry.resolveAsync)
+const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
+const snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
+const types = require(StudioDiscover.Source.Installer.types)
+const uninstallPesdeAsync = require(StudioDiscover.Source.Installer.uninstallPesdeAsync)
 
-local logger = createLogger.createLogger("wally.installer.uninstall")
+const logger = createLogger.createLogger("wally.installer.uninstall")
 
-type Realm = "shared" | "server"
-type Registry = types.Registry
-type RootRequest = types.RootRequest
-
-export type UninstallResult = {
-	ok: boolean,
-	error: string?,
-}
-
-local function runUninstall(scope: string, name: string, realm: Realm): UninstallResult
+const function runUninstallAsync(root: coreTypes.InstalledRoot): types.OperationResult
+	const scope, name, realm = root.scope, root.name, root.realm
 	logger.info(`uninstall {scope}/{name} realm={realm}`)
 
-	local priorRoots = snapshotRoots()
-	local remaining: { RootRequest } = {}
+	const remaining: { coreTypes.RootRequest } = {}
 	local didMatch = false
-	for _, prior in priorRoots do
+	for _, prior in snapshotRoots() do
 		if prior.requestRealm == realm and prior.scope == scope and prior.name == name then
 			didMatch = true
 			logger.info(`removing root {prior.scope}/{prior.name}@{prior.version} (alias={prior.alias})`)
 			continue
 		end
+
 		table.insert(remaining, prior)
 	end
 
 	if not didMatch then
 		logger.warn(`no matching root for {scope}/{name} in {realm}`)
+
 		return {
 			ok = false,
 			error = `No installed root matched {scope}/{name}`,
+			failures = {},
 		}
 	end
 
-	local lockData = lockfile.load()
+	const lockData = lockfile.load()
 	logger.info(`resolve starting ({#remaining} remaining root(s))`)
-	local resolved, rootAliases, resolutionFailures = resolveAsync(remaining, lockData, nil)
+	const resolved, rootAliases, resolutionFailures = resolveAsync(remaining, lockData, nil)
+
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
-	local result = applyRootsAsync(resolved, rootAliases, `Uninstall {scope}/{name}`, nil)
-	if not result.ok then
-		return {
-			ok = false,
-			error = result.error or "Uninstall failed",
-		}
-	end
+	return applyRootsAsync(`Uninstall {scope}/{name}`, function()
+		const failures = applyAsync(resolved, rootAliases, nil)
+		lockfile.save(resolved)
 
-	logger.info(`uninstall succeeded: {scope}/{name}`)
-	return {
-		ok = true,
-		error = nil,
-	}
+		return failures
+	end)
 end
 
-local function uninstallAsync(scope: string, name: string, realm: Realm, registry: Registry?): UninstallResult
-	if registry == "pesde" then
-		return uninstallPesdeAsync(scope, name, realm)
+--[[
+	Removes an installed root, and any dependency that only it needed, by resolving
+		and applying the roots that remain.
+]]
+const function uninstallAsync(root: coreTypes.InstalledRoot): types.OperationResult
+	if root.registry == "pesde" then
+		return uninstallPesdeAsync(root)
 	end
 
-	return runWithBusyLock(function(): UninstallResult
-		logger.warn(`uninstall rejected: another installer operation is in progress`)
-		return {
-			ok = false,
-			error = "Another installer operation is in progress.",
-		}
-	end, function(): UninstallResult
-		return runUninstall(scope, name, realm)
-	end, function(err): UninstallResult
-		logger.error(`uninstall crashed for {scope}/{name}: {err}`)
-		return {
-			ok = false,
-			error = `Uninstall failed: {err}`,
-		}
+	return runWithBusyLock("Uninstall", function()
+		return runUninstallAsync(root)
 	end)
 end
 

@@ -1,107 +1,101 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
+const React = require(StudioDiscover.Packages.React)
 
-local getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
-local getWallyMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
+const getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
+const getWallyMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
 
-local compareSemver = require(StudioDiscover.Semver.compareSemver)
-local parseSemver = require(StudioDiscover.Semver.parseSemver)
+const compareSemver = require(StudioDiscover.Semver.compareSemver)
+const parseSemver = require(StudioDiscover.Semver.parseSemver)
 
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-
-local coreTypes = require(StudioDiscover.Core.types)
-local useInstalledRoots = require(StudioDiscover.Source.Installer.useInstalledRoots)
-
-type Realm = coreTypes.Realm
-type Registry = coreTypes.Registry
-
-export type UpdateInfo = {
-	scope: string,
-	name: string,
-	realm: Realm,
-	alias: string,
-	registry: Registry,
-	installedVersion: string,
-	latestVersion: string,
-}
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const types = require(StudioDiscover.Source.Installer.types)
+const useInstalledRoots = require(StudioDiscover.Source.Installer.useInstalledRoots)
 
 export type UpdatesState = {
-	updates: { UpdateInfo },
-	loading: boolean,
+	read updates: { types.UpdateInfo },
+	read loading: boolean,
 }
 
-local EMPTY: UpdatesState = { updates = {}, loading = false }
+const IDLE: UpdatesState = { updates = {}, loading = false }
+const LOADING: UpdatesState = { updates = {}, loading = true }
 
-local function useUpdates(): UpdatesState
-	local installedState = useInstalledRoots()
-	local installedRoots = installedState.roots
-	local registries = SettingsStore.useSettings().registries
-	local wallyEnabled = registries.wally
-	local pesdeEnabled = registries.pesde
-	local state: UpdatesState, setState = React.useState(EMPTY)
+--[[
+	Returns the installed roots that have a newer version on their registry. Roots
+		from a registry the user turned off are skipped.
+]]
+const function useUpdates(): UpdatesState
+	const installedState = useInstalledRoots()
+	const installedRoots = installedState.roots
+	const registries = SettingsStore.useSettings().registries
+	const wallyEnabled = registries.wally
+	const pesdeEnabled = registries.pesde
+	const state, setState = React.useState(IDLE)
 
-	React.useEffect(function(): (() -> ())?
-		if installedState.loading then
-			setState({ updates = {}, loading = true })
-			return nil
-		end
-		if #installedRoots == 0 then
-			setState(EMPTY)
-			return nil
-		end
-
+	React.useEffect(function()
 		local cancelled = false
-		setState({ updates = {}, loading = true })
+
+		if installedState.loading or #installedRoots == 0 then
+			setState(if installedState.loading then LOADING else IDLE)
+
+			return function()
+				cancelled = true
+			end
+		end
+
+		setState(LOADING)
 
 		task.spawn(function()
-			local updates: { UpdateInfo } = {}
+			const updates: { types.UpdateInfo } = {}
+
 			for _, root in installedRoots do
 				if cancelled then
 					return
 				end
-				if root.registry == "wally" and not wallyEnabled then
+
+				const enabled = if root.registry == "pesde" then pesdeEnabled else wallyEnabled
+				if not enabled then
 					continue
 				end
-				if root.registry == "pesde" and not pesdeEnabled then
-					continue
-				end
-				local metadata = if root.registry == "pesde"
+
+				const metadata = if root.registry == "pesde"
 					then getPesdeMetadataAsync(root.scope, root.name)
 					else getWallyMetadataAsync(root.scope, root.name)
-				if metadata == nil or metadata.versions == nil or #metadata.versions == 0 then
+				if metadata == nil or #metadata.versions == 0 then
 					continue
 				end
-				local latest = metadata.versions[1].package.version
-				local latestSv = parseSemver(latest)
-				local installedSv = parseSemver(root.version)
-				if latestSv == nil or installedSv == nil then
+
+				const latest = metadata.versions[1].package.version
+				const latestSemver = parseSemver(latest)
+				const installedSemver = parseSemver(root.version)
+				if latestSemver == nil or installedSemver == nil then
 					continue
 				end
-				if compareSemver(latestSv, installedSv) > 0 then
+
+				if compareSemver(latestSemver, installedSemver) > 0 then
 					table.insert(updates, {
+						registry = root.registry,
 						scope = root.scope,
 						name = root.name,
 						realm = root.realm,
 						alias = root.alias,
-						registry = root.registry,
 						installedVersion = root.version,
 						latestVersion = latest,
 					})
 				end
 			end
-			if cancelled then
-				return
+
+			if not cancelled then
+				setState({ updates = updates, loading = false })
 			end
-			setState({ updates = updates, loading = false })
 		end)
 
 		return function()
 			cancelled = true
 		end
-	end, { installedRoots, wallyEnabled, pesdeEnabled } :: { any })
+	end, { installedState.loading, installedRoots, wallyEnabled, pesdeEnabled } :: { unknown })
 
 	return state
 end

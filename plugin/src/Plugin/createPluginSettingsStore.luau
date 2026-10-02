@@ -1,166 +1,106 @@
 --!strict
 
-local HttpService = game:GetService("HttpService")
+const HttpService = game:GetService("HttpService")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Charm = require(StudioDiscover.Packages.Charm)
+const Charm = require(StudioDiscover.Packages.Charm)
 
-local PluginStore = require(StudioDiscover.Source.Plugin.PluginStore)
-local createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const mergeSettings = require(StudioDiscover.Source.Plugin.mergeSettings)
+const pluginAtom = require(StudioDiscover.Source.Plugin.pluginAtom)
 
-local logger = createLogger.createLogger("settings")
+const logger = createLogger.createLogger("settings")
 
 export type PluginSettingsStore<T> = {
-	getStorage: () -> T,
-	setStorage: (T | ((T) -> T)) -> (),
-
-	isSettingDefault: (settingName: string) -> boolean,
-
-	getIsLoading: () -> boolean,
-	getErr: () -> string?,
-
-	dispose: () -> (),
+	read getStorage: () -> T,
+	read setStorage: (value: T | (T) -> T) -> (),
+	read getIsLoading: () -> boolean,
 }
 
-export type FieldValidator = (value: any) -> (boolean, any?)
-
-local function createPluginSettingsStore<T>(
+--[[
+	Keeps settings in a Charm atom backed by the plugin's settings on disk. They load
+		once the plugin handle is set, and every change after that is written back.
+		Until the load finishes, the store holds `defaults`.
+]]
+const function createPluginSettingsStore<T>(
 	storageKey: string,
-	defaultValue: T,
-	validators: { [string]: FieldValidator }
+	defaults: T,
+	validators: { [string]: mergeSettings.FieldValidator }
 ): PluginSettingsStore<T>
-	local storageAtom = Charm.atom(defaultValue)
-	local isLoadingAtom = Charm.atom(true)
-	local errAtom = Charm.atom(nil :: string?)
+	const storageAtom = Charm.atom(defaults)
+	const isLoadingAtom = Charm.atom(true)
 
-	local function readPluginSettingsAsync(plugin: Plugin): T?
-		logger.info(`reading plugin settings for {storageKey} from disk...`)
-
-		local data = plugin:GetSetting(storageKey)
-
-		logger.debug(`read raw plugin settings for {storageKey}:`, data)
-
+	const function readAsync(plugin: Plugin): T
+		const data = plugin:GetSetting(storageKey)
 		if typeof(data) ~= "string" then
-			logger.info("no plugin settings to read")
-			return nil
+			logger.info(`no saved settings for {storageKey}`)
+			return defaults
 		end
 
-		logger.info(`deserializing plugin settings for {storageKey} to object...`)
-
-		local success, result = pcall(function()
+		const decoded, saved = pcall(function()
 			return HttpService:JSONDecode(data)
 		end)
 
-		if not success then
-			logger.warn(`failed to decode plugin settings for {storageKey}:`, result)
-			errAtom(result)
-			return nil
+		if not decoded then
+			logger.warn(`failed to decode settings for {storageKey}:`, saved)
+			return defaults
 		end
 
-		if typeof(defaultValue) ~= "table" or typeof(result) ~= "table" then
-			return result :: T
+		const merged, rejected = mergeSettings(defaults, saved, validators)
+		for _, key in rejected do
+			logger.info(`settings field {storageKey}.{key} failed validation, using default`)
 		end
 
-		local merged: any = table.clone(defaultValue :: any)
-		for key in (defaultValue :: any) :: { [string]: any } do
-			local storedValue = (result :: any)[key]
-			if storedValue == nil then
-				continue
-			end
-
-			local validator = validators[key]
-			if validator == nil then
-				merged[key] = storedValue
-			else
-				local isValid = validator(storedValue)
-				if isValid then
-					merged[key] = storedValue
-				else
-					logger.info(`settings field {storageKey}.{key} failed validation, using default`)
-				end
-			end
-		end
-
-		logger.info(`got plugin settings for {storageKey}`)
 		return merged
 	end
 
-	local function writePluginSettingsAsync(plugin: Plugin, storage: T)
-		logger.info("writing plugin settings to disk...")
-		local data = HttpService:JSONEncode(storage)
-
-		local success, err = pcall(function()
-			plugin:SetSetting(storageKey, data)
+	const function writeAsync(plugin: Plugin, storage: T)
+		const ok, err = pcall(function()
+			plugin:SetSetting(storageKey, HttpService:JSONEncode(storage))
 		end)
 
-		if not success then
-			logger.warn(`failed to write plugin settings to disk: {err}`)
+		if not ok then
+			logger.warn(`failed to write settings for {storageKey}: {err}`)
 		end
 	end
 
-	local disposeLoad = Charm.effect(function()
-		local isLoading = isLoadingAtom()
-		local plugin = PluginStore.get().getPlugin()
+	Charm.effect(function()
+		const plugin = pluginAtom()
 
-		if plugin and isLoading then
+		if plugin ~= nil and isLoadingAtom() then
 			task.spawn(function()
-				local data = readPluginSettingsAsync(plugin)
-				if data then
-					storageAtom(data)
-				end
+				storageAtom(readAsync(plugin))
 				isLoadingAtom(false)
 			end)
 		end
 	end)
 
-	local prevStorage: T? = defaultValue
-	local disposeWrite = Charm.effect(function()
-		local storage = storageAtom()
-		local isLoading = isLoadingAtom()
-		local plugin = PluginStore.get().getPlugin()
+	-- Only changes made after the load are written, so loading never writes the file straight back.
+	local previous = defaults
+	Charm.effect(function()
+		const storage = storageAtom()
+		const plugin = pluginAtom()
+		const isLoading = isLoadingAtom()
 
-		if plugin and not isLoading and storage ~= prevStorage then
-			task.spawn(function()
-				writePluginSettingsAsync(plugin, storage)
-			end)
+		const changed = storage ~= previous
+		previous = storage
+
+		if changed and plugin ~= nil and not isLoading then
+			task.spawn(writeAsync, plugin, storage)
 		end
-
-		prevStorage = storage
 	end)
 
-	local function dispose()
-		disposeLoad()
-		disposeWrite()
-	end
-
-	local function isSettingDefault(settingName: string): boolean
-		local storage = storageAtom()
-		if typeof(defaultValue) ~= "table" or typeof(storage) ~= "table" then
-			return true
-		end
-
-		local settingDefaultValue = (defaultValue :: any)[settingName]
-		local storedValue = (storage :: any)[settingName]
-
-		return storedValue == nil or storedValue == settingDefaultValue
-	end
-
 	return {
-		getIsLoading = function(): boolean
-			return isLoadingAtom()
-		end,
-		getErr = function(): string?
-			return errAtom()
-		end,
-		getStorage = function(): T
+		getStorage = function()
 			return storageAtom()
 		end,
 		setStorage = function(value)
-			storageAtom(value :: any)
+			storageAtom(value)
 		end,
-		isSettingDefault = isSettingDefault,
-		dispose = dispose,
+		getIsLoading = function()
+			return isLoadingAtom()
+		end,
 	}
 end
 

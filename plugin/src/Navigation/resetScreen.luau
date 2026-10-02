@@ -1,16 +1,12 @@
 --!strict
 
-local createScreenId = require(script.Parent.createScreenId)
-local screensAtom = require(script.Parent.screensAtom)
-local types = require(script.Parent.types)
+const createScreen = require(script.Parent.createScreen)
+const screensAtom = require(script.Parent.screensAtom)
+const types = require(script.Parent.types)
 
-local function resetScreen(name: string, options: { [string]: any }?)
-	local screen: types.Screen = {
-		id = createScreenId(),
-		name = name,
-		options = options or {},
-	}
-	screensAtom({ screen })
+-- Replaces the whole stack with one screen, as the sidebar does.
+const function resetScreen(route: types.Route)
+	screensAtom({ createScreen(route) })
 end
 
 return resetScreen

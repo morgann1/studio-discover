@@ -1,25 +1,23 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
-local ReactRoblox = require(StudioDiscover.Packages.ReactRoblox)
+const React = require(StudioDiscover.Packages.React)
+const ReactRoblox = require(StudioDiscover.Packages.ReactRoblox)
 
-local App = require(StudioDiscover.Source.App)
+const App = require(StudioDiscover.Source.App)
 
-local e = React.createElement
+const e = React.createElement
 
-local function mountApp(plugin: Plugin, widget: DockWidgetPluginGui): () -> ()
-	local container = Instance.new("Folder")
-	local root = ReactRoblox.createRoot(container)
+--[[
+	Renders the app into `widget` through a portal from a root it owns, so React never
+		clears anything else in the widget. Returns a function that unmounts it.
+]]
+const function mountApp(widget: DockWidgetPluginGui): () -> ()
+	const container = Instance.new("Folder")
+	const root = ReactRoblox.createRoot(container)
 
-	root:render(ReactRoblox.createPortal(
-		e(App, {
-			plugin = plugin,
-			overlayGui = widget,
-		}),
-		widget
-	))
+	root:render(ReactRoblox.createPortal(e(App, { widget = widget }), widget))
 
 	return function()
 		root:unmount()

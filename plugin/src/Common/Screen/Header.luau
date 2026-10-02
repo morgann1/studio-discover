@@ -1,30 +1,28 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Button = Foundation.Button
-local Divider = Foundation.Divider
-local Text = Foundation.Text
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local IconName = Foundation.Enums.IconName
-local InputSize = Foundation.Enums.InputSize
+const Button = Foundation.Button
+const Divider = Foundation.Divider
+const Text = Foundation.Text
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const IconName = Foundation.Enums.IconName
+const InputSize = Foundation.Enums.InputSize
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	title: string,
-	onBack: (() -> ())?,
-	LayoutOrder: number?,
-}
-
-local function Header(props: Props)
-	local nextOrder = createNextOrder()
+const function Header(props: {
+	read title: string,
+	read onBack: (() -> ())?,
+	read LayoutOrder: number?,
+})
+	const nextOrder = createNextOrder()
 
 	return e(View, {
 		tag = "size-full-0 auto-y bg-surface-100 col gap-small padding-small",

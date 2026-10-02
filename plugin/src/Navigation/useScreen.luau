@@ -1,13 +1,13 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local getScreen = require(script.Parent.getScreen)
-local screensAtom = require(script.Parent.screensAtom)
-local types = require(script.Parent.types)
-local useAtom = require(StudioDiscover.Source.Common.useAtom)
+const getScreen = require(script.Parent.getScreen)
+const screensAtom = require(script.Parent.screensAtom)
+const types = require(script.Parent.types)
+const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
-local function useScreen(): types.Screen
+const function useScreen(): types.Screen
 	return useAtom(function()
 		return getScreen(screensAtom())
 	end)

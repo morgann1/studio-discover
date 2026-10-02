@@ -1,26 +1,23 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
+const React = require(StudioDiscover.Packages.React)
 
-local getPackageMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
-local getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
-local coreTypes = require(StudioDiscover.Core.types)
+const coreTypes = require(StudioDiscover.Core.types)
+const getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
+const getWallyMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
 
 export type MetadataState = {
-	loading: boolean,
-	data: coreTypes.PackageMetadata?,
-	error: string?,
+	read loading: boolean,
+	read data: coreTypes.PackageMetadata?,
+	read error: string?,
 }
 
-local EMPTY: MetadataState = table.freeze({
-	loading = false,
-	data = nil,
-	error = nil,
-})
+const IDLE: MetadataState = { loading = false }
+const LOADING: MetadataState = { loading = true }
 
-local function fetchAsync(
+const function fetchAsync(
 	registry: coreTypes.Registry,
 	scope: string,
 	name: string
@@ -28,38 +25,34 @@ local function fetchAsync(
 	if registry == "pesde" then
 		return getPesdeMetadataAsync(scope, name)
 	end
-	return getPackageMetadataAsync(scope, name)
+
+	return getWallyMetadataAsync(scope, name)
 end
 
-local function usePackageMetadata(scope: string, name: string, registry: coreTypes.Registry?): MetadataState
-	local resolvedRegistry: coreTypes.Registry = registry or "wally"
-	local state: MetadataState, setState = React.useState(EMPTY)
+-- Fetches a package's metadata from one registry, again whenever the package or registry changes.
+const function usePackageMetadata(registry: coreTypes.Registry, scope: string, name: string): MetadataState
+	const state, setState = React.useState(IDLE)
 
-	React.useEffect(function(): (() -> ())?
-		if scope == "" or name == "" then
-			setState(EMPTY)
-			return nil
-		end
-
+	React.useEffect(function()
 		local cancelled = false
-		setState({ loading = true, data = nil, error = nil })
 
-		task.spawn(function()
-			local data, err = fetchAsync(resolvedRegistry, scope, name)
-			if cancelled then
-				return
-			end
-			setState({
-				loading = false,
-				data = data,
-				error = err,
-			})
-		end)
+		if scope == "" or name == "" then
+			setState(IDLE)
+		else
+			setState(LOADING)
+
+			task.spawn(function()
+				const data, err = fetchAsync(registry, scope, name)
+				if not cancelled then
+					setState({ loading = false, data = data, error = err })
+				end
+			end)
+		end
 
 		return function()
 			cancelled = true
 		end
-	end, { scope, name, resolvedRegistry } :: { any })
+	end, { registry, scope, name })
 
 	return state
 end

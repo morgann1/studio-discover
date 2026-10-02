@@ -19,6 +19,7 @@ const PATHS_TO_LINT = table.freeze({
 	project.PACKAGES_PATH,
 	project.PLUGIN_BIN_PATH,
 	project.PLUGIN_SRC_PATH,
+	project.PLUGIN_TESTS_PATH,
 })
 
 const args = parseArgs()

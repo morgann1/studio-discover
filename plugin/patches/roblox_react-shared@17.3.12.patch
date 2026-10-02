@@ -1,0 +1,38 @@
+diff --git a/react-shared/src/flowtypes.roblox.lua b/react-shared/src/flowtypes.roblox.lua
+index 3f39c69..478187a 100644
+--- a/react-shared/src/flowtypes.roblox.lua
++++ b/react-shared/src/flowtypes.roblox.lua
+@@ -36,13 +36,13 @@ export type React_Node =
+ 	-- | React_Portal
+ 	| Array<React_Node?>
+ 	-- ROBLOX TODO Luau: this more closely matches the upstream Iterable<>, hypothetically the UNIQUE_TAG field makes it so we don't unify with other tables and squad field resolution
+-	| { [string]: React_Node?, UNIQUE_TAG: any? }
++	| { read [string]: React_Node?, read UNIQUE_TAG: any? }
+ 
+ export type React_Element<ElementType> = {
+-	type: ElementType,
+-	props: React_ElementProps<ElementType>?,
+-	key: React_Key | nil,
+-	ref: any,
++	read type: ElementType,
++	read props: React_ElementProps<ElementType>?,
++	read key: React_Key | nil,
++	read ref: any,
+ }
+ 
+ export type React_PureComponent<Props, State = nil> = React_Component<Props, State>
+@@ -194,10 +194,10 @@ export type React_ElementType = string | React_Component<any, any>
+ 
+ -- This was reverse engineered from usage, no specific flowtype or TS artifact
+ export type React_ElementProps<ElementType> = {
+-	ref: React_Ref<ElementType>?,
+-	key: React_Key?,
+-	__source: Source?,
+-	children: any?,
++	read ref: React_Ref<ElementType>?,
++	read key: React_Key?,
++	read __source: Source?,
++	read children: any?,
+ }
+ 
+ -- ROBLOX deviation: this is a built-in flow type, and very complex. we fudge this with `any`

@@ -1,14 +1,13 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const screensAtom = require(script.Parent.screensAtom)
 
-local Cryo = require(StudioDiscover.Packages.Cryo)
-
-local screensAtom = require(script.Parent.screensAtom)
-
-local function popScreen()
+const function popScreen()
 	screensAtom(function(stack)
-		return Cryo.List.removeIndex(stack, #stack)
+		const nextStack = table.clone(stack)
+		table.remove(nextStack)
+
+		return nextStack
 	end)
 end
 

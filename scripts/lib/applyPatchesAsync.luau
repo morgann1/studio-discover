@@ -10,8 +10,8 @@ const runAsync = require("@scripts/lib/runAsync")
 	Applies every git-format patch in `plugin/patches/` to the installed package it
 		names. A patch file is named for its `_Index` directory:
 
-		plugin/patches/jsdotlua_jest-runtime@3.10.0.patch
-		applies to plugin/Packages/_Index/jsdotlua_jest-runtime@3.10.0/
+		plugin/patches/roblox_react-shared@17.3.12.patch
+		applies to plugin/Packages/_Index/roblox_react-shared@17.3.12/
 
 	A patch for a package that is no longer installed is skipped with a warning.
 		One that no longer applies errors.

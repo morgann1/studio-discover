@@ -1,133 +1,125 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local Motion = require(StudioDiscover.Packages.Motion)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const Motion = require(StudioDiscover.Packages.Motion)
+const React = require(StudioDiscover.Packages.React)
 
-local Installer = require(StudioDiscover.Source.Installer)
-local Navigation = require(StudioDiscover.Source.Navigation)
-local SearchStore = require(StudioDiscover.Source.SearchStore)
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const Installer = require(StudioDiscover.Source.Installer)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const SearchStore = require(StudioDiscover.Source.SearchStore)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 
-local Item = require(script.Item)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-local useAtom = require(StudioDiscover.Source.Common.useAtom)
+const Item = require(script.Item)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const useAtom = require(StudioDiscover.Source.Common.useAtom)
+const useTokens = require(StudioDiscover.Source.Common.useTokens)
 
-local Divider = Foundation.Divider
-local IconButton = Foundation.IconButton
-local SearchInput = Foundation.SearchInput
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local IconName = Foundation.Enums.IconName
-local InputSize = Foundation.Enums.InputSize
-local useTokens = Foundation.Hooks.useTokens
+const Divider = Foundation.Divider
+const IconButton = Foundation.IconButton
+const SearchInput = Foundation.SearchInput
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const IconName = Foundation.Enums.IconName
+const InputSize = Foundation.Enums.InputSize
 
-local TransitionPreset = Motion.TransitionPreset
-local useMotion = Motion.useMotion
+const TransitionPreset = Motion.TransitionPreset
+const useMotion = Motion.useMotion
 
-local e = React.createElement
-
-type ItemName = "Home" | "Manage" | "Updates" | "Settings"
+const e = React.createElement
 
 type ItemDef = {
-	name: ItemName,
-	text: string,
-	icon: string,
+	read name: Navigation.ScreenName,
+	read text: string,
+	read icon: string,
 }
 
-local TOP_ITEMS: { ItemDef } = table.freeze({
-	{ name = "Home" :: ItemName, text = "Home", icon = IconName.House },
-	{ name = "Manage" :: ItemName, text = "Installed", icon = IconName.Folder },
-	{ name = "Updates" :: ItemName, text = "Updates", icon = IconName.ArrowRotateRight },
-	{ name = "Settings" :: ItemName, text = "Settings", icon = IconName.Gear },
-}) :: { ItemDef }
-
-local EXPANDED_WIDTH = 252
-local COMPACT_WIDTH = 56
-
-type Props = {
-	compact: boolean?,
-	LayoutOrder: number?,
+const ITEMS: { ItemDef } = {
+	{ name = "Home", text = "Home", icon = IconName.House },
+	{ name = "Manage", text = "Installed", icon = IconName.Folder },
+	{ name = "Updates", text = "Updates", icon = IconName.ArrowRotateRight },
+	{ name = "Settings", text = "Settings", icon = IconName.Gear },
 }
 
-local function Sidebar(props: Props)
-	local tokens = useTokens()
-	local current = Navigation.useScreen()
-	local searchText = SearchStore.useQuery()
-	local searchExpanded, setSearchExpanded = React.useState(false)
-	local searchBoxRef = React.useRef(nil :: Foundation.TextInputRef?)
+const EXPANDED_WIDTH = 252
+const COMPACT_WIDTH = 56
 
-	local compact = props.compact == true and not searchExpanded
+--[[
+	The search box and the top-level screens. Compact shows icons only, and the
+		search icon expands the sidebar until the search box loses focus.
+]]
+const function Sidebar(props: {
+	read compact: boolean,
+	read LayoutOrder: number?,
+})
+	const tokens = useTokens()
+	const current = Navigation.useScreen().route.name
+	const searchText = SearchStore.useQuery()
+	const searchExpanded, setSearchExpanded = React.useState(false)
+	const searchBoxRef = React.useRef(nil :: Foundation.TextInputRef?)
+	const updatesCount = #Installer.useUpdates().updates
+	const reduceMotion = useAtom(function()
+		return SettingsStore.getSettings().reduceMotion
+	end)
+
+	const compact = props.compact and not searchExpanded
 
 	React.useEffect(function()
-		if searchExpanded and searchBoxRef.current then
-			searchBoxRef.current.focus()
+		const searchBox = searchBoxRef.current
+		if searchExpanded and searchBox ~= nil then
+			searchBox.focus()
 		end
 	end, { searchExpanded })
 
+	-- Results only render on Home, so typing a query from another screen goes there.
 	React.useEffect(function()
-		if searchText ~= "" and current.name ~= "Home" then
-			Navigation.resetScreen("Home")
+		if searchText ~= "" and current ~= "Home" then
+			Navigation.resetScreen({ name = "Home" })
 		end
 	end, { searchText })
 
-	local onSearchIconActivated = React.useCallback(function()
+	const onSearchIconActivated = React.useCallback(function()
 		setSearchExpanded(true)
 	end, {})
 
-	local onSearchFocusLost = React.useCallback(function()
+	const onSearchFocusLost = React.useCallback(function()
 		setSearchExpanded(false)
 	end, {})
 
-	local reduceMotion = useAtom(function()
-		return SettingsStore.get().getStorage().reduceMotion
-	end)
+	const states = React.useMemo(function()
+		const duration = if reduceMotion then 0 else tokens.Time.Time_200
+		const transition = Motion.transition(TransitionPreset.Default, { duration = duration })
 
-	local states = React.useMemo(function()
-		local duration = if reduceMotion then 0 else tokens.Time.Time_200
-		local transition = Motion.transition(TransitionPreset.Default, { duration = duration })
 		return {
 			Expanded = Motion.createState({ width = EXPANDED_WIDTH }, { default = transition }),
 			Compact = Motion.createState({ width = COMPACT_WIDTH }, { default = transition }),
 		}
-	end, { tokens, reduceMotion } :: { any })
+	end, { tokens, reduceMotion } :: { unknown })
 
-	local values, animate = useMotion(states.Expanded)
+	const values, animate = useMotion(states.Expanded)
 
 	React.useEffect(function()
 		animate(if compact then states.Compact else states.Expanded)
-	end, { compact, states } :: { any })
+	end, { compact, states } :: { unknown })
 
-	local updatesState = Installer.useUpdates()
-	local updatesCount = #updatesState.updates
+	const nextOrder = createNextOrder()
+	const nextItemOrder = createNextOrder()
 
-	local nextOrder = createNextOrder()
-
-	local function renderNavItems(items: { ItemDef }): { [string]: any }
-		local result: { [string]: any } = {}
-		local order = createNextOrder()
-		for _, item in items do
-			local name = item.name
-			local isActive = current.name == name or (current.name == "base" and name == "Home")
-
-			result[name] = e(Item, {
-				text = item.text,
-				icon = item.icon,
-				isActive = isActive,
-				compact = compact,
-				badge = if name == "Updates" then updatesCount else nil,
-				LayoutOrder = order(),
-				onActivated = function()
-					Navigation.resetScreen(name)
-				end,
-			})
-		end
-		return result
+	const items: { [string]: React.Node } = {}
+	for _, item in ITEMS do
+		items[item.name] = e(Item, {
+			text = item.text,
+			icon = item.icon,
+			isActive = current == item.name,
+			compact = compact,
+			badge = if item.name == "Updates" then updatesCount else nil,
+			LayoutOrder = nextItemOrder(),
+			onActivated = function()
+				Navigation.resetScreen({ name = item.name })
+			end,
+		})
 	end
-
-	local topItems = renderNavItems(TOP_ITEMS)
 
 	return e(View, {
 		tag = "col gap-small padding-small bg-surface-100",
@@ -146,7 +138,7 @@ local function Sidebar(props: Props)
 				LayoutOrder = nextOrder(),
 			})
 			else e(SearchInput, {
-				ref = searchBoxRef :: any,
+				ref = searchBoxRef,
 				text = searchText,
 				placeholder = "Search",
 				size = InputSize.Medium,
@@ -164,8 +156,8 @@ local function Sidebar(props: Props)
 			tag = "grow col",
 			Size = UDim2.fromScale(1, 0),
 			LayoutOrder = nextOrder(),
-		}, topItems),
+		}, items),
 	})
 end
 
-return React.memo(Sidebar)
+return Sidebar

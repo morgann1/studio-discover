@@ -1,42 +1,33 @@
 --!strict
 
-local ChangeHistoryService = game:GetService("ChangeHistoryService")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+const coreTypes = require(StudioDiscover.Core.types)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
+const types = require(StudioDiscover.Source.Installer.types)
 
-local createLogger = require(StudioDiscover.Core.createLogger)
-local permissionError = require(StudioDiscover.Source.Installer.permissionError)
-local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
-local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
+const pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
+const pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
+const pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
+const pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
 
-local pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
-local pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
-local pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
-local pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
+const logger = createLogger.createLogger("pesde.installer.uninstall")
 
-local sharedTypes = require(StudioDiscover.Core.types)
-
-local logger = createLogger.createLogger("pesde.installer.uninstall")
-
-type Realm = sharedTypes.Realm
-
-export type UninstallResult = {
-	ok: boolean,
-	error: string?,
-}
-
-local function runUninstall(scope: string, name: string, realm: Realm): UninstallResult
+const function runUninstallAsync(root: coreTypes.InstalledRoot): types.OperationResult
+	const scope, name, realm = root.scope, root.name, root.realm
 	logger.info(`uninstall pesde {scope}/{name} realm={realm}`)
 
-	local priorSnapshots = pesdeSnapshotRoots()
-	local remaining: { pesdeResolveAsync.RootRequest } = {}
+	const remaining: { pesdeResolveAsync.RootRequest } = {}
 	local didMatch = false
-	for _, prior in priorSnapshots do
+	for _, prior in pesdeSnapshotRoots() do
 		if prior.realm == realm and prior.scope == scope and prior.name == name and prior.kind == "pesde" then
 			didMatch = true
 			logger.info(`removing root {prior.scope}/{prior.name}@{prior.version} (alias={prior.alias})`)
 			continue
 		end
+
 		table.insert(remaining, {
 			scope = prior.scope,
 			name = prior.name,
@@ -48,66 +39,33 @@ local function runUninstall(scope: string, name: string, realm: Realm): Uninstal
 
 	if not didMatch then
 		logger.warn(`no matching pesde root for {scope}/{name} in {realm}`)
+
 		return {
 			ok = false,
 			error = `No installed pesde root matched {scope}/{name}`,
+			failures = {},
 		}
 	end
 
 	logger.info(`resolve starting ({#remaining} remaining root(s))`)
-	local resolved, rootAliases, resolutionFailures = pesdeResolveAsync(remaining, nil)
+	const resolved, rootAliases, resolutionFailures = pesdeResolveAsync(remaining, nil)
+
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
-	local recordLabel = `Uninstall {scope}/{name}`
-	local recordingId = ChangeHistoryService:TryBeginRecording(recordLabel)
-
-	local applySuccess, applyOutcome = pcall(function()
-		local failures = pesdeApplyAsync(resolved, rootAliases, nil)
+	return applyRootsAsync(`Uninstall {scope}/{name}`, function()
+		const failures = pesdeApplyAsync(resolved, rootAliases, nil)
 		pesdeLockfile.save(resolved)
+
 		return failures
 	end)
-
-	if not applySuccess then
-		logger.error(`apply threw: {applyOutcome}`)
-		if recordingId ~= nil then
-			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
-		end
-		return {
-			ok = false,
-			error = permissionError.describe(applyOutcome),
-		}
-	end
-
-	if recordingId ~= nil then
-		ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Commit)
-	end
-
-	refreshInstalledRoots()
-
-	logger.info(`uninstall succeeded: {scope}/{name}`)
-	return {
-		ok = true,
-		error = nil,
-	}
 end
 
-local function uninstallPesdeAsync(scope: string, name: string, realm: Realm): UninstallResult
-	return runWithBusyLock(function(): UninstallResult
-		logger.warn(`uninstall rejected: another installer operation is in progress`)
-		return {
-			ok = false,
-			error = "Another installer operation is in progress.",
-		}
-	end, function(): UninstallResult
-		return runUninstall(scope, name, realm)
-	end, function(err): UninstallResult
-		logger.error(`uninstall crashed for {scope}/{name}: {err}`)
-		return {
-			ok = false,
-			error = `Uninstall failed: {err}`,
-		}
+-- The pesde half of `uninstallAsync`, which routes here by registry.
+const function uninstallPesdeAsync(root: coreTypes.InstalledRoot): types.OperationResult
+	return runWithBusyLock("Uninstall", function()
+		return runUninstallAsync(root)
 	end)
 end
 

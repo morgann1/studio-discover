@@ -1,29 +1,27 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local useSearchPackages = require(StudioDiscover.Source.Api.useSearchPackages)
+const Content = require(StudioDiscover.Source.Common.Content)
+const useSearchPackages = require(StudioDiscover.Source.Api.useSearchPackages)
 
-local PackageCard = require(script.Parent.PackageCard)
+const PackageCard = require(script.Parent.PackageCard)
 
-local Empty = Foundation.Empty
-local Loading = Foundation.Loading
-local Text = Foundation.Text
-local View = Foundation.View
+const Empty = Foundation.Empty
+const Loading = Foundation.Loading
+const Text = Foundation.Text
+const View = Foundation.View
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	query: string,
-	state: useSearchPackages.SearchState,
-}
-
-local function SearchResults(props: Props)
-	local state = props.state
+const function SearchResults(props: {
+	read query: string,
+	read state: useSearchPackages.SearchState,
+}): React.Node
+	const state = props.state
 
 	if state.loading then
 		return e(View, {
@@ -44,7 +42,7 @@ local function SearchResults(props: Props)
 		})
 	end
 
-	local data = state.data
+	const data = state.data
 	if data == nil or #data == 0 then
 		return e(View, {
 			tag = "size-full align-x-center align-y-center",
@@ -55,7 +53,7 @@ local function SearchResults(props: Props)
 		})
 	end
 
-	local cards: { [string]: any } = {}
+	const cards: { [string]: React.Node } = {}
 	for i, pkg in data do
 		cards[`{pkg.scope}/{pkg.name}`] = e(PackageCard, {
 			registries = pkg.registries,

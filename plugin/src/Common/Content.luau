@@ -1,20 +1,19 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local ScrollView = Foundation.ScrollView
-local View = Foundation.View
+const ScrollView = Foundation.ScrollView
+const View = Foundation.View
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	children: React.ReactNode?,
-}
-
-local function Content(props: Props)
+-- The scrolling, padded column every screen puts its body in.
+const function Content(props: {
+	read children: React.Node,
+})
 	return e(ScrollView, {
 		tag = "size-full",
 		scroll = {

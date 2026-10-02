@@ -1,18 +1,21 @@
 --!strict
 
-local popScreen = require(script.popScreen)
-local pushScreen = require(script.pushScreen)
-local replaceScreen = require(script.replaceScreen)
-local resetScreen = require(script.resetScreen)
-local types = require(script.types)
-local useScreen = require(script.useScreen)
+const popScreen = require(script.popScreen)
+const pushScreen = require(script.pushScreen)
+const resetScreen = require(script.resetScreen)
+const types = require(script.types)
+const useScreen = require(script.useScreen)
 
+export type PackageTarget = types.PackageTarget
+export type Route = types.Route
 export type Screen = types.Screen
+export type ScreenName = types.ScreenName
 
-return table.freeze({
+const Navigation = table.freeze({
 	popScreen = popScreen,
 	pushScreen = pushScreen,
-	replaceScreen = replaceScreen,
 	resetScreen = resetScreen,
 	useScreen = useScreen,
 })
+
+return Navigation

@@ -1,20 +1,17 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Charm = require(StudioDiscover.Packages.Charm)
+const Charm = require(StudioDiscover.Packages.Charm)
 
-local types = require(StudioDiscover.Source.Installer.types)
+const types = require(StudioDiscover.Source.Installer.types)
 
-type InstallerState = types.InstallerState
+const INITIAL: types.InstallerState = {
+	status = "idle",
+	errors = {},
+}
 
-local INITIAL: InstallerState = table.freeze({
-	status = "idle" :: "idle",
-	message = nil,
-	errors = table.freeze({}),
-	target = nil,
-})
-
-local installerAtom = Charm.atom(INITIAL :: InstallerState)
+-- The latest install's progress and outcome, which the package screen shows.
+const installerAtom = Charm.atom(INITIAL)
 
 return installerAtom

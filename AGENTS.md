@@ -76,7 +76,7 @@ The dev scripts live in `scripts/`, are written in Luau, and run under Lute from
 - `install` gets a clone ready: it generates the Lute typedefs, runs `wally install` and `wally-package-types`, pulls Foundation and friends via `roblox-packages`, applies patches, and writes `plugin/generated/`. Run it once after cloning. If module resolution looks broken, this probably did not run.
 - `build` produces `StudioDiscover.rbxm`. `--dev` produces `StudioDiscover-Dev.rbxm` with a separate toolbar, widget, and plugin-settings identity, so it installs alongside the release build without colliding. Use `--dev` when testing.
 - `lint` runs Selene and a StyLua check. `--fix` formats instead of checking.
-- `analyze` runs `luau-lsp analyze` twice: the scripts against the standard platform, and the plugin, the packages, and `scripts/tasks/` against Roblox through the plugin's sourcemap. It downloads the Roblox global types pinned in `project.luau` and checks their hash.
+- `analyze` runs `luau-lsp analyze` three times: the scripts against the standard platform, the plugin against Roblox with the new solver, and the packages and `scripts/tasks/` against Roblox with the old solver until they are migrated. The Roblox passes go through the plugin's sourcemap. It downloads the Roblox global types pinned in `project.luau` and checks their hash.
 - `test` builds `plugin/tests/build/tests.rbxl` and runs `scripts/tasks/run-tests.luau` in it through run-in-roblox. `--build-only` stops after the build.
 - `patch <package-path>` snapshots a vendored package on the first run and writes the diff to `plugin/patches/` on the second.
 - `codegen` regenerates `plugin/generated/` and the sourcemap. `upload-plugin <path>` publishes to the Creator Store by running `scripts/tasks/upload-plugin.luau` as an Open Cloud Luau Execution task, and the release workflow is what normally calls it.
@@ -143,6 +143,7 @@ Three rules hold the shape together. A package requires its siblings through the
 - Module-level mutable state that several free functions read and write is a trap. Two independent units of state means two sibling modules with explicit APIs.
 - Control flow should be readable from a function's arguments and return values, not by tracing side effects through helpers.
 - `--!strict` everywhere. Inferred types over annotations. `any` is the enemy.
+- Type component props inline with `read` fields. The new solver infers `createElement`'s props invariantly, so a `number` passed to a mutable `number?` prop fails. `plugin/patches/` makes React's own element types read-only for the same reason.
 - Comments describe how a thing is used, and move when the code moves. Mostly for functions, not a running annotation of every line.
 - Users are waiting on a network round trip and a tree write. Report real progress, never a lying spinner. `reduceMotion` is a real setting; honor it.
 - If a rule here fights the task in front of you, say so loudly and get sign-off before breaking it.

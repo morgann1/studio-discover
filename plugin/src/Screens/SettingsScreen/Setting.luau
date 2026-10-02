@@ -1,63 +1,32 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Cryo = require(StudioDiscover.Packages.Cryo)
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Divider = Foundation.Divider
-local Dropdown = Foundation.Dropdown
-local Text = Foundation.Text
-local Toggle = Foundation.Toggle
-local InputSize = Foundation.Enums.InputSize
+const Divider = Foundation.Divider
+const Text = Foundation.Text
 
-local e = React.createElement
+const e = React.createElement
 
-local ROW_HEIGHT = 48
-local ROW_GAP = 12
-local COLUMN_GAP = 2
-local ROW_PADDING_Y = 10
+const ROW_HEIGHT = 48
+const ROW_GAP = 12
+const COLUMN_GAP = 2
+const ROW_PADDING_Y = 10
 
-type Props = {
-	name: string,
-	description: string,
-	value: any?,
-	onChange: ((any) -> ())?,
-	options: { string }?,
-	input: React.ReactNode?,
-	LayoutOrder: number?,
-}
-
-local function Setting(props: Props)
-	local nextOrder = createNextOrder()
-	local nextRowOrder = createNextOrder()
-	local nextTextOrder = createNextOrder()
-
-	local control: React.ReactNode = nil
-	if props.input ~= nil then
-		control = props.input
-	elseif props.options ~= nil then
-		local items = Cryo.List.map(props.options, function(opt: string): Foundation.DropdownItem
-			return { id = opt, text = opt }
-		end)
-		control = e(Dropdown.Root, {
-			label = "",
-			value = props.value,
-			items = items,
-			onItemChanged = props.onChange,
-			size = InputSize.Small,
-			width = UDim.new(0, 200),
-		})
-	else
-		control = e(Toggle, {
-			isChecked = props.value,
-			onActivated = props.onChange,
-			size = InputSize.Small,
-		})
-	end
+-- One settings row: the name and description on the left, `control` on the right.
+const function Setting(props: {
+	read name: string,
+	read description: string,
+	read control: React.Node,
+	read LayoutOrder: number?,
+})
+	const nextOrder = createNextOrder()
+	const nextRowOrder = createNextOrder()
+	const nextTextOrder = createNextOrder()
 
 	return e("Frame", {
 		Size = UDim2.fromScale(1, 0),
@@ -133,7 +102,7 @@ local function Setting(props: Props)
 					BackgroundTransparency = 1,
 					LayoutOrder = nextRowOrder(),
 				}, {
-					Control = control,
+					Control = props.control,
 				}),
 			}),
 		}),

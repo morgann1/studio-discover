@@ -1,35 +1,35 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local Installer = require(StudioDiscover.Source.Installer)
-local Screen = require(StudioDiscover.Source.Common.Screen)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const Content = require(StudioDiscover.Source.Common.Content)
+const Installer = require(StudioDiscover.Source.Installer)
+const RootRow = require(StudioDiscover.Source.Common.RootRow)
+const Screen = require(StudioDiscover.Source.Common.Screen)
+const capitalize = require(StudioDiscover.Source.Util.capitalize)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Row = require(script.Row)
+const Empty = Foundation.Empty
+const Loading = Foundation.Loading
+const View = Foundation.View
 
-local Empty = Foundation.Empty
-local Loading = Foundation.Loading
-local View = Foundation.View
+const e = React.createElement
 
-local e = React.createElement
+-- Lists the installed roots for both registries, each with a Remove button.
+const function ManageScreen()
+	const installedState = Installer.useInstalledRoots()
 
-local function ManageScreen()
-	local installedState = Installer.useInstalledRoots()
-	local installedRoots = installedState.roots
-
-	local body: React.ReactNode
+	local body: React.Node
 	if installedState.loading then
 		body = e(View, {
 			tag = "size-full align-x-center align-y-center",
 		}, {
 			Spinner = e(Loading, {}),
 		})
-	elseif #installedRoots == 0 then
+	elseif #installedState.roots == 0 then
 		body = e(View, {
 			tag = "size-full align-x-center align-y-center",
 		}, {
@@ -38,20 +38,24 @@ local function ManageScreen()
 			}),
 		})
 	else
-		local nextOrder = createNextOrder()
-		local rows: { [string]: any } = {}
-		for _, root in installedRoots do
-			local key = `{root.registry}::{root.realm}::{root.scope}/{root.name}`
-			rows[key] = e(Row, {
+		const nextOrder = createNextOrder()
+		const rows: { [string]: React.Node } = {}
+
+		for _, root in installedState.roots do
+			rows[`{root.registry}::{root.realm}::{root.scope}/{root.name}`] = e(RootRow, {
+				registry = root.registry,
 				scope = root.scope,
 				name = root.name,
-				version = root.version,
-				alias = root.alias,
-				realm = root.realm,
-				registry = root.registry,
+				meta = `v{root.version} · {capitalize(root.realm)} · {root.alias}`,
+				actionText = "Remove",
+				isDestructive = true,
+				runActionAsync = function()
+					return Installer.uninstallAsync(root)
+				end,
 				LayoutOrder = nextOrder(),
 			})
 		end
+
 		body = e(Content, {}, rows)
 	end
 

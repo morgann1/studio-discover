@@ -42,7 +42,8 @@ local function createLogger(key: string): Logger
 				emitWarn(...)
 			end
 		end,
-		error = emit("ERROR", error),
+		-- Logs whether or not verbose logging is on, and never throws, since callers log on their way to cleanup.
+		error = emit("ERROR", warn),
 	})
 end
 

@@ -1,47 +1,44 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local React = require(StudioDiscover.Packages.React)
+const React = require(StudioDiscover.Packages.React)
 
-local searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
-local types = require(StudioDiscover.Core.types)
+const searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
+const types = require(StudioDiscover.Core.types)
 
-local LIMIT = 12
+const LIMIT = 12
 
 export type RecentState = {
-	loading: boolean,
-	packages: { types.PackageBrief },
-	error: string?,
+	read loading: boolean,
+	read packages: { types.PackageBrief },
+	read error: string?,
 }
 
-local EMPTY: RecentState = { loading = true, packages = {}, error = nil }
+const LOADING: RecentState = { loading = true, packages = {} }
 
-local function useRecent(): RecentState
-	local state: RecentState, setState = React.useState(EMPTY)
+-- Fetches the first page of pesde's listing once, on mount.
+const function useRecent(): RecentState
+	const state, setState = React.useState(LOADING)
 
-	React.useEffect(function(): (() -> ())?
+	React.useEffect(function()
 		local cancelled = false
-		setState({ loading = true, packages = {}, error = nil })
 
 		task.spawn(function()
-			local results, err = searchPesdeAsync("")
+			const results, err = searchPesdeAsync("")
 			if cancelled then
 				return
 			end
+
 			if results == nil then
 				setState({ loading = false, packages = {}, error = err })
 				return
 			end
 
-			local trimmed: { types.PackageBrief } = {}
-			for _, pkg in results do
-				if #trimmed >= LIMIT then
-					break
-				end
-				table.insert(trimmed, pkg)
-			end
-			setState({ loading = false, packages = trimmed, error = nil })
+			setState({
+				loading = false,
+				packages = table.move(results, 1, math.min(#results, LIMIT), 1, {}),
+			})
 		end)
 
 		return function()

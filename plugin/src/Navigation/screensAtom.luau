@@ -1,11 +1,12 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Charm = require(StudioDiscover.Packages.Charm)
+const Charm = require(StudioDiscover.Packages.Charm)
 
-local types = require(script.Parent.types)
+const types = require(script.Parent.types)
 
-local screensAtom = Charm.atom({} :: { types.Screen })
+-- The navigation stack. The last screen is the one shown.
+const screensAtom = Charm.atom({} :: { types.Screen })
 
 return screensAtom

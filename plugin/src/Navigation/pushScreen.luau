@@ -1,22 +1,17 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const createScreen = require(script.Parent.createScreen)
+const screensAtom = require(script.Parent.screensAtom)
+const types = require(script.Parent.types)
 
-local Cryo = require(StudioDiscover.Packages.Cryo)
-
-local createScreenId = require(script.Parent.createScreenId)
-local screensAtom = require(script.Parent.screensAtom)
-local types = require(script.Parent.types)
-
-local function pushScreen(name: string, options: { [string]: any }?)
-	local screen: types.Screen = {
-		id = createScreenId(),
-		name = name,
-		options = options or {},
-	}
+const function pushScreen(route: types.Route)
+	const screen = createScreen(route)
 
 	screensAtom(function(stack)
-		return Cryo.List.join(stack, { screen })
+		const nextStack = table.clone(stack)
+		table.insert(nextStack, screen)
+
+		return nextStack
 	end)
 end
 

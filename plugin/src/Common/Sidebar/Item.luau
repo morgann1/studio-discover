@@ -1,47 +1,44 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const useTokens = require(StudioDiscover.Source.Common.useTokens)
 
-local Icon = Foundation.Icon
-local Text = Foundation.Text
-local View = Foundation.View
-local IconSize = Foundation.Enums.IconSize
-local useTokens = Foundation.Hooks.useTokens
+const Icon = Foundation.Icon
+const Text = Foundation.Text
+const View = Foundation.View
+const IconSize = Foundation.Enums.IconSize
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	text: string,
-	icon: string,
-	isActive: boolean,
-	compact: boolean?,
-	badge: number?,
-	onActivated: () -> (),
-	LayoutOrder: number?,
-}
+--[[
+	One sidebar entry. When compact it shows only the icon, with a dot for a nonzero
+		`badge`; when expanded the count follows the label.
+]]
+const function Item(props: {
+	read text: string,
+	read icon: string,
+	read isActive: boolean,
+	read compact: boolean,
+	read badge: number?,
+	read onActivated: () -> (),
+	read LayoutOrder: number?,
+})
+	const tokens = useTokens()
+	const nextOrder = createNextOrder()
 
-local function Item(props: Props)
-	local tokens = useTokens()
-	local compact = props.compact == true
+	const backgroundStyle = if props.isActive then tokens.Color.ActionEmphasis.Background else nil
+	const foregroundStyle = if props.isActive then tokens.Color.ActionEmphasis.Foreground else nil
 
-	local backgroundStyle = if props.isActive then tokens.Color.ActionEmphasis.Background else nil
-	local foregroundStyle = if props.isActive then tokens.Color.ActionEmphasis.Foreground else nil
+	const badge = props.badge
+	const hasBadge = badge ~= nil and badge > 0
 
-	local tag = "size-full-1000 row align-y-center radius-medium"
-		.. if compact then " align-x-center" else " gap-small padding-x-medium"
-
-	local nextOrder = createNextOrder()
-
-	local badgeCount = props.badge
-	local hasBadge = badgeCount ~= nil and badgeCount > 0
-
-	local iconSlot: React.ReactNode
-	if compact and hasBadge then
+	local iconSlot: React.Node
+	if props.compact and hasBadge then
 		iconSlot = e(View, {
 			Size = UDim2.fromOffset(28, 28),
 			BackgroundTransparency = 1,
@@ -76,19 +73,19 @@ local function Item(props: Props)
 		})
 	end
 
-	local labelText = if hasBadge then `{props.text} ({badgeCount})` else props.text
-
 	return e(View, {
-		tag = tag,
+		tag = if props.compact
+			then "size-full-1000 row align-y-center radius-medium align-x-center"
+			else "size-full-1000 row align-y-center radius-medium gap-small padding-x-medium",
 		LayoutOrder = props.LayoutOrder,
 		onActivated = props.onActivated,
 		backgroundStyle = backgroundStyle,
 		ClipsDescendants = false,
 	}, {
 		IconSlot = iconSlot,
-		Label = not compact and e(Text, {
+		Label = not props.compact and e(Text, {
 			tag = "grow auto-y text-align-x-left text-title-medium",
-			Text = labelText,
+			Text = if hasBadge then `{props.text} ({badge})` else props.text,
 			textStyle = foregroundStyle,
 			LayoutOrder = nextOrder(),
 		}),

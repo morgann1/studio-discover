@@ -1,64 +1,60 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local Navigation = require(StudioDiscover.Source.Navigation)
-local Screen = require(StudioDiscover.Source.Common.Screen)
-local SearchStore = require(StudioDiscover.Source.SearchStore)
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-local useSearchPackages = require(StudioDiscover.Source.Api.useSearchPackages)
+const Content = require(StudioDiscover.Source.Common.Content)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const Screen = require(StudioDiscover.Source.Common.Screen)
+const SearchStore = require(StudioDiscover.Source.SearchStore)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const useSearchPackages = require(StudioDiscover.Source.Api.useSearchPackages)
 
-local Featured = require(script.Featured)
-local Recent = require(script.Recent)
-local SearchResults = require(script.SearchResults)
+const Featured = require(script.Featured)
+const Recent = require(script.Recent)
+const SearchResults = require(script.SearchResults)
 
-local Empty = Foundation.Empty
+const Empty = Foundation.Empty
 
-local e = React.createElement
+const e = React.createElement
 
-local function HomeScreen()
-	local query = SearchStore.useQuery()
-	local state = useSearchPackages(query)
-	local registries = SettingsStore.useSettings().registries
+const function openSettings()
+	Navigation.pushScreen({ name = "Settings" })
+end
 
-	local onOpenSettings = React.useCallback(function()
-		Navigation.pushScreen("Settings")
-	end, {})
+-- Search results while there is a query, otherwise Featured and Recent for the enabled registries.
+const function HomeScreen()
+	const query = SearchStore.useQuery()
+	const state = useSearchPackages(query)
+	const registries = SettingsStore.useSettings().registries
 
-	local body: React.ReactNode
-	if query == "" then
-		if not registries.wally and not registries.pesde then
-			body = e(Empty, {
-				text = "All registries are disabled.",
-				button = {
-					text = "Open Settings",
-					onActivated = onOpenSettings,
-				},
-			})
-		else
-			local nextOrder = createNextOrder()
-			local children: { [string]: any } = {}
-			if registries.wally then
-				children.Featured = e(Featured, {
-					LayoutOrder = nextOrder(),
-				})
-			end
-			if registries.pesde then
-				children.Recent = e(Recent, {
-					LayoutOrder = nextOrder(),
-				})
-			end
-			body = e(Content, {}, children)
-		end
-	else
+	local body: React.Node
+	if query ~= "" then
 		body = e(SearchResults, {
 			query = query,
 			state = state,
+		})
+	elseif not registries.wally and not registries.pesde then
+		body = e(Empty, {
+			text = "All registries are disabled.",
+			button = {
+				text = "Open Settings",
+				onActivated = openSettings,
+			},
+		})
+	else
+		const nextOrder = createNextOrder()
+
+		body = e(Content, {}, {
+			Featured = registries.wally and e(Featured, {
+				LayoutOrder = nextOrder(),
+			}),
+			Recent = registries.pesde and e(Recent, {
+				LayoutOrder = nextOrder(),
+			}),
 		})
 	end
 

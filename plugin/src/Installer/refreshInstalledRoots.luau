@@ -1,37 +1,38 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
-local snapshotPesdeRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
-local snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
-local types = require(StudioDiscover.Core.types)
+const installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
+const snapshotPesdeRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
+const snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
+const types = require(StudioDiscover.Core.types)
 
-type InstalledRoot = types.InstalledRoot
-
-local function refreshInstalledRoots()
-	local installed: { InstalledRoot } = {}
+-- Reads both registries' roots back out of the place into `installedRootsAtom`.
+const function refreshInstalledRoots()
+	const installed: { types.InstalledRoot } = {}
 
 	for _, root in snapshotRoots() do
-		table.insert(installed, {
+		const installedRoot: types.InstalledRoot = {
 			scope = root.scope,
 			name = root.name,
 			version = root.version,
 			realm = root.requestRealm,
 			alias = root.alias,
 			registry = "wally",
-		})
+		}
+		table.insert(installed, installedRoot)
 	end
 
 	for _, root in snapshotPesdeRoots() do
-		table.insert(installed, {
+		const installedRoot: types.InstalledRoot = {
 			scope = root.scope,
 			name = root.name,
 			version = root.version,
 			realm = root.realm,
 			alias = root.alias,
 			registry = "pesde",
-		})
+		}
+		table.insert(installed, installedRoot)
 	end
 
 	installedRootsAtom(installed)

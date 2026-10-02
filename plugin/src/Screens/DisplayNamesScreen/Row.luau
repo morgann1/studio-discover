@@ -1,32 +1,31 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
-local Button = Foundation.Button
-local TextInput = Foundation.TextInput
-local View = Foundation.View
-local ButtonVariant = Foundation.Enums.ButtonVariant
-local IconName = Foundation.Enums.IconName
-local InputSize = Foundation.Enums.InputSize
+const Button = Foundation.Button
+const TextInput = Foundation.TextInput
+const View = Foundation.View
+const ButtonVariant = Foundation.Enums.ButtonVariant
+const IconName = Foundation.Enums.IconName
+const InputSize = Foundation.Enums.InputSize
 
-local e = React.createElement
+const e = React.createElement
 
-type Props = {
-	name: string,
-	displayName: string,
-	onNameChanged: (string) -> (),
-	onDisplayNameChanged: (string) -> (),
-	onRemove: () -> (),
-	LayoutOrder: number?,
-}
-
-local function Row(props: Props)
-	local nextOrder = createNextOrder()
+-- One display-name rule: the package name, the alias to give it, and a Remove button.
+const function Row(props: {
+	read name: string,
+	read displayName: string,
+	read onNameChanged: (string) -> (),
+	read onDisplayNameChanged: (string) -> (),
+	read onRemove: () -> (),
+	read LayoutOrder: number?,
+})
+	const nextOrder = createNextOrder()
 
 	return e(View, {
 		tag = "size-full-0 auto-y row align-y-center gap-small",

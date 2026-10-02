@@ -1,23 +1,26 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
-local React = require(StudioDiscover.Packages.React)
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+
+const React = require(StudioDiscover.Packages.React)
 
 export type ThemeName = "Dark" | "Light"
 
-local studio = settings().Studio
+const studio = settings().Studio
 
-local function normalize(name: string): ThemeName
-	return if name == "Light" then "Light" else "Dark"
+const function readThemeName(): ThemeName
+	return if studio.Theme.Name == "Light" then "Light" else "Dark"
 end
 
-local function useThemeName(): ThemeName
-	local themeName: ThemeName, setThemeName = React.useState(normalize(studio.Theme.Name) :: ThemeName)
+-- Returns Studio's current theme, and re-renders when the user switches it.
+const function useThemeName(): ThemeName
+	const themeName, setThemeName = React.useState(readThemeName())
 
 	React.useEffect(function()
-		local connection = studio.ThemeChanged:Connect(function()
-			setThemeName(normalize(studio.Theme.Name))
+		const connection = studio.ThemeChanged:Connect(function()
+			setThemeName(readThemeName())
 		end)
+
 		return function()
 			connection:Disconnect()
 		end

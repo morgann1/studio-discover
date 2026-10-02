@@ -1,97 +1,39 @@
 --!strict
 
-local ChangeHistoryService = game:GetService("ChangeHistoryService")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+const countKeys = require(StudioDiscover.Source.Util.countKeys)
+const createInstallReporter = require(StudioDiscover.Source.Installer.createInstallReporter)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const pickFreeAlias = require(StudioDiscover.Source.Installer.pickFreeAlias)
+const resolveAlias = require(StudioDiscover.Source.Installer.resolveAlias)
+const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
+const types = require(StudioDiscover.Source.Installer.types)
 
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
+const pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
+const pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
+const pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
 
-local coreTypes = require(StudioDiscover.Core.types)
-local createLogger = require(StudioDiscover.Core.createLogger)
-local formatName = require(StudioDiscover.Source.Util.formatName)
-local installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
-local permissionError = require(StudioDiscover.Source.Installer.permissionError)
-local refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
-local runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
+const logger = createLogger.createLogger("pesde.installer.install")
 
-local pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
-local pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
-local pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
-local pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
+const function runInstallAsync(
+	request: types.InstallRequest,
+	report: createInstallReporter.InstallReporter
+): types.OperationResult
+	const scope, name, version, realm = request.scope, request.name, request.version, request.realm
+	logger.info(`install pesde {scope}/{name}@{version} realm={realm}`)
+	report.progress("Resolving dependencies...")
 
-local sharedTypes = require(StudioDiscover.Source.Installer.types)
-
-local logger = createLogger.createLogger("pesde.installer.install")
-
-type Realm = coreTypes.Realm
-type InstallerState = sharedTypes.InstallerState
-type InstallerTarget = sharedTypes.InstallerTarget
-
-export type InstallResult = {
-	ok: boolean,
-	error: string?,
-	failures: { string },
-}
-
-local function countPairs(t: { [any]: any }): number
-	local count = 0
-	for _ in t do
-		count += 1
-	end
-	return count
-end
-
-local function runInstall(
-	scope: string,
-	name: string,
-	version: string,
-	alias: string,
-	realm: Realm?,
-	target: InstallerTarget
-): InstallResult
-	logger.info(`install pesde {scope}/{name}@{version} alias={alias} realm={realm or "shared"}`)
-
-	local function setState(next: InstallerState)
-		installerAtom(next)
-	end
-
-	local function progress(message: string)
-		local current = installerAtom()
-		setState({
-			status = current.status,
-			message = message,
-			errors = current.errors,
-			target = target,
-		})
-	end
-
-	setState({
-		status = "running",
-		message = "Resolving dependencies...",
-		errors = {},
-		target = target,
-	})
-
-	local effectiveRealm: Realm = realm or "shared"
-
-	local settings = SettingsStore.get().getStorage()
-	local override: string? = nil
-	for _, rule in settings.displayNames do
-		if rule.name == name and rule.displayName ~= "" then
-			override = rule.displayName
-			break
-		end
-	end
-	local formattedAlias: string = if override ~= nil then override else formatName(alias, settings.namingConvention)
-
-	local priorSnapshots = pesdeSnapshotRoots()
-	local roots: { pesdeResolveAsync.RootRequest } = {}
-	for _, prior in priorSnapshots do
-		local samePackage = prior.realm == effectiveRealm and prior.scope == scope and prior.name == name
-		if samePackage then
+	-- Installing a package that is already a root replaces it, whatever its version.
+	const roots: { pesdeResolveAsync.RootRequest } = {}
+	for _, prior in pesdeSnapshotRoots() do
+		if prior.realm == realm and prior.scope == scope and prior.name == name then
 			logger.info(`replacing prior root {prior.scope}/{prior.name}@{prior.version}`)
 			continue
 		end
+
 		table.insert(roots, {
 			scope = prior.scope,
 			name = prior.name,
@@ -101,200 +43,73 @@ local function runInstall(
 		})
 	end
 
-	local baseAlias = formattedAlias
-	local finalAlias = formattedAlias
-	local suffix = 2
-	while true do
-		local conflict = false
+	const baseAlias = resolveAlias(name)
+	const alias = pickFreeAlias(baseAlias, function(candidate)
 		for _, prior in roots do
-			if prior.realm == effectiveRealm and prior.alias == finalAlias then
-				conflict = true
-				break
+			if prior.realm == realm and prior.alias == candidate then
+				return true
 			end
 		end
-		if not conflict then
-			break
-		end
-		finalAlias = `{baseAlias}{suffix}`
-		suffix += 1
-	end
-	if finalAlias ~= baseAlias then
-		logger.warn(`alias "{baseAlias}" collided; using "{finalAlias}" instead`)
+
+		return false
+	end)
+
+	if alias ~= baseAlias then
+		logger.warn(`alias "{baseAlias}" collided with an installed root; using "{alias}" instead`)
 	end
 
 	table.insert(roots, {
 		scope = scope,
 		name = name,
 		version = version,
-		realm = effectiveRealm,
-		alias = finalAlias,
+		realm = realm,
+		alias = alias,
 	})
 
 	logger.info(`resolve starting ({#roots} root(s))`)
-	local resolved, rootAliases, resolutionFailures = pesdeResolveAsync(roots, progress)
+	const resolved, rootAliases, resolutionFailures = pesdeResolveAsync(roots, report.progress)
 
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
-	local rootMatches = false
-	for pkgId in resolved do
-		local pkg = resolved[pkgId]
+	local rootId: string? = nil
+	for id, pkg in resolved do
 		if pkg.scope == scope and pkg.name == name and pkg.version == version then
-			rootMatches = true
+			rootId = id
 			break
 		end
 	end
-	if not rootMatches then
+
+	if rootId == nil then
 		local message = `Failed to resolve {scope}/{name}@{version}`
 		if #resolutionFailures > 0 then
-			message = `{message} ({table.concat(resolutionFailures, "; ")})`
+			message ..= ` ({table.concat(resolutionFailures, "; ")})`
 		end
-		setState({
-			status = "error",
-			message = message,
-			errors = resolutionFailures,
-			target = target,
-		})
-		return {
-			ok = false,
-			error = message,
-			failures = resolutionFailures,
-		}
+
+		return report.fail(message, resolutionFailures)
 	end
 
-	logger.info(`resolve complete: {countPairs(resolved)} package(s)`)
+	logger.info(`resolve complete: {countKeys(resolved)} package(s)`)
 
-	local recordLabel = `Install {scope}/{name}@{version}`
-	local recordingId = ChangeHistoryService:TryBeginRecording(recordLabel)
-
-	local applySuccess, applyOutcome = pcall(function()
-		local failures = pesdeApplyAsync(resolved, rootAliases, progress)
+	const applyResult = applyRootsAsync(`Install {scope}/{name}@{version}`, function()
+		const failures = pesdeApplyAsync(resolved, rootAliases, report.progress)
 		pesdeLockfile.save(resolved)
+
 		return failures
-	end)
+	end, `{rootId}:`)
 
-	if not applySuccess then
-		logger.error(`apply threw: {applyOutcome}`)
-		if recordingId ~= nil then
-			ChangeHistoryService:FinishRecording(recordingId, Enum.FinishRecordingOperation.Cancel)
-		end
-		local message = permissionError.describe(applyOutcome)
-		setState({
-			status = "error",
-			message = message,
-			errors = {},
-			target = target,
-		})
-		return {
-			ok = false,
-			error = message,
-			failures = {},
-		}
-	end
-
-	local applyFailures: { string } = applyOutcome :: { string }
-	local rootFailureMarker = ""
-	for pkgId in resolved do
-		local pkg = resolved[pkgId]
-		if pkg.scope == scope and pkg.name == name and pkg.version == version then
-			rootFailureMarker = `{pkgId}:`
-			break
-		end
-	end
-	local rootFailed = false
-	for _, failure in applyFailures do
-		if string.sub(failure, 1, #rootFailureMarker) == rootFailureMarker then
-			rootFailed = true
-			break
-		end
-	end
-
-	local shouldCommit = not rootFailed
-	if recordingId ~= nil then
-		local op = if shouldCommit then Enum.FinishRecordingOperation.Commit else Enum.FinishRecordingOperation.Cancel
-		ChangeHistoryService:FinishRecording(recordingId, op)
-	end
-
-	if shouldCommit then
-		refreshInstalledRoots()
-	end
-
-	local allFailures: { string } = {}
-	for _, f in resolutionFailures do
-		table.insert(allFailures, f)
-	end
-	for _, f in applyFailures do
-		table.insert(allFailures, f)
-	end
-
-	if not shouldCommit then
-		local message = `Failed to install {scope}/{name}@{version}`
-		setState({
-			status = "error",
-			message = message,
-			errors = allFailures,
-			target = target,
-		})
-		return {
-			ok = false,
-			error = message,
-			failures = allFailures,
-		}
-	end
-
-	logger.info(`install succeeded: {scope}/{name}@{version}`)
-	setState({
-		status = "success",
-		message = if #allFailures > 0
-			then `Installed with {#allFailures} warning(s)`
-			else `Installed {scope}/{name}@{version}`,
-		errors = allFailures,
-		target = target,
-	})
-	return {
-		ok = true,
-		error = nil,
-		failures = allFailures,
-	}
+	return report.finish(resolutionFailures, applyResult)
 end
 
-local function installPesdeAsync(
-	scope: string,
-	name: string,
-	version: string,
-	alias: string,
-	realm: Realm?
-): InstallResult
-	local target: InstallerTarget = {
-		scope = scope,
-		name = name,
-		version = version,
-	}
+-- The pesde half of `installAsync`, which routes here by registry.
+const function installPesdeAsync(request: types.InstallRequest): types.OperationResult
+	const report = createInstallReporter(request)
 
-	return runWithBusyLock(function(): InstallResult
-		logger.warn(`install rejected: another installer operation is in progress`)
-		return {
-			ok = false,
-			error = "Another installer operation is in progress.",
-			failures = {},
-		}
-	end, function(): InstallResult
-		return runInstall(scope, name, version, alias, realm, target)
-	end, function(err): InstallResult
-		logger.error(`install crashed for {scope}/{name}@{version}: {err}`)
-		local message = `Install failed: {err}`
-		installerAtom({
-			status = "error",
-			message = message,
-			errors = { err },
-			target = target,
-		})
-		return {
-			ok = false,
-			error = message,
-			failures = { err },
-		}
+	return runWithBusyLock("Install", function()
+		return runInstallAsync(request, report)
+	end, function(message)
+		report.fail(message, { message })
 	end)
 end
 

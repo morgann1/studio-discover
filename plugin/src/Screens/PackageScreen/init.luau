@@ -1,320 +1,279 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local Foundation = require(StudioDiscover.Packages.Foundation)
-local React = require(StudioDiscover.Packages.React)
+const Foundation = require(StudioDiscover.Packages.Foundation)
+const React = require(StudioDiscover.Packages.React)
 
-local Content = require(StudioDiscover.Source.Common.Content)
-local InstallConfirmDialog = require(StudioDiscover.Source.Installer.InstallConfirmDialog)
-local Installer = require(StudioDiscover.Source.Installer)
-local Navigation = require(StudioDiscover.Source.Navigation)
-local Screen = require(StudioDiscover.Source.Common.Screen)
-local Section = require(StudioDiscover.Source.Common.Section)
-local SettingsStore = require(StudioDiscover.Source.SettingsStore)
-local capitalize = require(StudioDiscover.Source.Util.capitalize)
-local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-local coreTypes = require(StudioDiscover.Core.types)
+const Content = require(StudioDiscover.Source.Common.Content)
+const InstallConfirmDialog = require(StudioDiscover.Source.Installer.InstallConfirmDialog)
+const Installer = require(StudioDiscover.Source.Installer)
+const Navigation = require(StudioDiscover.Source.Navigation)
+const Screen = require(StudioDiscover.Source.Common.Screen)
+const Section = require(StudioDiscover.Source.Common.Section)
+const SettingsStore = require(StudioDiscover.Source.SettingsStore)
+const capitalize = require(StudioDiscover.Source.Util.capitalize)
+const coreTypes = require(StudioDiscover.Core.types)
+const countKeys = require(StudioDiscover.Source.Util.countKeys)
+const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const installerTypes = require(StudioDiscover.Source.Installer.types)
+const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
+const usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
 
-local usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
+const Dependencies = require(script.Dependencies)
+const Hero = require(script.Hero)
 
-local Dependencies = require(script.Dependencies)
-local Hero = require(script.Hero)
+const Chip = Foundation.Chip
+const Empty = Foundation.Empty
+const Loading = Foundation.Loading
+const Text = Foundation.Text
+const View = Foundation.View
+const ChipSize = Foundation.Enums.ChipSize
 
-local Chip = Foundation.Chip
-local Empty = Foundation.Empty
-local Loading = Foundation.Loading
-local Text = Foundation.Text
-local View = Foundation.View
-local ChipSize = Foundation.Enums.ChipSize
+const e = React.createElement
 
-local REGISTRY_LABELS: { [coreTypes.Registry]: string } = {
-	wally = "Wally",
-	pesde = "pesde",
+type DependencyGroup = {
+	read key: string,
+	read title: string,
+	read dependencies: coreTypes.DependencyMap,
 }
 
-local e = React.createElement
-
-local function findVersion(data: coreTypes.PackageMetadata, version: string): coreTypes.PackageVersion
-	for _, entry in data.versions do
+const function findVersion(metadata: coreTypes.PackageMetadata, version: string): coreTypes.PackageVersion
+	for _, entry in metadata.versions do
 		if entry.package.version == version then
 			return entry
 		end
 	end
-	return data.versions[1]
+
+	return metadata.versions[1]
 end
 
-local function countEntries(map: { [string]: any }): number
-	local count = 0
-	for _ in map do
-		count += 1
-	end
-	return count
+const function openRegistries()
+	Navigation.pushScreen({ name = "Registries" })
 end
 
-local function aboutRow(label: string, value: string, order: number): React.ReactNode
-	local nextChildOrder = createNextOrder()
+const function centered(children: { [string]: React.Node }): React.Node
 	return e(View, {
-		tag = "size-full-0 auto-y row align-y-center gap-medium",
-		LayoutOrder = order,
-	}, {
-		Label = e(Text, {
-			tag = "auto-xy text-body-small content-muted",
-			Text = `{label}:`,
-			LayoutOrder = nextChildOrder(),
-		}),
-		Value = e(Text, {
-			tag = "grow auto-y text-body-small content-default text-align-x-left text-truncate",
-			Text = value,
-			LayoutOrder = nextChildOrder(),
+		tag = "size-full align-x-center align-y-center padding-large",
+	}, children)
+end
+
+const function message(text: string): React.Node
+	return centered({
+		Message = e(Text, {
+			tag = "auto-xy text-body-medium content-muted",
+			Text = text,
 		}),
 	})
 end
 
-local function PackageScreen()
-	local screen = Navigation.useScreen()
-	local scope = (screen.options.scope :: string?) or ""
-	local name = (screen.options.name :: string?) or ""
-	local requestedVersion = (screen.options.version :: string?) or ""
+const function aboutRow(label: string, children: { [string]: React.Node }, layoutOrder: number): React.Node
+	const nextOrder = createNextOrder()
 
-	local settings = SettingsStore.useSettings()
-	local registrySettings = settings.registries
+	return e(View, {
+		tag = "size-full-0 auto-y row align-y-center gap-medium",
+		LayoutOrder = layoutOrder,
+	}, {
+		Label = e(Text, {
+			tag = "auto-xy text-body-small content-muted",
+			Text = `{label}:`,
+			LayoutOrder = nextOrder(),
+		}),
+		Value = e(View, {
+			tag = "grow auto-y row align-y-center gap-xsmall",
+			LayoutOrder = nextOrder(),
+		}, children),
+	})
+end
 
-	local rawRegistries: { coreTypes.Registry }
-	local optionRegistries = screen.options.registries :: { coreTypes.Registry }?
-	if optionRegistries ~= nil and #optionRegistries > 0 then
-		rawRegistries = optionRegistries
-	else
-		rawRegistries = { (screen.options.registry :: coreTypes.Registry?) or "wally" }
-	end
+const function aboutText(text: string): { [string]: React.Node }
+	return {
+		Text = e(Text, {
+			tag = "size-full-0 auto-y text-body-small content-default text-align-x-left text-truncate",
+			Text = text,
+		}),
+	}
+end
 
-	local registries: { coreTypes.Registry } = {}
-	for _, r in rawRegistries do
-		local enabled = if r == "wally" then registrySettings.wally else registrySettings.pesde
+--[[
+	One package's details, versions, and dependencies, with the install action.
+		A package listed by more than one enabled registry gets a chip to switch
+		between them.
+]]
+const function PackageScreen(props: {
+	read target: Navigation.PackageTarget,
+})
+	const target = props.target
+	const scope, name = target.scope, target.name
+
+	const settings = SettingsStore.useSettings()
+	const installerState = Installer.useInstaller()
+	const installedRoots = Installer.useInstalledRoots().roots
+
+	const registries: { coreTypes.Registry } = {}
+	for _, registry in target.registries do
+		const enabled = if registry == "wally" then settings.registries.wally else settings.registries.pesde
 		if enabled then
-			table.insert(registries, r)
+			table.insert(registries, registry)
 		end
 	end
 
-	local selectedRegistry: coreTypes.Registry, setSelectedRegistry = React.useState(registries[1] or rawRegistries[1])
+	const selectedRegistry, setSelectedRegistry = React.useState(registries[1] or target.registries[1])
+	const selectedVersion, setSelectedVersion = React.useState("")
+	const isConfirmingInstall, setIsConfirmingInstall = React.useState(false)
+	const state = usePackageMetadata(selectedRegistry, scope, name)
+
+	-- Turning a registry off in Settings moves the selection to one that is still on.
 	React.useEffect(function()
-		if #registries == 0 then
-			return
-		end
-		local stillValid = false
-		for _, r in registries do
-			if r == selectedRegistry then
-				stillValid = true
-				break
-			end
-		end
-		if not stillValid then
+		if #registries > 0 and table.find(registries, selectedRegistry) == nil then
 			setSelectedRegistry(registries[1])
 		end
-	end, { registries } :: { any })
-
-	local onOpenRegistries = React.useCallback(function()
-		Navigation.pushScreen("Registries")
-	end, {})
-
-	local state = usePackageMetadata(scope, name, selectedRegistry)
-	local installerState = Installer.useInstaller()
-	local installedRoots = Installer.useInstalledRoots().roots
-	local selectedVersion, setSelectedVersion = React.useState("")
-	local isConfirmingInstall, setIsConfirmingInstall = React.useState(false)
+	end, { table.concat(registries, ",") })
 
 	React.useEffect(function()
-		if state.data == nil or #state.data.versions == 0 then
+		const metadata = state.data
+		if metadata == nil or #metadata.versions == 0 then
 			return
 		end
 
-		if requestedVersion ~= "" then
-			for _, entry in state.data.versions do
-				if entry.package.version == requestedVersion then
-					setSelectedVersion(requestedVersion)
-					return
-				end
-			end
-		end
+		-- findVersion falls back to the latest when the requested version is not listed.
+		setSelectedVersion(findVersion(metadata, target.version or "").package.version)
+	end, { state.data, target.version } :: { unknown })
 
-		setSelectedVersion(state.data.versions[1].package.version)
-	end, { state.data, requestedVersion } :: { any })
-
-	local title = if scope ~= "" and name ~= "" then `{scope}/{name}` else "Package"
-
-	local body: React.ReactNode
+	local body: React.Node
+	const metadata = state.data
 	if #registries == 0 then
 		body = e(Empty, {
 			text = "This package's source registries are disabled. Enable them in Settings to install.",
 			button = {
 				text = "Open Registries",
-				onActivated = onOpenRegistries,
+				onActivated = openRegistries,
 			},
 		})
 	elseif state.loading then
-		body = e(View, {
-			tag = "size-full align-x-center align-y-center",
-		}, {
+		body = centered({
 			Spinner = e(Loading, {}),
 		})
 	elseif state.error ~= nil then
-		body = e(View, {
-			tag = "size-full align-x-center align-y-center padding-large",
-		}, {
-			Message = e(Text, {
-				tag = "auto-xy text-body-medium content-muted",
-				Text = `Couldn't load package: {state.error}`,
-			}),
-		})
-	elseif state.data == nil or #state.data.versions == 0 then
-		body = e(View, {
-			tag = "size-full align-x-center align-y-center padding-large",
-		}, {
-			Message = e(Text, {
-				tag = "auto-xy text-body-medium content-muted",
-				Text = "Package not found.",
-			}),
-		})
+		body = message(`Couldn't load package: {state.error}`)
+	elseif metadata == nil or #metadata.versions == 0 then
+		body = message("Package not found.")
 	else
-		local metadata = state.data
-		local selected = findVersion(metadata, selectedVersion)
-		local pkg = selected.package
+		const selected = findVersion(metadata, selectedVersion)
+		const pkg = selected.package
+		const version = if selectedVersion ~= "" then selectedVersion else pkg.version
 
-		local hasDescription = pkg.description ~= nil and pkg.description:match("%S") ~= nil
-		local description: string = if hasDescription
-			then pkg.description :: string
+		const description = pkg.description
+		const descriptionText = if description ~= nil and string.match(description, "%S") ~= nil
+			then description
 			else `{capitalize(name)} has no provided description.`
 
-		local license = pkg.license or "Unknown"
-
-		local versionItems: { Foundation.DropdownItem } = {}
+		const versionItems: { Foundation.DropdownItem } = {}
 		for i, entry in metadata.versions do
-			local v = entry.package.version
+			const itemVersion = entry.package.version
 			table.insert(versionItems, {
-				id = v,
-				text = if i == 1 then `v{v} (latest)` else `v{v}`,
+				id = itemVersion,
+				text = if i == 1 then `v{itemVersion} (latest)` else `v{itemVersion}`,
 			})
 		end
 
-		type DepGroup = {
-			key: string,
-			title: string,
-			deps: coreTypes.DependencyMap,
-		}
-		local depGroups: { DepGroup } = {
-			{ key = "Shared", title = "Shared dependencies", deps = selected.dependencies },
-			{ key = "Server", title = "Server dependencies", deps = selected["server-dependencies"] },
-			{ key = "Dev", title = "Dev dependencies", deps = selected["dev-dependencies"] },
+		const request: installerTypes.InstallRequest = {
+			registry = selectedRegistry,
+			scope = scope,
+			name = name,
+			version = version,
+			realm = if pkg.realm == "server" then "server" else "shared",
 		}
 
-		local nextOrder = createNextOrder()
-
-		local aboutOrder = createNextOrder()
-		local aboutChildren: { [string]: any } = {
-			License = aboutRow("License", license, aboutOrder()),
-			Realm = aboutRow("Realm", capitalize(pkg.realm), aboutOrder()),
-			Versions = aboutRow("Versions", tostring(#metadata.versions), aboutOrder()),
-		}
-
-		if #registries > 1 then
-			local chipOrder = createNextOrder()
-			local chips: { [string]: any } = {}
-			for _, registry: coreTypes.Registry in registries do
-				local registryLabel = REGISTRY_LABELS[registry] or (registry :: any)
-				local active = selectedRegistry == registry
-				chips[registry] = e(Chip, {
-					text = registryLabel,
-					size = ChipSize.Small,
-					isChecked = active,
-					onActivated = function()
-						setSelectedRegistry(registry)
-					end,
-					LayoutOrder = chipOrder(),
-				})
-			end
-			local registryRowOrder = createNextOrder()
-			aboutChildren.Registry = e(View, {
-				tag = "size-full-0 auto-y row align-y-center gap-medium",
-				LayoutOrder = aboutOrder(),
-			}, {
-				Label = e(Text, {
-					tag = "auto-xy text-body-small content-muted",
-					Text = "Registry:",
-					LayoutOrder = registryRowOrder(),
-				}),
-				Chips = e(View, {
-					tag = "grow auto-y row align-y-center gap-xsmall",
-					LayoutOrder = registryRowOrder(),
-				}, chips),
-			})
+		const function install()
+			task.spawn(Installer.installAsync, request)
 		end
 
-		local installRealm: "shared" | "server" = if pkg.realm == "server" then "server" else "shared"
-		local activeVersion = if selectedVersion ~= "" then selectedVersion else pkg.version
-		local function performInstall()
-			task.spawn(function()
-				Installer.installAsync(scope, name, activeVersion, name, installRealm, selectedRegistry)
-			end)
-		end
-		local onInstall = function()
+		const function onInstall()
 			if settings.confirmBeforeInstall then
 				setIsConfirmingInstall(true)
 			else
-				performInstall()
+				install()
 			end
 		end
-		local onConfirmInstall = function()
+
+		const function onConfirmInstall()
 			setIsConfirmingInstall(false)
-			performInstall()
+			install()
 		end
-		local onCancelInstall = function()
+
+		const function onCancelInstall()
 			setIsConfirmingInstall(false)
 		end
 
-		local target = installerState.target
-		local isForThisPackage = target ~= nil
-			and target.scope == scope
-			and target.name == name
-			and target.version == activeVersion
-		local isPersistedInstalled = false
+		-- The installer's state belongs to whichever package it last ran for.
+		const installTarget = installerState.target
+		const isInstallerTarget = installTarget ~= nil
+			and installTarget.scope == scope
+			and installTarget.name == name
+			and installTarget.version == version
+
+		local isInstalled = false
 		for _, root in installedRoots do
 			if
-				root.scope == scope
+				root.registry == selectedRegistry
+				and root.scope == scope
 				and root.name == name
-				and root.version == activeVersion
-				and root.registry == selectedRegistry
+				and root.version == version
 			then
-				isPersistedInstalled = true
+				isInstalled = true
 				break
 			end
 		end
-		local heroStatus: "idle" | "running" | "success" | "error"
-		local heroMessage: string?
-		if isForThisPackage and installerState.status == "running" then
-			heroStatus = "running"
-			heroMessage = installerState.message
-		elseif isForThisPackage and installerState.status == "error" then
-			heroStatus = "error"
-			heroMessage = installerState.message
-		elseif isPersistedInstalled then
-			heroStatus = "success"
-			heroMessage = nil
-		else
-			heroStatus = "idle"
-			heroMessage = nil
+
+		local installStatus: installerTypes.InstallStatus = "idle"
+		local installMessage: string? = nil
+		if isInstallerTarget and (installerState.status == "running" or installerState.status == "error") then
+			installStatus = installerState.status
+			installMessage = installerState.message
+		elseif isInstalled then
+			installStatus = "success"
 		end
 
-		local bodyChildren: { [string]: any } = {
+		const nextOrder = createNextOrder()
+		const nextAboutOrder = createNextOrder()
+
+		const about: { [string]: React.Node } = {
+			License = aboutRow("License", aboutText(pkg.license or "Unknown"), nextAboutOrder()),
+			Realm = aboutRow("Realm", aboutText(capitalize(pkg.realm)), nextAboutOrder()),
+			Versions = aboutRow("Versions", aboutText(tostring(#metadata.versions)), nextAboutOrder()),
+		}
+
+		if #registries > 1 then
+			const nextChipOrder = createNextOrder()
+			const chips: { [string]: React.Node } = {}
+
+			for _, registry in registries do
+				chips[registry] = e(Chip, {
+					text = registryLabel(registry),
+					size = ChipSize.Small,
+					isChecked = selectedRegistry == registry,
+					onActivated = function()
+						setSelectedRegistry(registry)
+					end,
+					LayoutOrder = nextChipOrder(),
+				})
+			end
+
+			about.Registry = aboutRow("Registry", chips, nextAboutOrder())
+		end
+
+		const children: { [string]: React.Node } = {
 			Hero = e(Hero, {
 				scope = scope,
 				name = name,
 				authors = pkg.authors,
-				description = description,
-				selectedVersion = activeVersion,
+				description = descriptionText,
+				selectedVersion = version,
 				versionItems = versionItems,
 				onVersionChanged = setSelectedVersion,
-				installStatus = heroStatus,
-				installMessage = heroMessage,
+				installStatus = installStatus,
+				installMessage = installMessage,
 				isInstallBlocked = pkg.realm == "dev",
 				onInstall = onInstall,
 				LayoutOrder = nextOrder(),
@@ -322,38 +281,39 @@ local function PackageScreen()
 			About = e(Section, {
 				title = "About",
 				LayoutOrder = nextOrder(),
-			}, aboutChildren),
-		}
-
-		for _, group in depGroups do
-			if countEntries(group.deps) == 0 then
-				continue
-			end
-			bodyChildren[group.key] = e(Section, {
-				title = group.title,
-				LayoutOrder = nextOrder(),
-			}, {
-				List = e(Dependencies, { deps = group.deps, registry = selectedRegistry }),
-			})
-		end
-
-		if isConfirmingInstall then
-			bodyChildren.ConfirmInstallDialog = e(InstallConfirmDialog, {
-				scope = scope,
-				name = name,
-				version = activeVersion,
-				registry = selectedRegistry,
-				realm = installRealm,
+			}, about),
+			ConfirmInstallDialog = isConfirmingInstall and e(InstallConfirmDialog, {
+				request = request,
 				onConfirm = onConfirmInstall,
 				onCancel = onCancelInstall,
-			})
+			}),
+		}
+
+		const groups: { DependencyGroup } = {
+			{ key = "Shared", title = "Shared dependencies", dependencies = selected.dependencies },
+			{ key = "Server", title = "Server dependencies", dependencies = selected["server-dependencies"] },
+			{ key = "Dev", title = "Dev dependencies", dependencies = selected["dev-dependencies"] },
+		}
+
+		for _, group in groups do
+			if countKeys(group.dependencies) > 0 then
+				children[group.key] = e(Section, {
+					title = group.title,
+					LayoutOrder = nextOrder(),
+				}, {
+					List = e(Dependencies, {
+						dependencies = group.dependencies,
+						registry = selectedRegistry,
+					}),
+				})
+			end
 		end
 
-		body = e(Content, {}, bodyChildren)
+		body = e(Content, {}, children)
 	end
 
 	return e(Screen, {
-		title = title,
+		title = `{scope}/{name}`,
 		onBack = Navigation.popScreen,
 	}, {
 		Body = body,
