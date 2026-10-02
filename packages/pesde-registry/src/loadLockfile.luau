@@ -1,19 +1,15 @@
 --!strict
 
-const ServerStorage = game:GetService("ServerStorage")
-
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const asString = require(StudioDiscover.Libraries.Core.asString)
 const asTable = require(StudioDiscover.Libraries.Core.asTable)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
-const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const formatPackageId = require(StudioDiscover.Libraries.PesdeRegistry.formatPackageId)
+const readLockfileEntries = require(StudioDiscover.Libraries.Core.readLockfileEntries)
 const splitFullName = require(StudioDiscover.Libraries.Core.splitFullName)
 const targetFromRealm = require(StudioDiscover.Libraries.PesdeRegistry.targetFromRealm)
 const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
-
-const logger = createLogger.createLogger("pesde.installer.lockfile")
 
 const function parseRealm(raw: unknown): coreTypes.Realm?
 	if raw == "shared" or raw == "server" then
@@ -92,37 +88,11 @@ end
 		parse. A missing or unreadable lockfile reads as empty.
 ]]
 const function loadLockfile(): { [string]: types.PesdeResolvedPackage }
-	const lockModule = ServerStorage:FindFirstChild("PesdeLock")
-	if lockModule == nil or not lockModule:IsA("ModuleScript") then
-		logger.debug("no existing lockfile; starting fresh")
-		return {}
-	end
-
-	const ok, data: unknown = pcall(require, lockModule)
-	const rawEntries = if ok then asTable(data) else nil
-	if rawEntries == nil then
-		logger.warn(`lockfile unreadable: {data}`)
-		return {}
-	end
-
 	const locked: { [string]: types.PesdeResolvedPackage } = {}
-	local skippedCount = 0
-	local parsedCount = 0
-	for _, rawEntry in rawEntries do
-		const entry = parseEntry(rawEntry)
-		if entry == nil then
-			skippedCount += 1
-			continue
-		end
-
+	for _, entry in readLockfileEntries("PesdeLock", parseEntry) do
 		locked[entry.packageId] = entry
-		parsedCount += 1
 	end
 
-	if skippedCount > 0 then
-		logger.warn(`skipped {skippedCount} malformed lockfile entries`)
-	end
-	logger.info(`loaded lockfile ({parsedCount} entries)`)
 	return locked
 end
 

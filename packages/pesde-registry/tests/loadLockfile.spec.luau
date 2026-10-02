@@ -89,4 +89,16 @@ describe("loadLockfile", function()
 		expect(lock["spec/c@1.0.0 roblox"]).toBeNil()
 		expect(lock["spec/e@1.0.0 roblox"]).toBeNil()
 	end)
+
+	it("skips an entry whose id does not match its name, version, and realm", function()
+		replaceModuleAsync(
+			ServerStorage,
+			LOCKFILE_NAME,
+			[[return {
+	{ packageId = "spec/a@1.0.0 roblox_server", name = "spec/a", version = "1.0.0", realm = "shared", dependencies = {} },
+}]]
+		)
+
+		expect(loadLockfile()).toEqual({})
+	end)
 end)
