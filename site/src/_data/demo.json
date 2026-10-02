@@ -1,0 +1,40 @@
+{
+  "wally": [
+    { "name": "Knit", "latest": "1.7.0", "author": "sleitnick" },
+    { "name": "React", "latest": "17.3.12", "author": "roblox" },
+    { "name": "Signal", "latest": "2.0.3", "author": "sleitnick", "status": "update" },
+    { "name": "Promise", "latest": "4.0.0", "author": "evaera", "status": "update" },
+    { "name": "Janitor", "latest": "1.18.3", "author": "howmanysmall" },
+    { "name": "T", "latest": "3.1.1", "author": "osyrisrblx", "status": "installed" },
+    { "name": "Trove", "latest": "1.8.0", "author": "sleitnick" },
+    { "name": "Charm", "latest": "0.11.0-rc.5", "author": "littensy" }
+  ],
+  "realms": [
+    {
+      "name": "Shared",
+      "path": "ReplicatedStorage.Packages, ReplicatedStorage.PesdePackages",
+      "roots": [
+        { "name": "Jecs", "version": "0.11.0", "source": "pesde" },
+        {
+          "name": "Promise",
+          "version": "3.2.1",
+          "update": "4.0.0",
+          "major": true,
+          "source": "wally"
+        },
+        { "name": "Signal", "version": "2.0.1", "update": "2.0.3", "source": "wally" },
+        { "name": "T", "version": "3.1.1", "source": "wally" }
+      ]
+    },
+    {
+      "name": "Server",
+      "path": "ServerStorage.ServerPackages",
+      "roots": [{ "name": "Profilestore", "version": "1.0.3", "source": "wally" }]
+    }
+  ],
+  "progress": [
+    "Resolving dependencies...",
+    "Downloading sleitnick/signal@2.0.3...",
+    "Downloading evaera/promise@4.0.0..."
+  ]
+}
