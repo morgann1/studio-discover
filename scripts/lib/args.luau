@@ -1,7 +1,9 @@
---[[
-	Argument reading for the dev CLI.
+--!strict
 
-	`process.args[1]` is the command name itself, so it is always skipped.
+--[[
+	Argument reading for the scripts.
+
+	Lute puts the script path in `process.args[1]`, so it is always skipped.
 
 	Pass the names of switches that consume the following argument as their
 	value. Everything else starting with `-` is a boolean flag, and everything
@@ -16,8 +18,8 @@
 local process = require("@lute/process")
 
 export type Args = {
-	flags: { [string]: boolean },
-	values: { [string]: string },
+	flags: { [string]: boolean? },
+	values: { [string]: string? },
 	positionals: { string },
 }
 

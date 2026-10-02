@@ -1,5 +1,10 @@
 --!strict
 
+--[[
+	Runs inside the test place, through run-in-roblox or pasted into Studio's command
+		bar. Errors when any spec fails, which is what fails `scripts/test.luau`.
+]]
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -7,7 +12,8 @@ local DevPackages = ReplicatedStorage:WaitForChild("DevPackages") :: Folder
 local StudioDiscover = ServerScriptService:WaitForChild("StudioDiscover") :: Folder
 local Tests = StudioDiscover:WaitForChild("Tests") :: Folder
 
-local Jest = require(DevPackages:WaitForChild("Jest"))
+-- Analysis uses the plugin's sourcemap, which has no DevPackages, and Jest ships untyped anyway.
+local Jest = (require :: any)(DevPackages:WaitForChild("Jest"))
 
 local ok, err = pcall(function()
 	local status, payload = Jest.runCLI(Tests, {

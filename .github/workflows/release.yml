@@ -35,10 +35,10 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: 📦 Install packages
-        run: lute run install
+        run: lute scripts/install.luau
 
       - name: 🏗️ Build StudioDiscover.rbxm
-        run: lute run build
+        run: lute scripts/build.luau
 
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v3
@@ -52,5 +52,5 @@ jobs:
           ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
           ROBLOX_UNIVERSE_ID: ${{ vars.ROBLOX_UNIVERSE_ID }}
           ROBLOX_PLACE_ID: ${{ vars.ROBLOX_PLACE_ID }}
-        run: lute run upload-plugin StudioDiscover.rbxm --tag "${{
+        run: lute scripts/upload-plugin.luau StudioDiscover.rbxm --tag "${{
           steps.meta.outputs.tag }}"

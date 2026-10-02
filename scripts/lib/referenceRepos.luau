@@ -1,5 +1,7 @@
+--!strict
+
 --[[
-	The upstream repos `lute run sync` clones into `.repos/`.
+	The upstream repos `scripts/sync.luau` clones into `.repos/`.
 
 	Discover's packages are Luau ports of these tools, so having the real
 	implementation on disk at the version we target is what makes "does wally

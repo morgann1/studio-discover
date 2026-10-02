@@ -54,7 +54,7 @@ We need to be on the same page with terminology. When communicating, use this la
 
 1. **Assigning `.Source` directly.** Roblox caps `ModuleScript.Source` at 200,000 characters, and a package with one file over that limit takes the entire install down with it. Route every source write through `Core.setScriptSource`, which goes through `ScriptEditorService:UpdateSourceAsync` and has no such limit.
 2. **Mutating the place outside a recording.** All DataModel writes belong inside `TryBeginRecording`/`FinishRecording`, and a failure must `Cancel`, not `Commit`. See `Installer/applyRootsAsync`. A half-applied tree the user cannot undo is worse than an install that simply failed.
-3. **Editing generated or vendored trees.** `plugin/generated/`, `plugin/Packages/`, and `plugin/DevPackages/` are gitignored and rebuilt by `lute run codegen` and `lute run install`. Anything you write there disappears on the next build. To change a dependency's code, add a patch under `plugin/patches/` with `lute run patch`.
+3. **Editing generated or vendored trees.** `plugin/generated/`, `plugin/Packages/`, and `plugin/DevPackages/` are gitignored and rebuilt by `scripts/codegen.luau` and `scripts/install.luau`. Anything you write there disappears on the next build. To change a dependency's code, add a patch under `plugin/patches/` with `scripts/patch.luau`.
 
 ## Hit every surface
 
@@ -71,22 +71,22 @@ The most common defect in this repo is a change that works on the path you teste
 
 ## Commands
 
-The dev CLI lives in `.lute/`, is written in Luau, and runs under Lute. One file per command at the top level, and `lute run <name>` runs `.lute/<name>.luau`; anything shared between commands lives in `.lute/lib/`. There is no help command, so this list is the index. A command reads its arguments with `lib/args`, which skips `process.args[1]` because that is the command name.
+The dev scripts live in `scripts/`, are written in Luau, and run under Lute from the repo root: `lute scripts/<name>.luau`. One file per command at the top level. Helpers shared between them live in `scripts/lib/`, one function per file, and code that runs inside Roblox rather than Lute lives in `scripts/tasks/`. Paths and version pins they share live in `project.luau` at the root. Scripts require through the `@scripts` and `@root` aliases in `.luaurc`. There is no help command, so this list is the index. A script reads its arguments with `lib/args`, which skips `process.args[1]` because that is the script path.
 
-- `lute setup` generates the Lute typedefs. `lute run setup` does codegen plus package install. Run both once after cloning.
-- `lute run install` runs `wally install`, `wally-package-types`, pulls Foundation and friends via `roblox-packages`, then applies patches. If module resolution looks broken, this probably did not run.
-- `lute run build` produces `StudioDiscover.rbxm`. `--dev` produces `StudioDiscover-Dev.rbxm` with a separate toolbar, widget, and plugin-settings identity, so it installs alongside the release build without colliding. Use `--dev` when testing.
-- `lute run ci` runs Selene, StyLua, a sourcemap refresh, and `luau-lsp analyze`. `--fix` formats instead of checking.
-- `lute run test` builds `plugin/tests/build/tests.rbxl` and drives Jest through run-in-roblox. `--build-only` stops after the build.
-- `lute run patch <package-path>` snapshots a vendored package on the first run and writes the diff to `plugin/patches/` on the second.
-- `lute run codegen` regenerates `plugin/generated/` and the sourcemap. `lute run upload-plugin <path>` publishes to the Creator Store, and the release workflow is what normally calls it.
-- `lute run sync` shallow-clones the reference repos into the gitignored `.repos/`. Ones we depend on at a version are pinned to the tag matching `rokit.toml`; the rest follow their branch. `--dry-run` prints the plan, `--repo <id>` limits it to one, `--latest` ignores the pins. Declared in `.lute/lib/reference-repos.luau`.
+- `install` gets a clone ready: it generates the Lute typedefs, runs `wally install` and `wally-package-types`, pulls Foundation and friends via `roblox-packages`, applies patches, and writes `plugin/generated/`. Run it once after cloning. If module resolution looks broken, this probably did not run.
+- `build` produces `StudioDiscover.rbxm`. `--dev` produces `StudioDiscover-Dev.rbxm` with a separate toolbar, widget, and plugin-settings identity, so it installs alongside the release build without colliding. Use `--dev` when testing.
+- `lint` runs Selene and a StyLua check. `--fix` formats instead of checking.
+- `analyze` runs `luau-lsp analyze` twice: the scripts against the standard platform, and the plugin, the packages, and `scripts/tasks/` against Roblox through the plugin's sourcemap. It downloads the Roblox global types pinned in `project.luau` and checks their hash.
+- `test` builds `plugin/tests/build/tests.rbxl` and runs `scripts/tasks/run-tests.luau` in it through run-in-roblox. `--build-only` stops after the build.
+- `patch <package-path>` snapshots a vendored package on the first run and writes the diff to `plugin/patches/` on the second.
+- `codegen` regenerates `plugin/generated/` and the sourcemap. `upload-plugin <path>` publishes to the Creator Store by running `scripts/tasks/upload-plugin.luau` as an Open Cloud Luau Execution task, and the release workflow is what normally calls it.
+- `sync` shallow-clones the reference repos into the gitignored `.repos/`. Ones we depend on at a version are pinned to the tag matching `rokit.toml`; the rest follow their branch. `--dry-run` prints the plan, `--repo <id>` limits it to one, `--latest` ignores the pins. Declared in `scripts/lib/referenceRepos.luau`.
 
 ## Verifying
 
-- **`lute run ci` and `lute run test` both pass before a task is done.** Not one of them.
+- **`lint`, `analyze`, and `test` all pass before a task is done.** Not some of them.
 - Logic you touch under `plugin/src/` gets a Jest spec in `plugin/tests/`, and you run it.
-- run-in-roblox needs a native Roblox Studio install and does not work under WSL. The test command detects WSL and stops after the build. Build there if you like, then run the tests from a native Windows terminal, or open the built place in Studio and run `runTests.server.luau` from the command bar.
+- run-in-roblox needs a native Roblox Studio install and does not work under WSL. The test script detects WSL and stops after the build. Build there if you like, then run the tests from a native Windows terminal, or open the built place in Studio and paste `scripts/tasks/run-tests.luau` into the command bar.
 - The only real proof of an install path is an install. Ask before running one against a place that matters.
 
 ## Pull requests
@@ -116,7 +116,7 @@ Search and metadata go through a per-registry HTTP client that is rate limited, 
 
 ## Where code lives
 
-The repo is a source-only monorepo. `packages/` holds the parts that are really Luau ports of standalone tools, and `plugin/` holds everything coupled to Studio, React, and Charm. Packages are mounted into the build by Rojo, one entry per package in `plugin/default.project.json` and `plugin/test.project.json`; there are no per-package manifests and nothing is published. Adding a package means a mount in both project files, and a `packages/<name>/tests` mount under `Tests` if it has specs. `ANALYZE_PATHS` in `.lute/ci.luau` already covers all of `packages`.
+The repo is a source-only monorepo. `packages/` holds the parts that are really Luau ports of standalone tools, and `plugin/` holds everything coupled to Studio, React, and Charm. Packages are mounted into the build by Rojo, one entry per package in `plugin/default.project.json` and `plugin/test.project.json`; there are no per-package manifests and nothing is published. Adding a package means a mount in both project files, and a `packages/<name>/tests` mount under `Tests` if it has specs. `scripts/lint.luau` and `scripts/analyze.luau` already cover all of `packages`.
 
 Three rules hold the shape together. A package requires its siblings through the mount name, never through `Source`, and never requires anything under `plugin/src`. The two registry packages never require each other. Third-party code still comes from the one vendored tree at `StudioDiscover.Packages`, since there is a single `wally.toml`; both registry packages take `zzlib` that way.
 
@@ -135,7 +135,7 @@ Three rules hold the shape together. A package requires its siblings through the
 - `plugin/src/Plugin/` - Studio-facing glue: the plugin handle, widget mounting, settings persistence.
 - `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` - generated, gitignored, never edited by hand.
 - `docs/ui/` - vendored Foundation component reference. Read it before inventing a component that already exists.
-- `.repos/` - local read-only references, gitignored and absent until you run `lute run sync`. Prefer their patterns over invented ones. Never edit or import from them. Sync again when bumping the matching dependency.
+- `.repos/` - local read-only references, gitignored and absent until you run `lute scripts/sync.luau`. Prefer their patterns over invented ones. Never edit or import from them. Sync again when bumping the matching dependency.
 
 ## Taste
 

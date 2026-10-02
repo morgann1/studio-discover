@@ -1,7 +1,9 @@
+--!strict
+
 --[[
 	Clones the reference repos into `.repos/`.
 
-	Usage: lute run sync [--repo <id>] [--latest] [--dry-run]
+	Usage: lute scripts/sync.luau [--repo <id>] [--latest] [--dry-run]
 
 	Each repo is cloned shallow the first time and fetched afterwards, pinned to
 	the tag matching the version this repo targets, or following its branch when
@@ -13,15 +15,15 @@
 	dependencies, so nothing here is committed and nothing here is built. Run it
 	again whenever you bump a matching dependency.
 
-	The repos themselves are declared in lib/reference-repos.
+	The repos themselves are declared in lib/referenceRepos.
 ]]
 
-local fs = require("@lute/fs")
+local fs = require("@std/fs")
 local process = require("@lute/process")
 
-local color = require("./lib/color")
-local parseArgs = require("./lib/args")
-local referenceRepos = require("./lib/reference-repos")
+local color = require("@scripts/lib/color")
+local parseArgs = require("@scripts/lib/args")
+local referenceRepos = require("@scripts/lib/referenceRepos")
 
 type ReferenceRepo = referenceRepos.ReferenceRepo
 
@@ -56,11 +58,8 @@ local function readToolVersion(sourcePath: string, tool: string): string?
 		return nil
 	end
 
-	local handle = fs.open(sourcePath, "r")
-	local contents = fs.read(handle)
-	fs.close(handle)
-
-	return contents:match(`%f[%w_]{escapePattern(tool)}%s*=%s*"[^"@]+@([^"]+)"`)
+	local contents = fs.readFileToString(sourcePath)
+	return (contents:match(`%f[%w_]{escapePattern(tool)}%s*=%s*"[^"@]+@([^"]+)"`))
 end
 
 --[[

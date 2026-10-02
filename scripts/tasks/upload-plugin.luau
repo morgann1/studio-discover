@@ -1,10 +1,14 @@
---[[
-	Server-side script submitted to Open Cloud's Luau Execution Task API.
+--!strict
 
-	This runs inside a Roblox server (not Lute). It deserializes the rbxm
-	sent as the task's binary input and calls AssetService:CreateAssetVersionAsync
-	to publish a new version of the Creator Store plugin asset.
+--[[
+	Runs inside a Roblox server as an Open Cloud Luau Execution task, submitted by
+		`scripts/upload-plugin.luau`. It deserializes the .rbxm sent as the task's
+		binary input and publishes it as a new version of the Creator Store plugin.
 ]]
+
+local AssetService = game:GetService("AssetService")
+local EncodingService = game:GetService("EncodingService")
+local SerializationService = game:GetService("SerializationService")
 
 local PLUGIN_ID = 124703864101585
 local PLUGIN_NAME = "Discover"
@@ -17,10 +21,6 @@ assert(args, "no arguments passed to script")
 
 local input: buffer = args.BinaryInput
 assert(input, "no BinaryInput provided")
-
-local AssetService = game:GetService("AssetService")
-local EncodingService = game:GetService("EncodingService")
-local SerializationService = game:GetService("SerializationService")
 
 local input_hash: buffer = EncodingService:ComputeBufferHash(input, Enum.HashAlgorithm.Sha256)
 local hex_hash: { string } = table.create(buffer.len(input_hash))

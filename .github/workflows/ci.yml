@@ -21,11 +21,11 @@ jobs:
           cache: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Lute type definitions
-        run: lute setup
+      - name: Install
+        run: lute scripts/install.luau
 
-      - name: Install Luau packages
-        run: lute run install --quiet
+      - name: Lint
+        run: lute scripts/lint.luau
 
-      - name: Run checks
-        run: lute run ci
+      - name: Type check
+        run: lute scripts/analyze.luau
