@@ -17,8 +17,8 @@ export type Mark = {
 const MARKS: { [types.Registry]: Mark } = {
 	-- The walrus, cropped out of the Wally wordmark until a square mark is uploaded.
 	wally = { image = "rbxassetid://87427394631506", crop = Rect.new(0, 0, 254, 254) },
-	-- The logomark, cropped out of the pesde wordmark until a square mark is uploaded.
-	pesde = { image = "rbxassetid://125159874176259", crop = Rect.new(0, 0, 154, 154) },
+	-- pesde's favicon, from pesde.dev.
+	pesde = { image = "rbxassetid://107553028826404" },
 }
 
 -- Returns the mark drawn wherever a registry is named.
