@@ -18,7 +18,8 @@ type Row = {
 
 --[[
 	One row per constraint form pesde can send, each checked against versions on
-		both sides of its bounds. The bounds are semver 1.x's, which pesde uses.
+		both sides of its bounds, prereleases included. The bounds are semver 1.x's,
+		which pesde uses.
 ]]
 const rows: { Row } = {
 	{ constraint = "1.2.3", matches = { "1.2.3", "1.9.0" }, misses = { "1.2.2", "2.0.0" } },
@@ -37,8 +38,11 @@ const rows: { Row } = {
 	{
 		constraint = "~1.2.3-rc.1",
 		matches = { "1.2.3-rc.1", "1.2.3-rc.2", "1.2.3", "1.2.9" },
-		misses = { "1.2.3-alpha", "1.3.0" },
+		misses = { "1.2.3-alpha", "1.2.4-rc.1", "1.3.0" },
 	},
+	{ constraint = "^1.0.0", matches = { "1.5.0" }, misses = { "1.5.0-rc.1", "2.0.0-rc.1" } },
+	{ constraint = ">=2.0.0-rc.1", matches = { "2.0.0-rc.2" }, misses = { "2.0.1-rc.1" } },
+	{ constraint = "^0.6.0-rc.1", matches = { "0.6.0-rc.6", "0.6.0" }, misses = { "0.6.1-rc.1" } },
 	{ constraint = "1.*", matches = { "1.0.0", "1.9.9" }, misses = { "0.9.9", "2.0.0" } },
 	{ constraint = "1.x", matches = { "1.0.0", "1.9.9" }, misses = { "0.9.9", "2.0.0" } },
 	{ constraint = "1.2.*", matches = { "1.2.0", "1.2.9" }, misses = { "1.1.9", "1.3.0" } },

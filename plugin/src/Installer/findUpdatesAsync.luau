@@ -7,13 +7,16 @@ const getWallyMetadataAsync = require(StudioDiscover.Libraries.WallyRegistry.Api
 
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
-const isNewerVersion = require(StudioDiscover.Libraries.Semver.isNewerVersion)
+const isUpdateCandidate = require(StudioDiscover.Libraries.Semver.isUpdateCandidate)
 const types = require(StudioDiscover.Source.Installer.types)
 
 --[[
 	Returns the roots that have a newer version on their registry, asking each
 		registry in turn, and how many roots couldn't be checked because their metadata
 		failed to load. Roots from a registry the user turned off are skipped.
+
+	Each root is offered the newest version `isUpdateCandidate` allows, so a stable
+		root never moves onto a prerelease.
 ]]
 const function findUpdatesAsync(
 	roots: { coreTypes.InstalledRoot },
@@ -34,12 +37,15 @@ const function findUpdatesAsync(
 		if metadata == nil then
 			failed += 1
 			continue
-		elseif #metadata.versions == 0 then
-			continue
 		end
 
-		const latest = metadata.versions[1].package.version
-		if isNewerVersion(latest, root.version) then
+		-- Versions come newest first, so the first candidate is the newest one.
+		for _, versionData in metadata.versions do
+			const latest = versionData.package.version
+			if not isUpdateCandidate(root.version, latest) then
+				continue
+			end
+
 			table.insert(updates, {
 				registry = root.registry,
 				scope = root.scope,
@@ -49,6 +55,7 @@ const function findUpdatesAsync(
 				installedVersion = root.version,
 				latestVersion = latest,
 			})
+			break
 		end
 	end
 

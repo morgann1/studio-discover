@@ -44,6 +44,23 @@ describe("wally.buildSatisfies", function()
 		expect(matching(">=1.0.0, <2.0.0 || >=3.0.0, <4.0.0", versions)).toEqual({ "1.0.0", "1.9.9", "3.0.0", "3.9.9" })
 	end)
 
+	it("matches a prerelease only when a comparator names one on the same major.minor.patch", function()
+		expect(matching(">=1.0.0, <2.0.0", { "1.5.0", "1.5.0-rc.1", "2.0.0-rc.1" })).toEqual({ "1.5.0" })
+		expect(matching(">=2.0.0-rc.1", { "2.0.0-rc.2", "2.0.1-rc.1" })).toEqual({ "2.0.0-rc.2" })
+		expect(matching(">=0.6.0-rc.1, <0.7.0", { "0.6.0-rc.6", "0.6.0", "0.7.0-rc.1" })).toEqual({
+			"0.6.0-rc.6",
+			"0.6.0",
+		})
+	end)
+
+	it("rejects a prerelease for Wally's *, which arrives as >=0.0.0", function()
+		expect(matching(">=0.0.0", { "0.1.0", "2.0.0-rc.1" })).toEqual({ "0.1.0" })
+	end)
+
+	it("applies the prerelease rule within each alternative joined by ||", function()
+		expect(matching(">=1.0.0, <3.0.0 || =2.0.0-rc.1", { "2.0.0-rc.1", "2.0.0-rc.2" })).toEqual({ "2.0.0-rc.1" })
+	end)
+
 	it("fails a constraint that does not parse instead of matching everything", function()
 		expect(wally.buildSatisfies("not a version")).toBe(nil)
 		expect(wally.buildSatisfies(">=1.0.0 || banana")).toBe(nil)
