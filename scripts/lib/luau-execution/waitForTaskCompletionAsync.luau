@@ -1,34 +1,33 @@
 --!strict
 
-local json = require("@std/json")
-local task = require("@lute/task")
+const task = require("@lute/task")
 
-local color = require("@scripts/lib/color")
-local fetch = require("@scripts/lib/fetch")
-local types = require("./types")
+const color = require("@scripts/lib/color")
+const decodeLuauTask = require("@scripts/lib/luau-execution/decodeLuauTask")
+const fetchAsync = require("@scripts/lib/fetchAsync")
 
-local POLL_INTERVAL_SECONDS = 2
-local RETRY_DELAY_SECONDS = 5
+const POLL_INTERVAL_SECONDS = 2
+const RETRY_DELAY_SECONDS = 5
 
 --[[
 	Polling only reads a task Roblox is already running, so a failed poll can always
 		be repeated. One connection blip should not abandon a healthy task, but a
 		sustained outage still fails.
 ]]
-local MAX_CONSECUTIVE_FAILURES = 5
+const MAX_CONSECUTIVE_FAILURES = 5
 
 --[[
 	Polls a task until it leaves the queue and finishes, and returns its final state.
 		Roblox enforces the task's own timeout, so this always ends.
 ]]
-local function waitForTaskCompletionAsync(taskPath: string, apiKey: string): types.LuauTask
-	local url = `https://apis.roblox.com/cloud/v2/{taskPath}`
+const function waitForTaskCompletionAsync(taskPath: string, apiKey: string): decodeLuauTask.LuauTask
+	const url = `https://apis.roblox.com/cloud/v2/{taskPath}`
 	local consecutiveFailures = 0
 
 	while true do
-		-- Through a closure, so the options are still checked against fetch's types.
-		local ok, result = pcall(function()
-			return fetch(url, {
+		-- Through a closure, so the options are still checked against fetchAsync's types.
+		const ok, result = pcall(function()
+			return fetchAsync(url, {
 				headers = { ["x-api-key"] = apiKey },
 			})
 		end)
@@ -46,7 +45,7 @@ local function waitForTaskCompletionAsync(taskPath: string, apiKey: string): typ
 
 		consecutiveFailures = 0
 
-		local luauTask: types.LuauTask = json.deserialize(result.body) :: any
+		const luauTask = decodeLuauTask(result.body)
 		if luauTask.state ~= "QUEUED" and luauTask.state ~= "PROCESSING" then
 			return luauTask
 		end

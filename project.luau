@@ -6,10 +6,14 @@
 	Every script runs from the repo root, so paths here are relative to it.
 ]]
 
-return table.freeze({
+const project = table.freeze({
+	PROJECT_MODULE_PATH = "project.luau",
 	SCRIPTS_PATH = "scripts",
+	TASKS_PATH = "scripts/tasks",
 	PACKAGES_PATH = "packages",
 	PLUGIN_PATH = "plugin",
+	PLUGIN_BIN_PATH = "plugin/bin",
+	PLUGIN_SRC_PATH = "plugin/src",
 
 	PROJECT_PATH = "plugin/default.project.json",
 	TESTS_PROJECT_PATH = "plugin/test.project.json",
@@ -30,3 +34,5 @@ return table.freeze({
 	-- The Roblox client version that roblox-packages pulls Foundation and friends from.
 	ROBLOX_PACKAGES_VERSION = "0.716.0.7160873",
 })
+
+return project

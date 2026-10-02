@@ -7,24 +7,24 @@
 	Usage: lute scripts/lint.luau [--fix]
 ]]
 
-local process = require("@lute/process")
+const process = require("@lute/process")
 
-local parseArgs = require("@scripts/lib/args")
-local project = require("@root/project")
-local run = require("@scripts/lib/run")
+const parseArgs = require("@scripts/lib/parseArgs")
+const project = require("@root/project")
+const runAsync = require("@scripts/lib/runAsync")
 
-local PATHS_TO_LINT = {
-	"project.luau",
+const PATHS_TO_LINT = table.freeze({
+	project.PROJECT_MODULE_PATH,
 	project.SCRIPTS_PATH,
 	project.PACKAGES_PATH,
-	"plugin/bin",
-	"plugin/src",
-}
+	project.PLUGIN_BIN_PATH,
+	project.PLUGIN_SRC_PATH,
+})
 
-local args = parseArgs()
-local fix = args.flags.fix or args.flags.f or false
+const args = parseArgs()
+const fix = args.flags.fix or args.flags.f or false
 
-local styluaArgs = table.clone(PATHS_TO_LINT)
+const styluaArgs = table.clone(PATHS_TO_LINT)
 if not fix then
 	table.insert(styluaArgs, 1, "--check")
 end
@@ -32,16 +32,16 @@ end
 -- Both run even when the first fails, so one pass reports everything.
 local failureCount = 0
 
-local seleneOk = pcall(function()
-	run("selene", PATHS_TO_LINT)
+const seleneOk = pcall(function()
+	runAsync("selene", PATHS_TO_LINT)
 end)
 
 if not seleneOk then
 	failureCount += 1
 end
 
-local styluaOk = pcall(function()
-	run("stylua", styluaArgs)
+const styluaOk = pcall(function()
+	runAsync("stylua", styluaArgs)
 end)
 
 if not styluaOk then

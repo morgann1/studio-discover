@@ -6,6 +6,6 @@
 	Usage: lute scripts/codegen.luau
 ]]
 
-local codegen = require("@scripts/lib/codegen")
+const codegenAsync = require("@scripts/lib/codegenAsync")
 
-codegen({ sourcemap = true })
+codegenAsync({ sourcemap = true })

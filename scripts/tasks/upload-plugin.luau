@@ -6,43 +6,44 @@
 		binary input and publishes it as a new version of the Creator Store plugin.
 ]]
 
-local AssetService = game:GetService("AssetService")
-local EncodingService = game:GetService("EncodingService")
-local SerializationService = game:GetService("SerializationService")
+const AssetService = game:GetService("AssetService")
+const EncodingService = game:GetService("EncodingService")
+const SerializationService = game:GetService("SerializationService")
 
-local PLUGIN_ID = 124703864101585
-local PLUGIN_NAME = "Discover"
-local PLUGIN_DESCRIPTION = "Browse and install Luau packages from Wally and pesde directly from Roblox Studio."
-local PLUGIN_CREATOR_ID = 48044582
-local PLUGIN_CREATOR_TYPE = Enum.AssetCreatorType.User
+const PLUGIN_ID = 124703864101585
+const PLUGIN_NAME = "Discover"
+const PLUGIN_DESCRIPTION = "Browse and install Luau packages from Wally and pesde directly from Roblox Studio."
+const PLUGIN_CREATOR_ID = 48044582
+const PLUGIN_CREATOR_TYPE = Enum.AssetCreatorType.User
 
-local args: any = ...
-assert(args, "no arguments passed to script")
+-- Luau Execution passes the task's arguments as one table in `...`.
+const args: { [string]: unknown }? = ...
+assert(args ~= nil, "Expected the task to receive arguments")
 
-local input: buffer = args.BinaryInput
-assert(input, "no BinaryInput provided")
+const input = args.BinaryInput
+assert(typeof(input) == "buffer", "Expected the task's BinaryInput to be a buffer")
 
-local input_hash: buffer = EncodingService:ComputeBufferHash(input, Enum.HashAlgorithm.Sha256)
-local hex_hash: { string } = table.create(buffer.len(input_hash))
-for i = 0, buffer.len(input_hash) - 1 do
-	table.insert(hex_hash, string.format("%02x", buffer.readu8(input_hash, i)))
+const inputHash = EncodingService:ComputeBufferHash(input, Enum.HashAlgorithm.Sha256)
+const hexHash = table.create(buffer.len(inputHash))
+for index = 0, buffer.len(inputHash) - 1 do
+	table.insert(hexHash, string.format("%02x", buffer.readu8(inputHash, index)))
 end
 
-print(`Deserializing plugin (size: {buffer.len(input)} bytes, sha256: {table.concat(hex_hash, "")})`)
-local plugin = SerializationService:DeserializeInstancesAsync(input)[1]
-assert(plugin, "deserialization returned no instances")
+print(`Deserializing plugin (size: {buffer.len(input)} bytes, sha256: {table.concat(hexHash)})`)
+const plugin = SerializationService:DeserializeInstancesAsync(input)[1]
+assert(plugin ~= nil, "Expected the binary input to hold an instance")
 
 print(`Uploading new version of asset {PLUGIN_ID}`)
 
-local result, version_or_err = AssetService:CreateAssetVersionAsync(plugin, Enum.AssetType.Plugin, PLUGIN_ID, {
-	["Name"] = PLUGIN_NAME,
-	["Description"] = PLUGIN_DESCRIPTION,
-	["CreatorId"] = PLUGIN_CREATOR_ID,
-	["CreatorType"] = PLUGIN_CREATOR_TYPE,
+const result, versionOrError = AssetService:CreateAssetVersionAsync(plugin, Enum.AssetType.Plugin, PLUGIN_ID, {
+	Name = PLUGIN_NAME,
+	Description = PLUGIN_DESCRIPTION,
+	CreatorId = PLUGIN_CREATOR_ID,
+	CreatorType = PLUGIN_CREATOR_TYPE,
 })
 
 if result ~= Enum.CreateAssetResult.Success then
-	error(`Plugin failed to upload: {result.Name} - {version_or_err}`)
+	error(`Plugin failed to upload: {result.Name} - {versionOrError}`, 0)
 end
 
-print(`Plugin uploaded successfully. New version: {version_or_err}`)
+print(`Plugin uploaded successfully. New version: {versionOrError}`)
