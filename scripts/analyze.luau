@@ -63,12 +63,13 @@ then
 	failureCount += 1
 end
 
+-- Still on the old solver until the plugin is migrated, so this pass leaves out the editor
+-- settings, which turn the new one on.
 if
 	not analyzeAsync({
 		"--platform=roblox",
 		`--sourcemap={project.SOURCEMAP_PATH}`,
 		`--definitions={project.GLOBAL_DEFS_PATH}`,
-		"--settings=.vscode/settings.json",
 		project.PACKAGES_PATH,
 		project.PLUGIN_BIN_PATH,
 		project.PLUGIN_SRC_PATH,
