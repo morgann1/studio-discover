@@ -112,7 +112,7 @@ Semver: dependency bumps and small fixes are PATCH, new user-visible features ar
 
 ## How it works
 
-Search and metadata go through a per-registry HTTP client that is rate limited, honors `Retry-After` on a 429, and caches responses for five minutes. Installing resolves the requested roots against the lockfile in `ServerStorage`, downloads each archive, unzips or untars it in memory, and applies the whole tree into the place inside a single ChangeHistory recording. Roots get an alias ModuleScript in `Packages` pointing at the real content under `Packages/_Index`. UI state is Charm atoms read through ReactCharm; navigation is a screen stack in one atom.
+Search and metadata go through a per-registry HTTP client that is rate limited, honors `Retry-After` on a 429, and caches responses for five minutes. Installing resolves the requested roots against the lockfile in `ServerStorage`, downloads each archive, unzips or untars it in memory, and applies the whole tree into the place inside a single ChangeHistory recording. Roots get an alias ModuleScript in `Packages` pointing at the real content under `Packages/_Index`. UI state is Charm atoms read through `Common/useAtom`; navigation is a screen stack in one atom.
 
 ## Where code lives
 

@@ -4,7 +4,6 @@ local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local Foundation = require(StudioDiscover.Packages.Foundation)
 local React = require(StudioDiscover.Packages.React)
-local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 
 local CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 local ContextProviders = require(StudioDiscover.Source.Common.ContextProviders)
@@ -21,6 +20,7 @@ local Sidebar = require(StudioDiscover.Source.Common.Sidebar)
 local UpdatesScreen = require(StudioDiscover.Source.Screens.UpdatesScreen)
 local buildConfig = require(StudioDiscover.Generated.buildConfig)
 local createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+local useAtom = require(StudioDiscover.Source.Common.useAtom)
 local useIsCompact = require(StudioDiscover.Source.Common.useIsCompact)
 
 local Divider = Foundation.Divider
@@ -51,7 +51,7 @@ end)
 local function App(props: Props)
 	local nextOrder = createNextOrder()
 	local auto = useIsCompact(props.overlayGui)
-	local sidebarMode = ReactCharm.useAtom(function()
+	local sidebarMode = useAtom(function()
 		return SettingsStore.get().getStorage().sidebarMode
 	end)
 

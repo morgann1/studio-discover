@@ -3,11 +3,11 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local Charm = require(StudioDiscover.Packages.Charm)
-local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
 local gt = require(StudioDiscover.Packages.GreenTea)
 
 local createLogger = require(StudioDiscover.Core.createLogger)
 local createPluginSettingsStore = require(StudioDiscover.Source.Plugin.createPluginSettingsStore)
+local useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 export type NamingConvention = "Original" | "PascalCase" | "camelCase" | "snake_case" | "kebab-case"
 export type SidebarMode = "Auto" | "Expanded" | "Compact"
@@ -89,7 +89,7 @@ end)
 
 local function useSettings(): SettingsState
 	local store = get()
-	return ReactCharm.useAtom(store.getStorage)
+	return useAtom(store.getStorage)
 end
 
 local function setSetting(key: string, value: any)

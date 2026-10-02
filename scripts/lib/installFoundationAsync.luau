@@ -6,7 +6,7 @@ const color = require("@scripts/lib/color")
 
 -- roblox-packages links React by its own index name. We use the Wally React instead.
 const UPSTREAM_REACT_LINK = '%["React"%]%["React"%]'
-const WALLY_REACT_LINK = '["jsdotlua_react@17.2.1"]["react"]'
+const WALLY_REACT_LINK = '["roblox_react@17.3.12"]["react"]'
 
 const function copyTreeAsync(source: string, destination: string): ()
 	fs.createDirectory(destination, { makeParents = true })

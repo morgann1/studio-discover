@@ -3,12 +3,12 @@
 local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 local Charm = require(StudioDiscover.Packages.Charm)
-local ReactCharm = require(StudioDiscover.Packages.ReactCharm)
+local useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 local queryAtom = Charm.atom("")
 
 local function useQuery(): string
-	return ReactCharm.useAtom(queryAtom)
+	return useAtom(queryAtom)
 end
 
 local function setQuery(value: string)
