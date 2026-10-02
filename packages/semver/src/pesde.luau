@@ -2,42 +2,36 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const trim = require(StudioDiscover.Libraries.Core.trim)
-const wallySemver = require(StudioDiscover.Libraries.Semver.wally)
+const matchesVersionReq = require(StudioDiscover.Libraries.Semver.matchesVersionReq)
+const parseSemver = require(StudioDiscover.Libraries.Semver.parseSemver)
+const parseVersionReq = require(StudioDiscover.Libraries.Semver.parseVersionReq)
 
 --[[
-	Reduces a pesde constraint to the Wally form `buildSatisfies` reads, or to "" for
-		any version. A caret and a tilde both become a bare version, which Wally reads
-		as a caret range.
+	Builds a predicate over version strings from a pesde `version_req`, or returns nil
+		when it does not parse. pesde sends requirements in semver 1.x's own syntax,
+		so `^`, `~`, wildcards, and partial versions all keep their 1.x meaning.
+
+	A bare `*` matches every version, prereleases included, as pesde's
+		`version_matches` does.
 ]]
-const function normalizeConstraint(raw: string): string
-	const trimmed = trim(raw)
-	if trimmed == "" or trimmed == "*" then
-		return ""
-	end
-
-	const prefix = string.sub(trimmed, 1, 1)
-	if prefix == "^" or prefix == "~" then
-		return string.sub(trimmed, 2)
-	end
-
-	return trimmed
-end
-
-const function buildSatisfies(constraint: string): (version: string) -> boolean
-	const normalized = normalizeConstraint(constraint)
-	if normalized == "" then
+const function buildSatisfies(constraint: string): ((version: string) -> boolean)?
+	const comparators = parseVersionReq(constraint)
+	if comparators == nil then
+		return nil
+	elseif #comparators == 0 then
 		return function()
 			return true
 		end
 	end
 
-	return wallySemver.buildSatisfies(normalized)
+	return function(version: string): boolean
+		const parsed = parseSemver(version)
+		return parsed ~= nil and matchesVersionReq(comparators, parsed)
+	end
 end
 
 const pesdeSemver = table.freeze({
 	buildSatisfies = buildSatisfies,
-	normalizeConstraint = normalizeConstraint,
 })
 
 return pesdeSemver

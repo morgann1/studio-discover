@@ -45,10 +45,8 @@ end
 const function pickNewestMatch(
 	metadata: fetchMetadataAsync.PesdeMetadata,
 	target: types.Target,
-	versionReq: string
+	satisfies: (version: string) -> boolean
 ): VersionEntry?
-	const satisfies = pesdeSemver.buildSatisfies(versionReq)
-
 	local newest: VersionEntry? = nil
 	for _, entry in metadata.versions do
 		if entry.target ~= target or not satisfies(entry.version) then
@@ -196,6 +194,9 @@ const function resolveAsync(
 	const function findReusable(request: DependencyRequest): PesdeResolvedPackage?
 		const realm = realmFromTarget(request.target)
 		const satisfies = pesdeSemver.buildSatisfies(request.versionReq)
+		if satisfies == nil then
+			return nil
+		end
 
 		for _, pkg in activatedByName[`{request.scope}/{request.name}`] or {} do
 			if pkg.realm == realm and satisfies(pkg.version) then
@@ -209,6 +210,12 @@ const function resolveAsync(
 	-- Adds the newest version that satisfies the request to the graph, or records why there is none.
 	const function resolveRequestAsync(request: DependencyRequest): PesdeResolvedPackage?
 		const fullName = `{request.scope}/{request.name}`
+		const satisfies = pesdeSemver.buildSatisfies(request.versionReq)
+		if satisfies == nil then
+			table.insert(failures, `{fullName}: could not parse constraint "{request.versionReq}"`)
+			return nil
+		end
+
 		if onProgress ~= nil then
 			onProgress(`Resolving {fullName}...`)
 		end
@@ -219,7 +226,7 @@ const function resolveAsync(
 			return nil
 		end
 
-		const entry = pickNewestMatch(metadata, request.target, request.versionReq)
+		const entry = pickNewestMatch(metadata, request.target, satisfies)
 		if entry == nil then
 			table.insert(failures, `{fullName}: no version matches "{request.versionReq}" for target {request.target}`)
 			return nil
