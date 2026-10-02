@@ -7,11 +7,12 @@ const coreTypes = require(StudioDiscover.Core.types)
 const createLogger = require(StudioDiscover.Core.createLogger)
 const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const types = require(StudioDiscover.Source.Installer.types)
+const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 
 const pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
-const pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
 const pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
 const pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
+const savePesdeLockfileAsync = require(StudioDiscover.PesdeRegistry.saveLockfileAsync)
 
 const logger = createLogger.createLogger("pesde.installer.uninstall")
 
@@ -19,22 +20,16 @@ const function runUninstallAsync(root: coreTypes.InstalledRoot): types.Operation
 	const scope, name, realm = root.scope, root.name, root.realm
 	logger.info(`uninstall pesde {scope}/{name} realm={realm}`)
 
-	const remaining: { pesdeResolveAsync.RootRequest } = {}
+	const remaining: { coreTypes.RootRequest } = {}
 	local didMatch = false
 	for _, prior in pesdeSnapshotRoots() do
-		if prior.realm == realm and prior.scope == scope and prior.name == name and prior.kind == "pesde" then
+		if prior.requestRealm == realm and prior.scope == scope and prior.name == name then
 			didMatch = true
 			logger.info(`removing root {prior.scope}/{prior.name}@{prior.version} (alias={prior.alias})`)
 			continue
 		end
 
-		table.insert(remaining, {
-			scope = prior.scope,
-			name = prior.name,
-			version = prior.version,
-			realm = prior.realm,
-			alias = prior.alias,
-		})
+		table.insert(remaining, prior)
 	end
 
 	if not didMatch then
@@ -48,15 +43,24 @@ const function runUninstallAsync(root: coreTypes.InstalledRoot): types.Operation
 	end
 
 	logger.info(`resolve starting ({#remaining} remaining root(s))`)
-	const resolved, rootAliases, resolutionFailures = pesdeResolveAsync(remaining, nil)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(remaining, nil)
 
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
+	const unresolvedError = unresolvedRootsError(unresolvedRoots, resolutionFailures)
+	if unresolvedError ~= nil then
+		return {
+			ok = false,
+			error = unresolvedError,
+			failures = resolutionFailures,
+		}
+	end
+
 	return applyRootsAsync(`Uninstall {scope}/{name}`, function()
 		const failures = pesdeApplyAsync(resolved, rootAliases, nil)
-		pesdeLockfile.save(resolved)
+		savePesdeLockfileAsync(resolved)
 
 		return failures
 	end)

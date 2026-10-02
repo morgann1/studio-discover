@@ -3,6 +3,7 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+const coreTypes = require(StudioDiscover.Core.types)
 const countKeys = require(StudioDiscover.Source.Util.countKeys)
 const createInstallReporter = require(StudioDiscover.Source.Installer.createInstallReporter)
 const createLogger = require(StudioDiscover.Core.createLogger)
@@ -10,11 +11,12 @@ const pickFreeAlias = require(StudioDiscover.Source.Installer.pickFreeAlias)
 const resolveAlias = require(StudioDiscover.Source.Installer.resolveAlias)
 const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const types = require(StudioDiscover.Source.Installer.types)
+const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 
 const pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
-const pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
 const pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
 const pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
+const savePesdeLockfileAsync = require(StudioDiscover.PesdeRegistry.saveLockfileAsync)
 
 const logger = createLogger.createLogger("pesde.installer.install")
 
@@ -27,26 +29,20 @@ const function runInstallAsync(
 	report.progress("Resolving dependencies...")
 
 	-- Installing a package that is already a root replaces it, whatever its version.
-	const roots: { pesdeResolveAsync.RootRequest } = {}
+	const roots: { coreTypes.RootRequest } = {}
 	for _, prior in pesdeSnapshotRoots() do
-		if prior.realm == realm and prior.scope == scope and prior.name == name then
+		if prior.requestRealm == realm and prior.scope == scope and prior.name == name then
 			logger.info(`replacing prior root {prior.scope}/{prior.name}@{prior.version}`)
 			continue
 		end
 
-		table.insert(roots, {
-			scope = prior.scope,
-			name = prior.name,
-			version = prior.version,
-			realm = prior.realm,
-			alias = prior.alias,
-		})
+		table.insert(roots, prior)
 	end
 
 	const baseAlias = resolveAlias(name)
 	const alias = pickFreeAlias(baseAlias, function(candidate)
 		for _, prior in roots do
-			if prior.realm == realm and prior.alias == candidate then
+			if prior.requestRealm == realm and prior.alias == candidate then
 				return true
 			end
 		end
@@ -62,15 +58,20 @@ const function runInstallAsync(
 		scope = scope,
 		name = name,
 		version = version,
-		realm = realm,
+		requestRealm = realm,
 		alias = alias,
 	})
 
 	logger.info(`resolve starting ({#roots} root(s))`)
-	const resolved, rootAliases, resolutionFailures = pesdeResolveAsync(roots, report.progress)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(roots, report.progress)
 
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
+	end
+
+	const unresolvedError = unresolvedRootsError(unresolvedRoots, resolutionFailures)
+	if unresolvedError ~= nil then
+		return report.fail(unresolvedError, resolutionFailures)
 	end
 
 	local rootId: string? = nil
@@ -94,7 +95,7 @@ const function runInstallAsync(
 
 	const applyResult = applyRootsAsync(`Install {scope}/{name}@{version}`, function()
 		const failures = pesdeApplyAsync(resolved, rootAliases, report.progress)
-		pesdeLockfile.save(resolved)
+		savePesdeLockfileAsync(resolved)
 
 		return failures
 	end, `{rootId}:`)

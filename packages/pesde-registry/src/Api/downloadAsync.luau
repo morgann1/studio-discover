@@ -1,58 +1,27 @@
 --!strict
 
-local HttpService = game:GetService("HttpService")
+const HttpService = game:GetService("HttpService")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local buildUserAgent = require(StudioDiscover.Core.buildUserAgent)
-local cache = require(StudioDiscover.Core.cache)
-local createLogger = require(StudioDiscover.Core.createLogger)
-local rateLimiter = require(StudioDiscover.PesdeRegistry.Api.rateLimiter)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const httpClient = require(StudioDiscover.PesdeRegistry.Api.httpClient)
+const types = require(StudioDiscover.PesdeRegistry.types)
 
-local logger = createLogger.createLogger("pesde.api.download")
+const logger = createLogger.createLogger("pesde.api.download")
 
-local API_BASE = "https://registry.pesde.daimond113.com/v1"
+-- Downloads one package version's archive for `target`, or returns nil and why not.
+const function downloadAsync(scope: string, name: string, version: string, target: types.Target): (string?, string?)
+	const slug = HttpService:UrlEncode(`{scope}/{name}`)
+	const path = `/packages/{slug}/{HttpService:UrlEncode(version)}/{HttpService:UrlEncode(target)}/archive`
 
-type Target = "roblox" | "roblox_server"
-
-local function downloadPesdeAsync(scope: string, name: string, version: string, target: Target): (string?, string?)
-	local cacheKey = `pesde:archive:{scope}/{name}@{version}/{target}`
-	local cached = cache.get(cacheKey)
-	if cached ~= nil then
-		return cached, nil
+	const archive, err = httpClient.getAsync(path, { ["Accept"] = "application/octet-stream" })
+	if archive == nil then
+		return nil, err
 	end
 
-	local slug = HttpService:UrlEncode(`{scope}/{name}`)
-	local encodedVersion = HttpService:UrlEncode(version)
-	local encodedTarget = HttpService:UrlEncode(target)
-	local url = `{API_BASE}/packages/{slug}/{encodedVersion}/{encodedTarget}/archive`
-
-	rateLimiter.acquireAsync()
-	local ok, response = pcall(function()
-		return HttpService:RequestAsync({
-			Url = url,
-			Method = "GET",
-			Headers = {
-				["Accept"] = "application/octet-stream",
-				["X-Real-User-Agent"] = buildUserAgent(),
-			},
-		})
-	end)
-	if not ok then
-		logger.warn(`request failed for {scope}/{name}@{version} {target}: {response}`)
-		return nil, tostring(response)
-	end
-	if response.StatusCode < 200 or response.StatusCode >= 300 then
-		logger.warn(`HTTP {response.StatusCode} for {scope}/{name}@{version} {target}`)
-		return nil, `HTTP {response.StatusCode}`
-	end
-	if response.Body == nil or response.Body == "" then
-		return nil, "Empty response"
-	end
-
-	cache.set(cacheKey, response.Body)
-	logger.info(`downloaded {scope}/{name}@{version} {target} ({#response.Body} bytes)`)
-	return response.Body, nil
+	logger.info(`downloaded {scope}/{name}@{version} {target} ({#archive} bytes)`)
+	return archive, nil
 end
 
-return downloadPesdeAsync
+return downloadAsync

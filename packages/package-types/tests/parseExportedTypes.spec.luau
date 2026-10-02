@@ -1,305 +1,283 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+const ReplicatedStorage = game:GetService("ReplicatedStorage")
+const ServerScriptService = game:GetService("ServerScriptService")
 
-local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
-local describe = JestGlobals.describe
-local expect = JestGlobals.expect
-local test = JestGlobals.test
+const JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
+const describe = JestGlobals.describe
+const expect = JestGlobals.expect
+const it = JestGlobals.it
 
-local StudioDiscover = ServerScriptService:WaitForChild("StudioDiscover") :: Folder
-local parseExportedTypes = require(StudioDiscover.PackageTypes.parseExportedTypes)
+const parseExportedTypes = require(ServerScriptService.StudioDiscover.PackageTypes.parseExportedTypes)
 
-local extractExportedTypes = parseExportedTypes.extractExportedTypes
-local extractDefaultType = parseExportedTypes.extractDefaultType
-local splitGenerics = parseExportedTypes.splitGenerics
-local shouldKeepDefault = parseExportedTypes.shouldKeepDefault
-local stripUnknownDefaults = parseExportedTypes.stripUnknownDefaults
+const extractExportedTypes = parseExportedTypes.extractExportedTypes
+const extractDefaultType = parseExportedTypes.extractDefaultType
+const splitGenerics = parseExportedTypes.splitGenerics
+const shouldKeepDefault = parseExportedTypes.shouldKeepDefault
+const stripUnknownDefaults = parseExportedTypes.stripUnknownDefaults
 
 describe("splitGenerics", function()
-	test("returns empty list when there are no generics", function()
+	it("returns empty list when there are no generics", function()
 		expect(splitGenerics("")).toEqual({})
 	end)
 
-	test("splits a single param", function()
+	it("splits a single param", function()
 		expect(splitGenerics("<T>")).toEqual({ "T" })
 	end)
 
-	test("splits multiple params at top-level commas", function()
+	it("splits multiple params at top-level commas", function()
 		expect(splitGenerics("<T, U>")).toEqual({ "T", " U" })
 	end)
 
-	test("ignores commas nested in angle brackets", function()
+	it("ignores commas nested in angle brackets", function()
 		expect(splitGenerics("<T, U<V, W>>")).toEqual({ "T", " U<V, W>" })
 	end)
 
-	test("ignores commas nested in parens (function types)", function()
+	it("ignores commas nested in parens (function types)", function()
 		expect(splitGenerics("<T = (a, b) -> c, U>")).toEqual({ "T = (a, b) -> c", " U" })
 	end)
 
-	test("ignores commas nested in braces (table types)", function()
+	it("ignores commas nested in braces (table types)", function()
 		expect(splitGenerics("<T = {x: number, y: number}, U>")).toEqual({ "T = {x: number, y: number}", " U" })
+	end)
+
+	it("keeps union defaults intact", function()
+		expect(splitGenerics("<T = A | B, U>")).toEqual({ "T = A | B", " U" })
+	end)
+
+	it("keeps intersection defaults intact", function()
+		expect(splitGenerics("<T = A & B, U>")).toEqual({ "T = A & B", " U" })
+	end)
+
+	it("handles optional-type defaults", function()
+		expect(splitGenerics("<T = number?, U>")).toEqual({ "T = number?", " U" })
+	end)
+
+	it("handles variadic type-pack params", function()
+		expect(splitGenerics("<T..., U>")).toEqual({ "T...", " U" })
+	end)
+
+	it("handles generic function-type defaults", function()
+		expect(splitGenerics("<F = <T>(T) -> T, U>")).toEqual({ "F = <T>(T) -> T", " U" })
+	end)
+
+	it("handles indexer-table defaults", function()
+		expect(splitGenerics("<T = { [string]: number }, U>")).toEqual({
+			"T = { [string]: number }",
+			" U",
+		})
 	end)
 end)
 
 describe("extractDefaultType", function()
-	test("returns nil when there is no default", function()
+	it("returns nil when there is no default", function()
 		expect(extractDefaultType("T")).toBeNil()
 	end)
 
-	test("captures a bare identifier default", function()
+	it("captures a bare identifier default", function()
 		expect(extractDefaultType("T = number")).toBe("number")
 	end)
 
-	test("captures a namespaced default", function()
+	it("captures a namespaced default", function()
 		expect(extractDefaultType("T = Foo.Bar")).toBe("Foo.Bar")
 	end)
 
-	test("captures a function-type default", function()
+	it("captures a function-type default", function()
 		expect(extractDefaultType("T = (...any) -> ()")).toBe("(...any) -> ()")
 	end)
 
-	test("captures a table-type default", function()
+	it("captures a table-type default", function()
 		expect(extractDefaultType("T = {[string]: number}")).toBe("{[string]: number}")
 	end)
 
-	test("captures a generic-type default", function()
+	it("captures a generic-type default", function()
 		expect(extractDefaultType("T = Array<string>")).toBe("Array<string>")
 	end)
 
-	test("ignores '=' nested inside angle brackets", function()
+	it("ignores '=' nested inside angle brackets", function()
 		expect(extractDefaultType("T = Pair<A = B, C>")).toBe("Pair<A = B, C>")
+	end)
+
+	it("captures singleton literal defaults", function()
+		expect(extractDefaultType('T = "open"')).toBe('"open"')
+		expect(extractDefaultType("T = true")).toBe("true")
+		expect(extractDefaultType("T = 42")).toBe("42")
+	end)
+
+	it("captures typeof defaults", function()
+		expect(extractDefaultType("T = typeof(workspace)")).toBe("typeof(workspace)")
 	end)
 end)
 
 describe("shouldKeepDefault", function()
-	test("keeps a builtin default", function()
+	it("keeps a builtin default", function()
 		expect(shouldKeepDefault("number", {})).toBe(true)
 	end)
 
-	test("keeps a default that references a resolved type", function()
+	it("keeps a default that references a resolved type", function()
 		expect(shouldKeepDefault("Self", { Self = true })).toBe(true)
 	end)
 
-	test("drops a default with namespace access", function()
+	it("drops a default with namespace access", function()
 		expect(shouldKeepDefault("Foo.Bar", {})).toBe(false)
 	end)
 
-	test("keeps a function-type default made of builtins", function()
+	it("keeps a function-type default made of builtins", function()
 		expect(shouldKeepDefault("(...any) -> ()", {})).toBe(true)
 	end)
 
-	test("drops a function-type default that references an unresolved type", function()
+	it("drops a function-type default that references an unresolved type", function()
 		expect(shouldKeepDefault("(Unknown) -> ()", {})).toBe(false)
+	end)
+
+	it("keeps a union of builtins", function()
+		expect(shouldKeepDefault("number | string", {})).toBe(true)
+	end)
+
+	it("keeps a typeof expression made of keywords", function()
+		expect(shouldKeepDefault("typeof(nil)", {})).toBe(true)
+	end)
+
+	it("drops a union that references an external namespaced type", function()
+		expect(shouldKeepDefault("number | Foo.Bar", {})).toBe(false)
 	end)
 end)
 
 describe("extractExportedTypes", function()
-	test("finds a simple alias export", function()
-		local types = extractExportedTypes("export type Foo = number")
+	it("finds a simple alias export", function()
+		const types = extractExportedTypes("export type Foo = number")
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Foo")
 		expect(types[1].generics).toBe("")
 		expect(types[1].kind).toBe("alias")
 	end)
 
-	test("finds a single-line generic export", function()
-		local types = extractExportedTypes("export type Foo<T> = T")
+	it("finds a single-line generic export", function()
+		const types = extractExportedTypes("export type Foo<T> = T")
 		expect(#types).toBe(1)
 		expect(types[1].generics).toBe("<T>")
 	end)
 
-	test("ignores non-export types", function()
-		local types = extractExportedTypes("type Foo = number")
+	it("ignores non-export types", function()
+		const types = extractExportedTypes("type Foo = number")
 		expect(#types).toBe(0)
 	end)
 
-	test("finds multiple exports across lines", function()
-		local src = "export type Foo = number\nexport type Bar = string"
-		local types = extractExportedTypes(src)
+	it("finds multiple exports across lines", function()
+		const src = "export type Foo = number\nexport type Bar = string"
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(2)
 		expect(types[1].name).toBe("Foo")
 		expect(types[2].name).toBe("Bar")
 	end)
 
-	test("finds a type whose generic header spans multiple lines", function()
-		local src = table.concat({
+	it("finds a type whose generic header spans multiple lines", function()
+		const src = table.concat({
 			"export type Foo<",
 			"    T,",
 			"    U = number",
 			"> = T",
 		}, "\n")
-		local types = extractExportedTypes(src)
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Foo")
 		expect(types[1].generics:find("T") ~= nil).toBe(true)
 		expect(types[1].generics:find("U") ~= nil).toBe(true)
 	end)
 
-	test("recognises export type function with kind = function", function()
-		local src = "export type function Concat(a, b) return a end"
-		local types = extractExportedTypes(src)
+	it("recognises export type function with kind = function", function()
+		const src = "export type function Concat(a, b) return a end"
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Concat")
 		expect(types[1].kind).toBe("function")
 	end)
 
-	test("does not match export type in the middle of a line", function()
-		local types = extractExportedTypes("local notAnExport = 'export type Fake = number'")
-		expect(#types).toBe(0)
-	end)
-
-	test("captures generic header when a default contains a function arrow", function()
-		local types = extractExportedTypes("export type Handler<T = (...any) -> ()> = T")
+	it("captures generic header when a default contains a function arrow", function()
+		const types = extractExportedTypes("export type Handler<T = (...any) -> ()> = T")
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Handler")
 		expect(types[1].generics).toBe("<T = (...any) -> ()>")
 	end)
-end)
 
-describe("Luau type-syntax coverage", function()
-	test("splitGenerics keeps union defaults intact", function()
-		expect(splitGenerics("<T = A | B, U>")).toEqual({ "T = A | B", " U" })
-	end)
-
-	test("splitGenerics keeps intersection defaults intact", function()
-		expect(splitGenerics("<T = A & B, U>")).toEqual({ "T = A & B", " U" })
-	end)
-
-	test("splitGenerics handles optional-type defaults", function()
-		expect(splitGenerics("<T = number?, U>")).toEqual({ "T = number?", " U" })
-	end)
-
-	test("splitGenerics handles variadic type-pack params", function()
-		expect(splitGenerics("<T..., U>")).toEqual({ "T...", " U" })
-	end)
-
-	test("splitGenerics handles generic function-type defaults", function()
-		expect(splitGenerics("<F = <T>(T) -> T, U>")).toEqual({ "F = <T>(T) -> T", " U" })
-	end)
-
-	test("splitGenerics handles function-type defaults with named params", function()
-		expect(splitGenerics("<F = (a: number, b: string) -> boolean, U>")).toEqual({
-			"F = (a: number, b: string) -> boolean",
-			" U",
-		})
-	end)
-
-	test("splitGenerics handles record-table defaults", function()
-		expect(splitGenerics("<T = { x: number, y: number }, U>")).toEqual({
-			"T = { x: number, y: number }",
-			" U",
-		})
-	end)
-
-	test("splitGenerics handles indexer-table defaults", function()
-		expect(splitGenerics("<T = { [string]: number }, U>")).toEqual({
-			"T = { [string]: number }",
-			" U",
-		})
-	end)
-
-	test("extractDefaultType captures singleton literal defaults", function()
-		expect(extractDefaultType('T = "open"')).toBe('"open"')
-		expect(extractDefaultType("T = true")).toBe("true")
-		expect(extractDefaultType("T = 42")).toBe("42")
-	end)
-
-	test("extractDefaultType captures typeof defaults", function()
-		expect(extractDefaultType("T = typeof(workspace)")).toBe("typeof(workspace)")
-	end)
-
-	test("shouldKeepDefault keeps a union of builtins", function()
-		expect(shouldKeepDefault("number | string", {})).toBe(true)
-	end)
-
-	test("shouldKeepDefault keeps a typeof expression made of keywords", function()
-		expect(shouldKeepDefault("typeof(nil)", {})).toBe(true)
-	end)
-
-	test("shouldKeepDefault drops a union that references an external namespaced type", function()
-		expect(shouldKeepDefault("number | Foo.Bar", {})).toBe(false)
-	end)
-
-	test("extractExportedTypes forwards each type function parameter as a generic", function()
-		local types = extractExportedTypes("export type function keyof(a, b) end")
+	it("forwards each type function parameter as a generic", function()
+		const types = extractExportedTypes("export type function keyof(a, b) end")
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("keyof")
 		expect(types[1].kind).toBe("function")
 		expect(types[1].generics).toBe("<T0, T1>")
 	end)
 
-	test("extractExportedTypes drops a variadic type function parameter", function()
-		local types = extractExportedTypes("export type function keyof(a, b, ...) end")
+	it("drops a variadic type function parameter", function()
+		const types = extractExportedTypes("export type function keyof(a, b, ...) end")
 		expect(types[1].generics).toBe("<T0, T1>")
 	end)
 
-	test("extractExportedTypes gives a variadic-only type function empty generics", function()
-		local types = extractExportedTypes("export type function keyof(...) end")
+	it("gives a variadic-only type function empty generics", function()
+		const types = extractExportedTypes("export type function keyof(...) end")
 		expect(types[1].generics).toBe("<>")
 	end)
 
-	test("extractExportedTypes skips export type inside a short comment", function()
-		local types = extractExportedTypes("-- export type Fake = number\nexport type Real = string")
+	it("skips export type inside a short comment", function()
+		const types = extractExportedTypes("-- export type Fake = number\nexport type Real = string")
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Real")
 	end)
 
-	test("extractExportedTypes skips export type inside a long comment", function()
-		local src = "--[[\nexport type Fake = number\n]] export type Real = string"
-		local types = extractExportedTypes(src)
+	it("skips export type inside a long comment", function()
+		const src = "--[[\nexport type Fake = number\n]] export type Real = string"
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Real")
 	end)
 
-	test("extractExportedTypes skips export type inside a leveled long comment", function()
-		local src = "--[==[\nexport type Fake = number\n]==]\nexport type Real = string"
-		local types = extractExportedTypes(src)
+	it("skips export type inside a leveled long comment", function()
+		const src = "--[==[\nexport type Fake = number\n]==]\nexport type Real = string"
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Real")
 	end)
 
-	test("extractExportedTypes skips export type inside a short string literal", function()
-		local types = extractExportedTypes("local s = 'export type Fake = number'\nexport type Real = string")
+	it("skips export type inside a short string literal", function()
+		const types = extractExportedTypes("local s = 'export type Fake = number'\nexport type Real = string")
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Real")
 	end)
 
-	test("extractExportedTypes skips export type inside a long string literal", function()
-		local src = "local s = [[\nexport type Fake = number\n]]\nexport type Real = string"
-		local types = extractExportedTypes(src)
+	it("skips export type inside a long string literal", function()
+		const src = "local s = [[\nexport type Fake = number\n]]\nexport type Real = string"
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Real")
 	end)
 
-	test("extractExportedTypes skips export type inside a leveled long string literal", function()
-		local src = "local s = [=[\nexport type Fake = number\n]=]\nexport type Real = string"
-		local types = extractExportedTypes(src)
+	it("skips export type inside a leveled long string literal", function()
+		const src = "local s = [=[\nexport type Fake = number\n]=]\nexport type Real = string"
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Real")
 	end)
 
-	test("extractExportedTypes does not match someexport type prefix", function()
-		local types = extractExportedTypes("someexport type Fake = number")
+	it("does not match someexport type prefix", function()
+		const types = extractExportedTypes("someexport type Fake = number")
 		expect(#types).toBe(0)
 	end)
 
-	test("extractExportedTypes captures singleton string default containing >", function()
-		local types = extractExportedTypes([[export type Marker<T = ">"> = T]])
+	it("captures singleton string default containing >", function()
+		const types = extractExportedTypes([[export type Marker<T = ">"> = T]])
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Marker")
 		expect(types[1].generics).toBe([[<T = ">">]])
 	end)
 
-	test("extractExportedTypes handles multi-line header with variadic type-pack", function()
-		local src = table.concat({
+	it("handles multi-line header with variadic type-pack", function()
+		const src = table.concat({
 			"export type Handler<",
 			"    T...,",
 			"    R = ()",
 			"> = (T...) -> R",
 		}, "\n")
-		local types = extractExportedTypes(src)
+		const types = extractExportedTypes(src)
 		expect(#types).toBe(1)
 		expect(types[1].name).toBe("Handler")
 		expect(types[1].generics:find("T%.%.%.") ~= nil).toBe(true)
@@ -308,12 +286,12 @@ describe("Luau type-syntax coverage", function()
 end)
 
 describe("stripUnknownDefaults", function()
-	test("keeps a default that only references generics", function()
+	it("keeps a default that only references generics", function()
 		expect(stripUnknownDefaults("<T, S = T>", { T = true, S = true })).toBe("<T, S = T>")
 	end)
 
-	test("strips earlier defaults when a later default is unknown", function()
-		local resolvedTypes = { State = true, Dispatchers = true } :: { [string]: true }
+	it("strips earlier defaults when a later default is unknown", function()
+		const resolvedTypes = { State = true, Dispatchers = true } :: { [string]: true }
 		expect(stripUnknownDefaults("<State = any, Dispatchers = ExternalType>", resolvedTypes)).toBe(
 			"<State, Dispatchers>"
 		)

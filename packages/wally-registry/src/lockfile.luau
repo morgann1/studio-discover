@@ -1,103 +1,130 @@
 --!strict
 
-local ServerStorage = game:GetService("ServerStorage")
+--[[
+	The `WallyLock` ModuleScript in ServerStorage: every package version currently
+		resolved into the place, keyed by its `_Index` id. Resolve prefers locked
+		versions, so an install does not move packages it did not have to.
+]]
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const ServerStorage = game:GetService("ServerStorage")
 
-local coreTypes = require(StudioDiscover.Core.types)
-local createLogger = require(StudioDiscover.Core.createLogger)
-local setScriptSource = require(StudioDiscover.Core.setScriptSource)
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local packageId = require(StudioDiscover.WallyRegistry.packageId)
-local types = require(StudioDiscover.WallyRegistry.types)
+const asString = require(StudioDiscover.Core.asString)
+const asTable = require(StudioDiscover.Core.asTable)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const packageId = require(StudioDiscover.WallyRegistry.packageId)
+const replaceModuleAsync = require(StudioDiscover.Core.replaceModuleAsync)
+const splitFullName = require(StudioDiscover.Core.splitFullName)
+const types = require(StudioDiscover.WallyRegistry.types)
 
-local logger = createLogger.createLogger("wally.installer.lockfile")
+const logger = createLogger.createLogger("wally.installer.lockfile")
 
-type LockEntry = coreTypes.LockEntry
-type ResolvedPackage = types.ResolvedPackage
+const LOCKFILE_NAME = "WallyLock"
 
-local LOCKFILE_NAME = "WallyLock"
+-- Reads the `_Index` id of one entry the way `saveAsync` writes it, or returns nil when it is not one.
+const function parseEntryId(raw: unknown): string?
+	const entry = asTable(raw)
+	if entry == nil then
+		return nil
+	end
 
-local function load(): { [string]: LockEntry }
-	local lockModule = ServerStorage:FindFirstChild(LOCKFILE_NAME)
+	const fullName, version = asString(entry.name), asString(entry.version)
+	if fullName == nil or version == nil then
+		return nil
+	end
+
+	const scope, name = splitFullName(fullName)
+	if scope == nil or name == nil then
+		return nil
+	end
+
+	return packageId.format(scope, name, version)
+end
+
+--[[
+	Reads which package versions are locked, as a set of `_Index` ids, skipping
+		entries it cannot parse. A missing or unreadable lockfile reads as empty.
+]]
+const function load(): { [string]: true? }
+	const lockModule = ServerStorage:FindFirstChild(LOCKFILE_NAME)
 	if lockModule == nil or not lockModule:IsA("ModuleScript") then
 		logger.debug("no existing lockfile; starting fresh")
 		return {}
 	end
-	local ok, data = pcall(require, lockModule :: any)
-	if not ok or typeof(data) ~= "table" then
+
+	const ok, data: unknown = pcall(require, lockModule)
+	const rawEntries = if ok then asTable(data) else nil
+	if rawEntries == nil then
 		logger.warn(`lockfile unreadable: {data}`)
 		return {}
 	end
-	local entries: { [string]: LockEntry } = {}
-	for _, entry in data :: any do
-		local scope, name = entry.name:match("^(.+)/(.+)$")
-		if scope == nil or name == nil then
-			logger.warn(`lockfile entry has unparseable name: "{entry.name}"`)
+
+	const lockedIds: { [string]: true? } = {}
+	local skippedCount = 0
+	local parsedCount = 0
+	for _, rawEntry in rawEntries do
+		const id = parseEntryId(rawEntry)
+		if id == nil then
+			skippedCount += 1
 			continue
 		end
-		local id = packageId.format(scope, name, entry.version)
-		entries[id] = {
-			name = entry.name,
-			version = entry.version,
-			realm = entry.realm or "shared",
-			dependencies = entry.dependencies or {},
-		}
-	end
-	local parsedCount = 0
-	for _ in entries do
+
+		lockedIds[id] = true
 		parsedCount += 1
 	end
-	logger.info(`loaded lockfile ({#data} entries, {parsedCount} parsed)`)
-	return entries
+
+	if skippedCount > 0 then
+		logger.warn(`skipped {skippedCount} malformed lockfile entries`)
+	end
+	logger.info(`loaded lockfile ({parsedCount} entries)`)
+	return lockedIds
 end
 
-local function save(resolved: { [string]: ResolvedPackage })
-	local lines: { string } = { "return {" }
-
-	local sortedIds: { string } = {}
+-- Replaces the lockfile with `resolved`. A failed write leaves no lockfile, which the next load reads as empty.
+const function saveAsync(resolved: { [string]: types.ResolvedPackage })
+	const sortedIds: { string } = {}
 	for id in resolved do
 		table.insert(sortedIds, id)
 	end
 	table.sort(sortedIds)
 
+	const lines = { "return {" }
 	for _, id in sortedIds do
-		local entry = resolved[id]
+		const entry = resolved[id]
 		table.insert(lines, "\t{")
-		table.insert(lines, `\t\tname = "{entry.scope}/{entry.name}",`)
-		table.insert(lines, `\t\tversion = "{entry.version}",`)
+		table.insert(lines, `\t\tname = {string.format("%q", `{entry.scope}/{entry.name}`)},`)
+		table.insert(lines, `\t\tversion = {string.format("%q", entry.version)},`)
 		table.insert(lines, `\t\trealm = "{entry.realm}",`)
-		if #entry.dependencies > 0 then
+
+		if #entry.dependencies == 0 then
+			table.insert(lines, "\t\tdependencies = {},")
+		else
 			table.insert(lines, "\t\tdependencies = {")
-			for _, dep in entry.dependencies do
-				local depLine = '\t\t\t{ alias = "' .. dep.alias .. '", packageId = "' .. dep.packageId .. '" },'
-				table.insert(lines, depLine)
+			for _, dependency in entry.dependencies do
+				const alias = string.format("%q", dependency.alias)
+				const dependencyId = string.format("%q", dependency.packageId)
+				table.insert(lines, `\t\t\t\{ alias = {alias}, packageId = {dependencyId} },`)
 			end
 			table.insert(lines, "\t\t},")
-		else
-			table.insert(lines, "\t\tdependencies = {},")
 		end
+
 		table.insert(lines, "\t},")
 	end
 	table.insert(lines, "}")
 
-	local existing = ServerStorage:FindFirstChild(LOCKFILE_NAME)
-	if existing ~= nil then
-		existing:Destroy()
-	end
-	local lockModule = Instance.new("ModuleScript")
-	lockModule.Name = LOCKFILE_NAME
-	lockModule.Parent = ServerStorage
-	local ok, err = setScriptSource(lockModule, table.concat(lines, "\n"))
-	if not ok then
+	const err = replaceModuleAsync(ServerStorage, LOCKFILE_NAME, table.concat(lines, "\n"))
+	if err ~= nil then
 		logger.warn(`could not save lockfile: {err}`)
-		lockModule:Destroy()
 		return
 	end
+
 	logger.info(`saved lockfile ({#sortedIds} entries)`)
 end
 
-return table.freeze({
+const lockfile = table.freeze({
 	load = load,
-	save = save,
+	saveAsync = saveAsync,
 })
+
+return lockfile

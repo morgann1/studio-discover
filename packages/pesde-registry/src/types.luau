@@ -1,28 +1,29 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+--[[
+	What only pesde understands: its targets, the kinds of dependency it lists, and
+		its resolved dependency graph.
+]]
 
-local types = require(StudioDiscover.Core.types)
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-export type Realm = types.Realm
-export type ProgressCallback = types.ProgressCallback
+const coreTypes = require(StudioDiscover.Core.types)
 
+-- pesde publishes a package per target. `roblox_server` is the server realm.
+export type Target = "roblox" | "roblox_server"
+
+-- A dependency on a pesde package, or on a wally package pesde proxies. Discover installs only the first.
 export type Kind = "pesde" | "wally"
 
-export type PesdeDependency = {
-	alias: string,
-	packageId: string,
-}
-
+-- `libPath` stays writable because apply fills it in from the archive when the metadata did not have it.
 export type PesdeResolvedPackage = {
-	packageId: string,
-	scope: string,
-	name: string,
-	version: string,
-	realm: Realm,
-	kind: Kind,
+	read packageId: string,
+	read scope: string,
+	read name: string,
+	read version: string,
+	read realm: coreTypes.Realm,
 	libPath: string?,
-	dependencies: { PesdeDependency },
+	read dependencies: { coreTypes.Dependency },
 }
 
 return nil

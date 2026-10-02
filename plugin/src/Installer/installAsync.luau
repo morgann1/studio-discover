@@ -10,13 +10,13 @@ const createInstallReporter = require(StudioDiscover.Source.Installer.createInst
 const createLogger = require(StudioDiscover.Core.createLogger)
 const installPesdeAsync = require(StudioDiscover.Source.Installer.installPesdeAsync)
 const lockfile = require(StudioDiscover.WallyRegistry.lockfile)
-const packageId = require(StudioDiscover.WallyRegistry.packageId)
 const pickFreeAlias = require(StudioDiscover.Source.Installer.pickFreeAlias)
 const resolveAlias = require(StudioDiscover.Source.Installer.resolveAlias)
 const resolveAsync = require(StudioDiscover.WallyRegistry.resolveAsync)
 const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
 const types = require(StudioDiscover.Source.Installer.types)
+const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 
 const logger = createLogger.createLogger("wally.installer.install")
 
@@ -64,26 +64,22 @@ const function runInstallAsync(
 
 	const lockData = lockfile.load()
 	logger.info(`resolve starting ({#roots} root(s), lockfile has {countKeys(lockData)} entries)`)
-	const resolved, rootAliases, resolutionFailures = resolveAsync(roots, lockData, report.progress)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = resolveAsync(roots, lockData, report.progress)
 
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
-	if resolved[packageId.format(scope, name, version)] == nil then
-		local message = `Failed to resolve {scope}/{name}@{version}`
-		if #resolutionFailures > 0 then
-			message ..= ` ({table.concat(resolutionFailures, "; ")})`
-		end
-
-		return report.fail(message, resolutionFailures)
+	const unresolvedError = unresolvedRootsError(unresolvedRoots, resolutionFailures)
+	if unresolvedError ~= nil then
+		return report.fail(unresolvedError, resolutionFailures)
 	end
 
 	logger.info(`resolve complete: {countKeys(resolved)} package(s) activated`)
 
 	const applyResult = applyRootsAsync(`Install {scope}/{name}@{version}`, function()
 		const failures = applyAsync(resolved, rootAliases, report.progress)
-		lockfile.save(resolved)
+		lockfile.saveAsync(resolved)
 
 		return failures
 	end, `{scope}/{name}@{version}:`)

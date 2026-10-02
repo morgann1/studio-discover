@@ -1,66 +1,65 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local parseSemver = require(StudioDiscover.Semver.parseSemver)
+const parseSemver = require(StudioDiscover.Semver.parseSemver)
 
 type Semver = parseSemver.Semver
 type PrereleaseIdent = parseSemver.PrereleaseIdent
 
-local function compareIdent(a: PrereleaseIdent, b: PrereleaseIdent): number
-	local aIsNum = typeof(a) == "number"
-	local bIsNum = typeof(b) == "number"
-	if aIsNum and bIsNum then
-		if (a :: number) == (b :: number) then
-			return 0
-		end
-		return if (a :: number) < (b :: number) then -1 else 1
-	end
-	if aIsNum then
-		return -1
-	end
-	if bIsNum then
-		return 1
-	end
-	if (a :: string) == (b :: string) then
+const function compareNumbers(a: number, b: number): number
+	if a == b then
 		return 0
 	end
-	return if (a :: string) < (b :: string) then -1 else 1
+
+	return if a < b then -1 else 1
 end
 
-local function comparePrerelease(a: { PrereleaseIdent }, b: { PrereleaseIdent }): number
+-- Numeric identifiers sort below alphanumeric ones, as semver specifies.
+const function compareIdent(a: PrereleaseIdent, b: PrereleaseIdent): number
+	if typeof(a) == "number" and typeof(b) == "number" then
+		return compareNumbers(a, b)
+	elseif typeof(a) == "number" then
+		return -1
+	elseif typeof(b) == "number" then
+		return 1
+	elseif a == b then
+		return 0
+	end
+
+	return if a < b then -1 else 1
+end
+
+const function comparePrerelease(a: { PrereleaseIdent }, b: { PrereleaseIdent }): number
+	-- A release has no prerelease, and sorts above any of its prereleases.
 	if #a == 0 and #b == 0 then
 		return 0
-	end
-	if #a == 0 then
+	elseif #a == 0 then
 		return 1
-	end
-	if #b == 0 then
+	elseif #b == 0 then
 		return -1
 	end
-	local len = math.min(#a, #b)
-	for i = 1, len do
-		local cmp = compareIdent(a[i], b[i])
-		if cmp ~= 0 then
-			return cmp
+
+	for index = 1, math.min(#a, #b) do
+		const comparison = compareIdent(a[index], b[index])
+		if comparison ~= 0 then
+			return comparison
 		end
 	end
-	if #a == #b then
-		return 0
-	end
-	return if #a < #b then -1 else 1
+
+	return compareNumbers(#a, #b)
 end
 
-local function compareSemver(a: Semver, b: Semver): number
+-- Returns -1, 0, or 1 as `a` sorts below, level with, or above `b` in semver precedence.
+const function compareSemver(a: Semver, b: Semver): number
 	if a.major ~= b.major then
-		return if a.major < b.major then -1 else 1
+		return compareNumbers(a.major, b.major)
+	elseif a.minor ~= b.minor then
+		return compareNumbers(a.minor, b.minor)
+	elseif a.patch ~= b.patch then
+		return compareNumbers(a.patch, b.patch)
 	end
-	if a.minor ~= b.minor then
-		return if a.minor < b.minor then -1 else 1
-	end
-	if a.patch ~= b.patch then
-		return if a.patch < b.patch then -1 else 1
-	end
+
 	return comparePrerelease(a.prerelease, b.prerelease)
 end
 

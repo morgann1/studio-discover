@@ -43,7 +43,7 @@ const function createPluginSettingsStore<T>(
 		end)
 
 		if not decoded then
-			logger.warn(`failed to decode settings for {storageKey}:`, saved)
+			logger.warn(`failed to decode settings for {storageKey}: {saved}`)
 			return defaults
 		end
 

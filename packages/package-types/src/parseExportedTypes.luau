@@ -3,12 +3,33 @@
 --[[
 	Reading exported types back out of Luau source.
 
-	This half of the package is pure string work: it never touches an Instance,
-	which is what makes it directly testable. `init.luau` is the half that knows
-	about link modules and `_Index`.
+	This module is pure string work: it never touches an Instance, which is what
+		makes it directly testable. `forwardTypes.luau` builds the forwarding lines
+		from it, and `init.luau` is the part that knows about link modules and
+		`_Index`.
 ]]
 
-local BUILTIN_TYPES: { [string]: boolean } = {
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+
+const trim = require(StudioDiscover.Core.trim)
+
+-- The names a forwarded default may use: type names that are in scope in the rewritten link module.
+export type ResolvedTypes = { [string]: true? }
+
+--[[
+	One `export type` in a module's source.
+
+	`generics` is the alias's own generic header. A type function has no header, so
+		it gets one generic per named parameter, `<T0, T1>`, the way upstream forwards
+		it.
+]]
+export type ExportedType = {
+	read name: string,
+	read generics: string,
+	read kind: "alias" | "function",
+}
+
+const BUILTIN_TYPES: ResolvedTypes = {
 	["any"] = true,
 	["boolean"] = true,
 	["buffer"] = true,
@@ -18,330 +39,362 @@ local BUILTIN_TYPES: { [string]: boolean } = {
 	["thread"] = true,
 	["unknown"] = true,
 }
+table.freeze(BUILTIN_TYPES)
 
-local TYPE_SYNTAX_TOKENS: { [string]: boolean } = {
+const TYPE_SYNTAX_TOKENS: ResolvedTypes = {
 	["typeof"] = true,
 	["nil"] = true,
 	["true"] = true,
 	["false"] = true,
 }
+table.freeze(TYPE_SYNTAX_TOKENS)
 
--- `generics` is the alias's own generic header. A type function has no header,
--- so it gets one generic per named parameter, `<T0, T1>`, the way upstream forwards it.
-export type ExportedType = {
-	name: string,
-	generics: string,
-	kind: "alias" | "function",
-}
+const function isOpeningBracket(char: string): boolean
+	return char == "<" or char == "(" or char == "{" or char == "["
+end
 
--- Splits "<T, U = string>" into its top-level parameters, ignoring commas nested
--- inside brackets or an inner generic list.
-local function splitGenerics(generics: string): { string }
-	local inner = generics:match("^<(.+)>$")
+-- A `>` right after `-` is a function arrow, not a closing bracket.
+const function isClosingBracket(char: string, previous: string): boolean
+	return char == ")" or char == "}" or char == "]" or (char == ">" and previous ~= "-")
+end
+
+--[[
+	Splits "<T, U = string>" into its top-level parameters, ignoring commas nested
+		inside brackets or an inner generic list.
+]]
+const function splitGenerics(generics: string): { string }
+	const inner = generics:match("^<(.+)>$")
 	if inner == nil then
 		return {}
 	end
 
-	local params: { string } = {}
+	const params: { string } = {}
 	local depth = 0
 	local current = ""
-	for i = 1, #inner do
-		local ch = inner:sub(i, i)
-		local prev = if i > 1 then inner:sub(i - 1, i - 1) else ""
-		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
+
+	for index = 1, #inner do
+		const char = inner:sub(index, index)
+		const previous = if index > 1 then inner:sub(index - 1, index - 1) else ""
+
+		if isOpeningBracket(char) then
 			depth += 1
-			current ..= ch
-		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
+			current ..= char
+		elseif isClosingBracket(char, previous) then
 			depth -= 1
-			current ..= ch
-		elseif ch == "," and depth == 0 then
+			current ..= char
+		elseif char == "," and depth == 0 then
 			table.insert(params, current)
 			current = ""
 		else
-			current ..= ch
+			current ..= char
 		end
 	end
+
 	if current ~= "" then
 		table.insert(params, current)
 	end
+
 	return params
 end
 
-local function extractParamName(param: string): string?
+const function extractParamName(param: string): string?
 	return param:match("^%s*([%w_]+)")
 end
 
 -- Returns the text after a top-level `=` in one generic parameter, if there is one.
-local function extractDefaultType(param: string): string?
+const function extractDefaultType(param: string): string?
 	local depth = 0
-	for i = 1, #param do
-		local ch = param:sub(i, i)
-		local prev = if i > 1 then param:sub(i - 1, i - 1) else ""
-		if ch == "<" or ch == "(" or ch == "{" or ch == "[" then
+
+	for index = 1, #param do
+		const char = param:sub(index, index)
+		const previous = if index > 1 then param:sub(index - 1, index - 1) else ""
+
+		if isOpeningBracket(char) then
 			depth += 1
-		elseif ch == ")" or ch == "}" or ch == "]" or (ch == ">" and prev ~= "-") then
+		elseif isClosingBracket(char, previous) then
 			depth -= 1
-		elseif ch == "=" and depth == 0 then
-			local rest = param:sub(i + 1)
-			rest = (rest:gsub("^%s+", ""):gsub("%s+$", ""))
-			if rest == "" then
-				return nil
-			end
-			return rest
+		elseif char == "=" and depth == 0 then
+			const rest = trim(param:sub(index + 1))
+			return if rest == "" then nil else rest
 		end
 	end
+
 	return nil
 end
 
--- A default is only safe to copy across if every identifier in it resolves where
--- the rewritten link module will be evaluated.
-local function shouldKeepDefault(defaultType: string, resolvedTypes: { [string]: true }): boolean
+--[[
+	A default is only safe to copy across if every identifier in it resolves where
+		the rewritten link module will be evaluated.
+]]
+const function shouldKeepDefault(defaultType: string, resolvedTypes: ResolvedTypes): boolean
 	if defaultType:find("[%w_]%s*%.%s*[%a_]") ~= nil then
 		return false
 	end
+
 	for ident in defaultType:gmatch("[%a_][%w_]*") do
-		if BUILTIN_TYPES[ident] or resolvedTypes[ident] or TYPE_SYNTAX_TOKENS[ident] then
-			continue
+		if BUILTIN_TYPES[ident] == nil and resolvedTypes[ident] == nil and TYPE_SYNTAX_TOKENS[ident] == nil then
+			return false
 		end
-		return false
 	end
+
 	return true
 end
 
--- Luau only allows defaulted generics after every non-defaulted one, so dropping a
--- default means dropping every default to its left as well.
-local function stripUnknownDefaults(generics: string, resolvedTypes: { [string]: true }): string
+-- A forwarded parameter keeps its name, and its `...` when it is a type pack.
+const function forwardedParam(param: string): string?
+	const name = extractParamName(param)
+	if name == nil then
+		return nil
+	end
+
+	return if param:match("%.%.%.") ~= nil then `{name}...` else name
+end
+
+--[[
+	Rewrites a generic header so it only keeps defaults that `shouldKeepDefault`
+		accepts.
+
+	Luau only allows defaulted generics after every non-defaulted one, so dropping a
+		default means dropping every default to its left as well.
+]]
+const function stripUnknownDefaults(generics: string, resolvedTypes: ResolvedTypes): string
 	if generics == "" then
 		return ""
 	end
 
-	local params = splitGenerics(generics)
+	const params = splitGenerics(generics)
 	if #params == 0 then
 		return generics
 	end
 
-	local hasDefault: { boolean } = {}
-	local keepDefault: { boolean } = {}
-	for i, param in params do
-		local defaultType = extractDefaultType(param)
-		hasDefault[i] = defaultType ~= nil
-		keepDefault[i] = defaultType ~= nil and shouldKeepDefault(defaultType :: string, resolvedTypes)
-	end
-
+	-- Everything up to the last parameter without a keepable default loses its default.
 	local lastStrippedIndex = 0
-	for i = #params, 1, -1 do
-		if hasDefault[i] and not keepDefault[i] then
-			lastStrippedIndex = i
-			break
-		end
-		if not hasDefault[i] then
-			lastStrippedIndex = i
+	for index = #params, 1, -1 do
+		const defaultType = extractDefaultType(params[index])
+		if defaultType == nil or not shouldKeepDefault(defaultType, resolvedTypes) then
+			lastStrippedIndex = index
 			break
 		end
 	end
 
-	local result: { string } = {}
-	for i, param in params do
-		if i <= lastStrippedIndex then
-			local name = extractParamName(param)
-			local isVariadic = param:match("%.%.%.") ~= nil
-			if isVariadic then
-				table.insert(result, (name or param) .. "...")
-			else
-				table.insert(result, name or param)
-			end
+	const result: { string } = {}
+	for index, param in params do
+		if index <= lastStrippedIndex then
+			table.insert(result, forwardedParam(param) or param)
 		else
-			table.insert(result, (param:gsub("^%s+", "")))
+			table.insert(result, trim(param))
 		end
 	end
 
-	return "<" .. table.concat(result, ", ") .. ">"
+	return `<{table.concat(result, ", ")}>`
 end
 
 -- Turns a generic declaration into the argument list that forwards it on.
-local function extractParamNames(generics: string): string
+const function extractParamNames(generics: string): string
 	if generics == "" then
 		return ""
 	end
 
-	local params = splitGenerics(generics)
-	local names: { string } = {}
-	for _, param in params do
-		local name = extractParamName(param)
+	const names: { string } = {}
+	for _, param in splitGenerics(generics) do
+		const name = forwardedParam(param)
 		if name ~= nil then
-			local isVariadic = param:match("%.%.%.") ~= nil
-			table.insert(names, if isVariadic then name .. "..." else name)
+			table.insert(names, name)
 		end
 	end
-	return "<" .. table.concat(names, ", ") .. ">"
+
+	return `<{table.concat(names, ", ")}>`
 end
 
--- Turns a type function's parameter list into the generics that forward it.
--- Variadic `...` cannot be forwarded as a generic, so it is dropped.
-local function typeFunctionGenerics(parameterList: string): string
-	local names: { string } = {}
+--[[
+	Turns a type function's parameter list into the generics that forward it.
+		Variadic `...` cannot be forwarded as a generic, so it is dropped.
+]]
+const function typeFunctionGenerics(parameterList: string): string
+	const names: { string } = {}
 	for param in parameterList:sub(2, -2):gmatch("[^,]+") do
-		param = (param:gsub("^%s+", ""):gsub("%s+$", ""))
-		if param ~= "" and param ~= "..." then
+		const name = trim(param)
+		if name ~= "" and name ~= "..." then
 			table.insert(names, `T{#names}`)
 		end
 	end
-	return "<" .. table.concat(names, ", ") .. ">"
+
+	return `<{table.concat(names, ", ")}>`
 end
 
-local function tryOpenLongBracket(source: string, pos: number): number?
-	if source:sub(pos, pos) ~= "[" then
+const function tryOpenLongBracket(source: string, position: number): number?
+	if source:sub(position, position) ~= "[" then
 		return nil
 	end
+
 	local level = 0
-	local i = pos + 1
-	while source:sub(i, i) == "=" do
+	local index = position + 1
+	while source:sub(index, index) == "=" do
 		level += 1
-		i += 1
+		index += 1
 	end
-	if source:sub(i, i) == "[" then
-		return level
-	end
-	return nil
+
+	return if source:sub(index, index) == "[" then level else nil
 end
 
-local function skipLongBracket(source: string, afterOpen: number, level: number): number
-	local close = "]" .. string.rep("=", level) .. "]"
-	local found = source:find(close, afterOpen, true)
+const function skipLongBracket(source: string, afterOpen: number, level: number): number
+	const close = `]{string.rep("=", level)}]`
+	const found = source:find(close, afterOpen, true)
 	if found == nil then
 		return #source + 1
 	end
+
 	return found + #close
 end
 
--- Returns the position just past a comment or string literal starting at `pos`,
--- or nil when `pos` is ordinary source. Keeps `export type` inside a comment or
--- string from being read as a real declaration.
-local function skipStringOrComment(source: string, pos: number): number?
-	if pos > #source then
+--[[
+	Returns the position just past a comment or string literal starting at
+		`position`, or nil when `position` is ordinary source. Keeps `export type`
+		inside a comment or string from being read as a real declaration.
+]]
+const function skipStringOrComment(source: string, position: number): number?
+	if position > #source then
 		return nil
 	end
-	if source:sub(pos, pos + 1) == "--" then
-		local afterDash = pos + 2
-		local longLevel = tryOpenLongBracket(source, afterDash)
+
+	if source:sub(position, position + 1) == "--" then
+		const afterDash = position + 2
+		const longLevel = tryOpenLongBracket(source, afterDash)
 		if longLevel ~= nil then
 			return skipLongBracket(source, afterDash + longLevel + 2, longLevel)
 		end
-		local nl = source:find("\n", afterDash, true)
-		return if nl == nil then #source + 1 else nl
+
+		const newline = source:find("\n", afterDash, true)
+		return if newline == nil then #source + 1 else newline
 	end
-	local longLevel = tryOpenLongBracket(source, pos)
+
+	const longLevel = tryOpenLongBracket(source, position)
 	if longLevel ~= nil then
-		return skipLongBracket(source, pos + longLevel + 2, longLevel)
+		return skipLongBracket(source, position + longLevel + 2, longLevel)
 	end
-	local ch = source:sub(pos, pos)
-	if ch == "'" or ch == '"' then
-		local i = pos + 1
-		while i <= #source do
-			local c = source:sub(i, i)
-			if c == "\\" then
-				i += 2
-			elseif c == ch then
-				return i + 1
-			elseif c == "\n" then
-				return i + 1
-			else
-				i += 1
-			end
+
+	const quote = source:sub(position, position)
+	if quote ~= "'" and quote ~= '"' then
+		return nil
+	end
+
+	local index = position + 1
+	while index <= #source do
+		const char = source:sub(index, index)
+		if char == "\\" then
+			index += 2
+		elseif char == quote or char == "\n" then
+			return index + 1
+		else
+			index += 1
 		end
-		return #source + 1
 	end
-	return nil
+
+	return #source + 1
 end
 
--- Finds the `>` closing the generic list that opens at `start`, skipping over
--- `->` arrows and any brackets or strings in between.
-local function readBalancedAngleBrackets(source: string, start: number): number?
+--[[
+	Finds the `>` closing the generic list that opens at `start`, skipping over `->`
+		arrows and any brackets or strings in between.
+]]
+const function readBalancedAngleBrackets(source: string, start: number): number?
 	local angleDepth = 0
 	local parenDepth = 0
 	local braceDepth = 0
 	local squareDepth = 0
-	local i = start
-	while i <= #source do
-		local skipped = skipStringOrComment(source, i)
+	local index = start
+
+	while index <= #source do
+		const skipped = skipStringOrComment(source, index)
 		if skipped ~= nil then
-			i = skipped
+			index = skipped
 			continue
 		end
-		local ch = source:sub(i, i)
-		local prev = if i > 1 then source:sub(i - 1, i - 1) else ""
-		if ch == "(" then
+
+		const char = source:sub(index, index)
+		const previous = if index > 1 then source:sub(index - 1, index - 1) else ""
+		const isTopLevel = parenDepth == 0 and braceDepth == 0 and squareDepth == 0
+
+		if char == "(" then
 			parenDepth += 1
-		elseif ch == ")" then
+		elseif char == ")" then
 			parenDepth -= 1
-		elseif ch == "{" then
+		elseif char == "{" then
 			braceDepth += 1
-		elseif ch == "}" then
+		elseif char == "}" then
 			braceDepth -= 1
-		elseif ch == "[" then
+		elseif char == "[" then
 			squareDepth += 1
-		elseif ch == "]" then
+		elseif char == "]" then
 			squareDepth -= 1
-		elseif ch == "<" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 then
+		elseif char == "<" and isTopLevel then
 			angleDepth += 1
-		elseif ch == ">" and parenDepth == 0 and braceDepth == 0 and squareDepth == 0 and prev ~= "-" then
+		elseif char == ">" and isTopLevel and previous ~= "-" then
 			angleDepth -= 1
 			if angleDepth == 0 then
-				return i
+				return index
 			end
 		end
-		i += 1
+
+		index += 1
 	end
+
 	return nil
 end
 
-local function extractExportedTypes(source: string): { ExportedType }
-	local types: { ExportedType } = {}
-	local i = 1
-	while i <= #source do
-		local skipped = skipStringOrComment(source, i)
+-- Returns every `export type` and `export type function` in `source`, in order.
+const function extractExportedTypes(source: string): { ExportedType }
+	const exported: { ExportedType } = {}
+	local index = 1
+
+	while index <= #source do
+		const skipped = skipStringOrComment(source, index)
 		if skipped ~= nil then
-			i = skipped
+			index = skipped
 			continue
 		end
-		local _, kwEnd = source:find("^%f[%w_]export%s+type%s+", i)
-		if kwEnd == nil then
-			i += 1
+
+		const _, keywordEnd = source:find("^%f[%w_]export%s+type%s+", index)
+		if keywordEnd == nil then
+			index += 1
 			continue
 		end
-		local afterKw = kwEnd + 1
-		local kind: "alias" | "function" = "alias"
-		local _, fnEnd = source:find("^function%s+", afterKw)
-		if fnEnd ~= nil then
-			kind = "function"
-			afterKw = fnEnd + 1
-		end
-		local _, nameEnd, name = source:find("^([%w_]+)", afterKw)
+
+		const _, functionEnd = source:find("^function%s+", keywordEnd + 1)
+		const kind: "alias" | "function" = if functionEnd ~= nil then "function" else "alias"
+		const nameStart = if functionEnd ~= nil then functionEnd + 1 else keywordEnd + 1
+
+		const _, nameEnd, name = source:find("^([%w_]+)", nameStart)
 		if name == nil or nameEnd == nil then
-			i = kwEnd + 1
+			index = keywordEnd + 1
 			continue
 		end
-		local afterName = (nameEnd :: number) + 1
+
+		const afterName = nameEnd + 1
 		local generics = ""
-		local nextNonWs = source:find("%S", afterName)
 		if kind == "function" then
-			local parameterList = source:match("^%s*(%b())", afterName)
+			const parameterList = source:match("^%s*(%b())", afterName)
 			if parameterList ~= nil then
 				generics = typeFunctionGenerics(parameterList)
 			end
-		elseif nextNonWs ~= nil and source:sub(nextNonWs, nextNonWs) == "<" then
-			local genericsEnd = readBalancedAngleBrackets(source, nextNonWs)
-			if genericsEnd ~= nil then
-				generics = source:sub(nextNonWs, genericsEnd)
+		else
+			const nextNonSpace = source:find("%S", afterName)
+			if nextNonSpace ~= nil and source:sub(nextNonSpace, nextNonSpace) == "<" then
+				const genericsEnd = readBalancedAngleBrackets(source, nextNonSpace)
+				if genericsEnd ~= nil then
+					generics = source:sub(nextNonSpace, genericsEnd)
+				end
 			end
 		end
-		table.insert(types, { name = name :: string, generics = generics, kind = kind })
-		i = afterName
+
+		table.insert(exported, { name = name, generics = generics, kind = kind })
+		index = afterName
 	end
-	return types
+
+	return exported
 end
 
-return table.freeze({
+const parseExportedTypes = table.freeze({
 	extractDefaultType = extractDefaultType,
 	extractExportedTypes = extractExportedTypes,
 	extractParamName = extractParamName,
@@ -350,3 +403,5 @@ return table.freeze({
 	splitGenerics = splitGenerics,
 	stripUnknownDefaults = stripUnknownDefaults,
 })
+
+return parseExportedTypes

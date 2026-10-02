@@ -52,7 +52,7 @@ We need to be on the same page with terminology. When communicating, use this la
 
 ## The three ways to hurt yourself
 
-1. **Assigning `.Source` directly.** Roblox caps `ModuleScript.Source` at 200,000 characters, and a package with one file over that limit takes the entire install down with it. Route every source write through `Core.setScriptSource`, which goes through `ScriptEditorService:UpdateSourceAsync` and has no such limit.
+1. **Assigning `.Source` directly.** Roblox caps `ModuleScript.Source` at 200,000 characters, and a package with one file over that limit takes the entire install down with it. Route every source write through `Core.setScriptSourceAsync`, which goes through `ScriptEditorService:UpdateSourceAsync` and has no such limit.
 2. **Mutating the place outside a recording.** All DataModel writes belong inside `TryBeginRecording`/`FinishRecording`, and a failure must `Cancel`, not `Commit`. See `Installer/applyRootsAsync`. A half-applied tree the user cannot undo is worse than an install that simply failed.
 3. **Editing generated or vendored trees.** `plugin/generated/`, `plugin/Packages/`, and `plugin/DevPackages/` are gitignored and rebuilt by `scripts/codegen.luau` and `scripts/install.luau`. Anything you write there disappears on the next build. To change a dependency's code, add a patch under `plugin/patches/` with `scripts/patch.luau`.
 
@@ -76,7 +76,7 @@ The dev scripts live in `scripts/`, are written in Luau, and run under Lute from
 - `install` gets a clone ready: it generates the Lute typedefs, runs `wally install` and `wally-package-types`, pulls Foundation and friends via `roblox-packages`, applies patches, and writes `plugin/generated/`. Run it once after cloning. If module resolution looks broken, this probably did not run.
 - `build` produces `StudioDiscover.rbxm`. `--dev` produces `StudioDiscover-Dev.rbxm` with a separate toolbar, widget, and plugin-settings identity, so it installs alongside the release build without colliding. Use `--dev` when testing.
 - `lint` runs Selene and a StyLua check. `--fix` formats instead of checking.
-- `analyze` runs `luau-lsp analyze` three times: the scripts against the standard platform, the plugin against Roblox with the new solver, and the packages and `scripts/tasks/` against Roblox with the old solver until they are migrated. The Roblox passes go through the plugin's sourcemap. It downloads the Roblox global types pinned in `project.luau` and checks their hash.
+- `analyze` runs `luau-lsp analyze` twice, both with the new solver: the scripts against the standard platform, and the plugin, the packages, and `scripts/tasks/` against Roblox through the plugin's sourcemap. It downloads the Roblox global types pinned in `project.luau` and checks their hash.
 - `test` builds `plugin/tests/build/tests.rbxl` and runs `scripts/tasks/run-tests.luau` in it through run-in-roblox. `--build-only` stops after the build.
 - `patch <package-path>` snapshots a vendored package on the first run and writes the diff to `plugin/patches/` on the second.
 - `codegen` regenerates `plugin/generated/` and the sourcemap. `upload-plugin <path>` publishes to the Creator Store by running `scripts/tasks/upload-plugin.luau` as an Open Cloud Luau Execution task, and the release workflow is what normally calls it.
@@ -120,9 +120,9 @@ The repo is a source-only monorepo. `packages/` holds the parts that are really 
 
 Three rules hold the shape together. A package requires its siblings through the mount name, never through `Source`, and never requires anything under `plugin/src`. The two registry packages never require each other. Third-party code still comes from the one vendored tree at `StudioDiscover.Packages`, since there is a single `wally.toml`; both registry packages take `zzlib` that way.
 
-- `packages/core/` - what both registries and the plugin share: the logger, `setScriptSource`, the TOML reader, the HTTP cache and rate limiter, the archive-to-Instance tree builder, and the shared type vocabulary in `types.luau`. Mounted as `StudioDiscover.Core`.
+- `packages/core/` - what both registries and the plugin share: the logger, `setScriptSourceAsync`, the TOML reader, the HTTP client with its cache and rate limiter, the archive-to-Instance tree builder, and the shared type vocabulary in `types.luau`. Mounted as `StudioDiscover.Core`.
 - `packages/semver/` - parsing and comparison, plus a constraint engine per registry in `wally.luau` and `pesde.luau`. Mounted as `StudioDiscover.Semver`.
-- `packages/package-types/` - a Luau port of the wally-package-types CLI. `parseExportedTypes.luau` is the pure half and is where the tests point; `init.luau` returns `processLink`, which rewrites one link module in place. Mounted as `StudioDiscover.PackageTypes`.
+- `packages/package-types/` - a Luau port of the wally-package-types CLI. `parseExportedTypes.luau` is the pure half, and `forwardTypes.luau` turns a module's source into the `export type` lines a link needs, for both registries; `init.luau` returns `processLinkAsync`, which rewrites one Wally link module in place. Mounted as `StudioDiscover.PackageTypes`.
 - `packages/wally-registry/` - Wally's engine: `Api/` for search, metadata and download; then resolve, apply, lockfile, snapshot, and the naming rules around `_Index`. Mounted as `StudioDiscover.WallyRegistry`.
 - `packages/pesde-registry/` - the same surface for pesde, including the tar reader and the normalization from pesde's metadata into `Core.types.PackageMetadata`. Mounted as `StudioDiscover.PesdeRegistry`.
 - `plugin/bin/Main.plugin.luau` - the entry point. Everything hangs off `Plugin/setupPlugin`.

@@ -1,11 +1,15 @@
 --!strict
 
-type Realm = "shared" | "server"
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local function promoteRealm(existing: Realm, incoming: Realm): Realm
+const types = require(StudioDiscover.Core.types)
+
+-- A package that anything shared needs has to replicate, so shared wins over server.
+const function promoteRealm(existing: types.Realm, incoming: types.Realm): types.Realm
 	if existing == "shared" or incoming == "shared" then
 		return "shared"
 	end
+
 	return "server"
 end
 

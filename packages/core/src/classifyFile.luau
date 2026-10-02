@@ -1,8 +1,11 @@
 --!strict
 
-export type FileClass = "Script" | "LocalScript" | "ModuleScript" | "skip"
+export type ScriptClass = "Script" | "LocalScript" | "ModuleScript"
 
-local function classifyFile(path: string): FileClass
+export type FileClass = ScriptClass | "skip"
+
+-- Returns the class of script an archive file becomes, or "skip" for anything that is not Luau source.
+const function classifyFile(path: string): FileClass
 	if string.match(path, "%.server%.luau?$") ~= nil then
 		return "Script"
 	elseif string.match(path, "%.client%.luau?$") ~= nil then
@@ -10,6 +13,7 @@ local function classifyFile(path: string): FileClass
 	elseif string.match(path, "%.luau?$") ~= nil then
 		return "ModuleScript"
 	end
+
 	return "skip"
 end
 

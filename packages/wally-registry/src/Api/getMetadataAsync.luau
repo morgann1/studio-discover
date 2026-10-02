@@ -1,35 +1,84 @@
 --!strict
 
-local HttpService = game:GetService("HttpService")
+const HttpService = game:GetService("HttpService")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local cache = require(StudioDiscover.Core.cache)
-local httpClient = require(StudioDiscover.WallyRegistry.Api.httpClient)
-local types = require(StudioDiscover.Core.types)
+const asString = require(StudioDiscover.Core.asString)
+const asStringList = require(StudioDiscover.Core.asStringList)
+const asStringMap = require(StudioDiscover.Core.asStringMap)
+const asTable = require(StudioDiscover.Core.asTable)
+const createCache = require(StudioDiscover.Core.createCache)
+const httpClient = require(StudioDiscover.WallyRegistry.Api.httpClient)
+const isNewerVersion = require(StudioDiscover.Semver.isNewerVersion)
+const types = require(StudioDiscover.Core.types)
 
-local function getPackageMetadataAsync(scope: string, name: string): (types.PackageMetadata?, string?)
-	local path = `/package-metadata/{HttpService:UrlEncode(scope)}/{HttpService:UrlEncode(name)}`
+const cache = createCache() :: createCache.Cache<types.PackageMetadata>
 
-	local cached = cache.get(path)
+-- Reads one version out of Wally's response, or returns nil when it lacks a version or realm.
+const function readPackageVersion(raw: unknown): types.PackageVersion?
+	const versionData = asTable(raw)
+	const info = if versionData ~= nil then asTable(versionData.package) else nil
+	if versionData == nil or info == nil then
+		return nil
+	end
+
+	const version, realm = asString(info.version), asString(info.realm)
+	if version == nil or realm == nil then
+		return nil
+	end
+
+	return {
+		package = {
+			authors = asStringList(info.authors),
+			description = asString(info.description),
+			license = asString(info.license),
+			realm = realm,
+			version = version,
+		},
+		dependencies = asStringMap(versionData.dependencies),
+		["server-dependencies"] = asStringMap(versionData["server-dependencies"]),
+		["dev-dependencies"] = asStringMap(versionData["dev-dependencies"]),
+	}
+end
+
+--[[
+	Fetches every published version of a package, newest first, or returns nil and
+		why not. A version the response does not describe fully is left out.
+]]
+const function getMetadataAsync(scope: string, name: string): (types.PackageMetadata?, string?)
+	const path = `/package-metadata/{HttpService:UrlEncode(scope)}/{HttpService:UrlEncode(name)}`
+
+	const cached = cache.get(path)
 	if cached ~= nil then
 		return cached, nil
 	end
 
-	local body, err = httpClient.requestAsync(path)
-	if body == nil then
+	const decoded, err = httpClient.getJsonAsync(path)
+	if err ~= nil then
 		return nil, err
 	end
 
-	local success, decoded = pcall(function()
-		return HttpService:JSONDecode(body)
-	end)
-	if not success then
-		return nil, `JSON decode failed: {decoded}`
+	const response = asTable(decoded)
+	const versions: { types.PackageVersion } = {}
+	for _, rawVersion in asTable(if response ~= nil then response.versions else nil) or {} do
+		const version = readPackageVersion(rawVersion)
+		if version ~= nil then
+			table.insert(versions, version)
+		end
 	end
 
-	cache.set(path, decoded)
-	return decoded, nil
+	if #versions == 0 then
+		return nil, "metadata has no versions"
+	end
+
+	table.sort(versions, function(a: types.PackageVersion, b: types.PackageVersion): boolean
+		return isNewerVersion(a.package.version, b.package.version)
+	end)
+
+	const metadata: types.PackageMetadata = { versions = versions }
+	cache.set(path, metadata)
+	return metadata, nil
 end
 
-return getPackageMetadataAsync
+return getMetadataAsync

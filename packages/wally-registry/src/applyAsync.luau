@@ -1,217 +1,209 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local coreTypes = require(StudioDiscover.Core.types)
-local createLogger = require(StudioDiscover.Core.createLogger)
-local downloadAndExtractAsync = require(StudioDiscover.WallyRegistry.downloadAndExtractAsync)
-local foldersModule = require(StudioDiscover.WallyRegistry.getPackagesFolder)
-local linkModule = require(StudioDiscover.WallyRegistry.buildPackageLink)
-local processLink = require(StudioDiscover.PackageTypes)
-local setScriptSource = require(StudioDiscover.Core.setScriptSource)
-local types = require(StudioDiscover.WallyRegistry.types)
+const buildPackageLink = require(StudioDiscover.WallyRegistry.buildPackageLink)
+const coreTypes = require(StudioDiscover.Core.types)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const downloadAndExtractAsync = require(StudioDiscover.WallyRegistry.downloadAndExtractAsync)
+const parseLink = require(StudioDiscover.PackageTypes.parseLink)
+const packagesFolder = require(StudioDiscover.WallyRegistry.packagesFolder)
+const processLinkAsync = require(StudioDiscover.PackageTypes)
+const realms = require(StudioDiscover.Core.realms)
+const setScriptSourceAsync = require(StudioDiscover.Core.setScriptSourceAsync)
+const types = require(StudioDiscover.WallyRegistry.types)
+const writePendingSourcesAsync = require(StudioDiscover.Core.writePendingSourcesAsync)
 
-local logger = createLogger.createLogger("wally.installer.apply")
+const logger = createLogger.createLogger("wally.installer.apply")
 
-local buildSiblingPackageLink = linkModule.buildSiblingPackageLink
-local buildRootPackageLink = linkModule.buildRootPackageLink
-local getPackagesFolder = foldersModule.getPackagesFolder
-local getOrCreateIndex = foldersModule.getOrCreateIndex
-
-type Realm = "shared" | "server"
-type ResolvedPackage = types.ResolvedPackage
-type ProgressCallback = coreTypes.ProgressCallback
-
-type ExistingEntry = {
-	folder: Folder,
-	realm: Realm,
+type InstalledPackage = {
+	read folder: Folder,
+	read realm: coreTypes.Realm,
 }
 
-local function isLinkModule(source: string): boolean
-	return source:match('%["([^"]+@[^"]+)"%]') ~= nil
-end
-
-local function getModuleName(tree: Instance, fallbackName: string): string
+-- The ModuleScript a link requires inside the package's folder, which is the tree root for most packages.
+const function getModuleName(tree: Instance, fallbackName: string): string
 	if tree:IsA("ModuleScript") then
 		return tree.Name
 	end
+
 	for _, child in tree:GetChildren() do
 		if child:IsA("ModuleScript") then
 			return child.Name
 		end
 	end
+
 	return fallbackName
 end
 
-local function placeTreeInFolder(tree: Instance, folder: Folder)
+const function placeTreeInFolder(tree: Instance, folder: Folder)
 	if tree:IsA("ModuleScript") then
 		tree.Parent = folder
 		return
 	end
+
 	for _, child in tree:GetChildren() do
 		child.Parent = folder
 	end
 	tree:Destroy()
 end
 
-local function applyAsync(
-	resolved: { [string]: ResolvedPackage },
-	rootAliases: { [string]: string },
-	onProgress: ProgressCallback?
-): { string }
-	local failures: { string } = {}
-	local moduleNames: { [string]: string } = {}
+-- The package folders already under each realm's `_Index`, keyed by their id.
+const function findInstalledPackages(): { [string]: InstalledPackage? }
+	const installed: { [string]: InstalledPackage? } = {}
 
-	for _, realmName: Realm in { "shared", "server" } :: { Realm } do
-		local packagesFolder = getPackagesFolder(realmName)
-		for _, child in packagesFolder:GetChildren() do
-			if child:IsA("ModuleScript") then
+	for _, realm in realms do
+		const index = packagesFolder.findIndex(realm)
+		if index == nil then
+			continue
+		end
+
+		for _, child in index:GetChildren() do
+			if child:IsA("Folder") then
+				installed[child.Name] = { folder = child, realm = realm }
+			end
+		end
+	end
+
+	return installed
+end
+
+-- Parents a link and writes its source, then re-exports its target's types. A link that cannot be written is dropped.
+const function writeLinkAsync(build: buildPackageLink.LinkBuild, parent: Instance, label: string)
+	-- The link takes its alias, so anything already holding that name goes.
+	const existing = parent:FindFirstChild(build.link.Name)
+	if existing ~= nil then
+		existing:Destroy()
+	end
+
+	build.link.Parent = parent
+
+	const ok, err = setScriptSourceAsync(build.link, build.source)
+	if not ok then
+		logger.warn(`link source write failed for {label}: {err}`)
+		build.link:Destroy()
+		return
+	end
+
+	processLinkAsync(build.link)
+end
+
+--[[
+	Writes a resolved graph into the place: every package under its realm's
+		`_Index`, the links between them, and an alias in `Packages` for each root.
+
+	Packages already installed at the same id and realm are kept and only relinked.
+		Anything else under `_Index` is removed. Returns the non-fatal failures, each
+		prefixed with the package it came from. Run it inside a ChangeHistory
+		recording.
+]]
+const function applyAsync(
+	resolved: { [string]: types.ResolvedPackage },
+	rootAliases: { [string]: string },
+	onProgress: coreTypes.ProgressCallback?
+): { string }
+	const failures: { string } = {}
+	const packageFolders: { [string]: Folder? } = {}
+	const moduleNames: { [string]: string? } = {}
+
+	-- Root links are rewritten from `rootAliases` at the end. Any other module in the folder is left alone.
+	for _, realm in realms do
+		const folder = packagesFolder.find(realm)
+		if folder == nil then
+			continue
+		end
+
+		for _, child in folder:GetChildren() do
+			if child:IsA("ModuleScript") and parseLink(child.Source) ~= nil then
 				child:Destroy()
 			end
 		end
 	end
 
-	local existingByPackageId: { [string]: ExistingEntry } = {}
-	for _, realmName: Realm in { "shared", "server" } :: { Realm } do
-		local packagesFolder = getPackagesFolder(realmName)
-		local indexFolder = packagesFolder:FindFirstChild("_Index")
-		if indexFolder ~= nil then
-			for _, child in indexFolder:GetChildren() do
-				if child:IsA("Folder") then
-					existingByPackageId[child.Name] = {
-						folder = child,
-						realm = realmName,
-					}
-				end
-			end
-		end
-	end
-
-	for packageId, existing in existingByPackageId do
-		local resolvedPackage = resolved[packageId]
-		if resolvedPackage == nil then
-			logger.debug(`drop orphan {packageId} (realm={existing.realm})`)
-			existing.folder:Destroy()
-			existingByPackageId[packageId] = nil
-		elseif resolvedPackage.realm ~= existing.realm then
-			logger.debug(`drop {packageId}: realm changed {existing.realm} -> {resolvedPackage.realm}`)
-			existing.folder:Destroy()
-			existingByPackageId[packageId] = nil
-		end
-	end
-
-	for packageId, resolvedPackage in resolved do
-		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
-		local indexFolder = getOrCreateIndex(packagesFolder)
-
-		local existing = existingByPackageId[packageId]
-		if existing ~= nil then
-			local moduleName = existing.folder:GetAttribute("ModuleName")
-			moduleNames[packageId] = if typeof(moduleName) == "string" then moduleName else resolvedPackage.name
-			logger.debug(`reuse existing {packageId} (ModuleName={moduleNames[packageId]})`)
-
-			for _, child in existing.folder:GetChildren() do
-				if child:IsA("ModuleScript") and isLinkModule(child.Source) then
-					child:Destroy()
-				end
-			end
+	for id, installed in findInstalledPackages() do
+		const resolvedPackage = resolved[id]
+		if resolvedPackage == nil or resolvedPackage.realm ~= installed.realm then
+			logger.debug(`drop {id} (realm={installed.realm})`)
+			installed.folder:Destroy()
 			continue
 		end
 
+		for _, child in installed.folder:GetChildren() do
+			if child:IsA("ModuleScript") and parseLink(child.Source) ~= nil then
+				child:Destroy()
+			end
+		end
+
+		const moduleName = installed.folder:GetAttribute("ModuleName")
+		packageFolders[id] = installed.folder
+		moduleNames[id] = if typeof(moduleName) == "string" then moduleName else resolvedPackage.name
+		logger.debug(`reuse existing {id} (ModuleName={moduleNames[id]})`)
+	end
+
+	for id, resolvedPackage in resolved do
+		if packageFolders[id] ~= nil then
+			continue
+		end
+
+		const label = `{resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}`
 		if onProgress ~= nil then
-			onProgress(`Downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}...`)
+			onProgress(`Downloading {label}...`)
 		end
-		logger.info(`downloading {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}`)
+		logger.info(`downloading {label}`)
 
-		local tree, pending, err =
-			downloadAndExtractAsync(resolvedPackage.scope, resolvedPackage.name, resolvedPackage.version)
-		if tree == nil then
-			logger.warn(
-				`download failed for {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {err}`
-			)
-			table.insert(failures, `{resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {err}`)
+		const extracted = downloadAndExtractAsync(resolvedPackage.scope, resolvedPackage.name, resolvedPackage.version)
+		if not extracted.ok then
+			logger.warn(`download failed for {label}: {extracted.error}`)
+			table.insert(failures, `{label}: {extracted.error}`)
 			continue
 		end
-		logger.debug(`downloaded {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}`)
 
-		local moduleName = getModuleName(tree, resolvedPackage.name)
-		moduleNames[packageId] = moduleName
+		const moduleName = getModuleName(extracted.tree, resolvedPackage.name)
+		const folder = Instance.new("Folder")
+		folder.Name = id
+		folder:SetAttribute("ModuleName", moduleName)
+		placeTreeInFolder(extracted.tree, folder)
+		folder.Parent = packagesFolder.getIndex(resolvedPackage.realm)
 
-		local packageFolder = Instance.new("Folder")
-		packageFolder.Name = packageId
-		packageFolder:SetAttribute("ModuleName", moduleName)
-		placeTreeInFolder(tree, packageFolder)
-		packageFolder.Parent = indexFolder
-
-		local sourceFailure: string? = nil
-		for _, item in pending :: { any } do
-			local ok, sourceErr = setScriptSource(item.script, item.content)
-			if not ok then
-				sourceFailure = `{item.path}: {sourceErr}`
-				break
-			end
-		end
+		const sourceFailure = writePendingSourcesAsync(extracted.pending)
 		if sourceFailure ~= nil then
-			logger.warn(
-				`source write failed for {resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {sourceFailure}`
-			)
-			table.insert(
-				failures,
-				`{resolvedPackage.scope}/{resolvedPackage.name}@{resolvedPackage.version}: {sourceFailure}`
-			)
-			packageFolder:Destroy()
-			moduleNames[packageId] = nil
-		end
-	end
-
-	for packageId, resolvedPackage in resolved do
-		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
-		local indexFolder = getOrCreateIndex(packagesFolder)
-		local packageFolder = indexFolder:FindFirstChild(packageId) :: Folder?
-		if packageFolder == nil then
+			logger.warn(`source write failed for {label}: {sourceFailure}`)
+			table.insert(failures, `{label}: {sourceFailure}`)
+			folder:Destroy()
 			continue
 		end
 
-		for _, dep in resolvedPackage.dependencies do
-			local depResolved = resolved[dep.packageId]
-			if depResolved == nil then
+		packageFolders[id] = folder
+		moduleNames[id] = moduleName
+	end
+
+	for id, folder in packageFolders do
+		const resolvedPackage = resolved[id]
+		for _, dependency in resolvedPackage.dependencies do
+			const target = resolved[dependency.packageId]
+			if target == nil then
 				continue
 			end
-			local dependencyModuleName = moduleNames[dep.packageId] or depResolved.name
-			local build = buildSiblingPackageLink(
-				dep.alias,
-				dep.packageId,
-				dependencyModuleName,
+
+			const build = buildPackageLink.buildSiblingPackageLink(
+				dependency.alias,
+				dependency.packageId,
+				moduleNames[dependency.packageId] or target.name,
 				resolvedPackage.realm,
-				depResolved.realm
+				target.realm
 			)
-			build.link.Parent = packageFolder
-			local ok, linkErr = setScriptSource(build.link, build.source)
-			if not ok then
-				logger.warn(`link source write failed for {packageId} -> {dep.packageId}: {linkErr}`)
-				build.link:Destroy()
-				continue
-			end
-			processLink(build.link)
+			writeLinkAsync(build, folder, `{id} -> {dependency.packageId}`)
 		end
 	end
 
-	for packageId, alias in rootAliases do
-		local resolvedPackage = resolved[packageId]
+	for id, alias in rootAliases do
+		const resolvedPackage = resolved[id]
 		if resolvedPackage == nil then
 			continue
 		end
-		local packagesFolder = getPackagesFolder(resolvedPackage.realm)
-		local moduleName = moduleNames[packageId] or resolvedPackage.name
-		local rootBuild = buildRootPackageLink(alias, packageId, moduleName)
-		rootBuild.link.Parent = packagesFolder
-		local ok, linkErr = setScriptSource(rootBuild.link, rootBuild.source)
-		if not ok then
-			logger.warn(`root link source write failed for {packageId}: {linkErr}`)
-			rootBuild.link:Destroy()
-			continue
-		end
-		processLink(rootBuild.link)
+
+		const build = buildPackageLink.buildRootPackageLink(alias, id, moduleNames[id] or resolvedPackage.name)
+		writeLinkAsync(build, packagesFolder.get(resolvedPackage.realm), `root {id}`)
 	end
 
 	return failures

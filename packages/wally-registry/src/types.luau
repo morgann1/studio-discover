@@ -1,41 +1,24 @@
 --!strict
 
 --[[
-	What only Wally understands: its resolved dependency graph, and the shape its
-	search endpoint returns.
+	What only Wally understands: its resolved dependency graph.
 
 	The metadata the package screen renders is registry-neutral and lives in
-	`Core.types` as `PackageMetadata`, because pesde normalizes into it too.
+		`Core.types` as `PackageMetadata`, because pesde normalizes into it too.
 ]]
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local coreTypes = require(StudioDiscover.Core.types)
+const coreTypes = require(StudioDiscover.Core.types)
 
-type Realm = coreTypes.Realm
-
--- One edge in the resolved graph: the name a package requires its dependency by,
--- and the `_Index` entry that name points at.
-export type Dependency = {
-	alias: string,
-	packageId: string,
-	realm: Realm,
-}
-
+-- `realm` stays writable because resolve promotes a server package to shared once something shared needs it.
 export type ResolvedPackage = {
-	scope: string,
-	name: string,
-	version: string,
-	realm: Realm,
-	packageId: string,
-	dependencies: { Dependency },
-}
-
-export type WallyPackageBrief = {
-	scope: string,
-	name: string,
-	description: string?,
-	versions: { string },
+	read scope: string,
+	read name: string,
+	read version: string,
+	realm: coreTypes.Realm,
+	read packageId: string,
+	read dependencies: { coreTypes.Dependency },
 }
 
 return nil

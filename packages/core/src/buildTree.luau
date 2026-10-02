@@ -1,116 +1,133 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local classifyFile = require(StudioDiscover.Core.classifyFile)
-local createLogger = require(StudioDiscover.Core.createLogger)
+const classifyFile = require(StudioDiscover.Core.classifyFile)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const exhaustiveMatch = require(StudioDiscover.Core.exhaustiveMatch)
 
-local logger = createLogger.createLogger("core.buildTree")
+const logger = createLogger.createLogger("core.buildTree")
 
 export type Entry = {
-	path: string,
-	content: string,
+	read path: string,
+	read content: string,
 }
 
+-- A script the tree holds and the source it still needs, which the caller writes through `setScriptSourceAsync`.
 export type PendingSource = {
-	script: LuaSourceContainer,
-	path: string,
-	content: string,
+	read script: LuaSourceContainer,
+	read path: string,
+	read content: string,
 }
 
-local function getInstanceName(filename: string): string
-	local instanceName = filename
-	instanceName = instanceName:gsub("%.server%.luau?$", "")
-	instanceName = instanceName:gsub("%.client%.luau?$", "")
-	instanceName = instanceName:gsub("%.luau?$", "")
-	return instanceName
+const function getInstanceName(fileName: string): string
+	return fileName:match("^(.-)%.server%.luau?$")
+		or fileName:match("^(.-)%.client%.luau?$")
+		or fileName:match("^(.-)%.luau?$")
+		or fileName
 end
 
-local function buildTree(entries: { Entry }, packageName: string): (Instance, { PendingSource })
+const function createScript(className: classifyFile.ScriptClass): LuaSourceContainer
+	if className == "Script" then
+		return Instance.new("Script")
+	elseif className == "LocalScript" then
+		return Instance.new("LocalScript")
+	elseif className == "ModuleScript" then
+		return Instance.new("ModuleScript")
+	end
+
+	return exhaustiveMatch(className)
+end
+
+--[[
+	Builds an archive's files into an Instance tree named `packageName`, dropping the
+		archive's top-level directory and anything that is not Luau source.
+
+	An init file turns its folder into a script named for the folder. Entries can
+		come in any order, since a file whose folder is already a script lands inside
+		that script.
+
+	The scripts come back without source, as `pending`, since a source write can
+		fail and the caller decides what a failure means.
+]]
+const function buildTree(entries: { Entry }, packageName: string): (Instance, { PendingSource })
 	logger.debug(`building tree for "{packageName}" ({#entries} entries)`)
-	local root: any = Instance.new("Folder")
+
+	local root: Instance = Instance.new("Folder")
 	root.Name = packageName
 
-	local pending: { PendingSource } = {}
+	const pending: { PendingSource } = {}
 	local skipped = 0
 	local moduleCount = 0
 	local initPromotions = 0
 
-	table.sort(entries, function(a, b)
-		local aIsInit = a.path:match("init%.luau?$") ~= nil
-		local bIsInit = b.path:match("init%.luau?$") ~= nil
-		if aIsInit ~= bIsInit then
-			return not aIsInit
-		end
-		return a.path < b.path
-	end)
-
 	for _, entry in entries do
-		local className = classifyFile(entry.path)
+		const className = classifyFile(entry.path)
 		if className == "skip" then
 			skipped += 1
 			continue
 		end
 
-		local parts = string.split(entry.path, "/")
-		local startIdx = if #parts > 1 then 2 else 1
+		const parts = string.split(entry.path, "/")
 
-		local parent: any = root
-		for i = startIdx, #parts - 1 do
-			local folderName = parts[i]
+		local parent = root
+		for index = 2, #parts - 1 do
+			const folderName = parts[index]
 			if folderName == "" then
 				continue
 			end
-			local existing = parent:FindFirstChild(folderName)
-			if existing == nil then
-				existing = Instance.new("Folder")
-				existing.Name = folderName
-				existing.Parent = parent
+
+			const existing = parent:FindFirstChild(folderName)
+			if existing ~= nil then
+				parent = existing
+				continue
 			end
-			parent = existing
+
+			const folder = Instance.new("Folder")
+			folder.Name = folderName
+			folder.Parent = parent
+			parent = folder
 		end
 
-		local fileName = parts[#parts]
-		if fileName == "" then
+		const instanceName = getInstanceName(parts[#parts])
+		if instanceName ~= "init" then
+			const container = createScript(className)
+			container.Name = instanceName
+			container.Parent = parent
+
+			table.insert(pending, { script = container, path = entry.path, content = entry.content })
+			moduleCount += 1
 			continue
 		end
 
-		local instanceName = getInstanceName(fileName)
-
-		if instanceName == "init" then
-			if parent:IsA("Folder") then
-				local moduleScript: any = Instance.new(className :: any)
-				moduleScript.Name = parent.Name
-				table.insert(pending, { script = moduleScript, path = entry.path, content = entry.content })
-
-				if parent == root then
-					for _, child in parent:GetChildren() do
-						child.Parent = moduleScript
-					end
-					parent:Destroy()
-					root = moduleScript
-				else
-					moduleScript.Parent = parent.Parent
-					for _, child in parent:GetChildren() do
-						child.Parent = moduleScript
-					end
-					parent:Destroy()
-				end
-				initPromotions += 1
-				moduleCount += 1
-			end
-		else
-			local inst: any = Instance.new(className :: any)
-			inst.Name = instanceName
-			inst.Parent = parent
-			table.insert(pending, { script = inst, path = entry.path, content = entry.content })
-			moduleCount += 1
+		-- A folder an earlier init file already promoted has nothing left to promote.
+		if not parent:IsA("Folder") then
+			continue
 		end
+
+		const container = createScript(className)
+		container.Name = parent.Name
+		table.insert(pending, { script = container, path = entry.path, content = entry.content })
+
+		for _, child in parent:GetChildren() do
+			child.Parent = container
+		end
+
+		if parent == root then
+			root = container
+		else
+			container.Parent = parent.Parent
+		end
+		parent:Destroy()
+
+		initPromotions += 1
+		moduleCount += 1
 	end
 
 	logger.debug(
 		`built "{packageName}" tree: {moduleCount} module(s), {initPromotions} init promotion(s), {skipped} skipped`
 	)
+
 	return root, pending
 end
 

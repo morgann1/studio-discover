@@ -1,20 +1,21 @@
 --!strict
 
 export type RateLimiter = {
-	acquireAsync: () -> (),
+	read acquireAsync: () -> (),
 }
 
-local function createRateLimiter(minIntervalSeconds: number): RateLimiter
+-- Returns a limiter whose `acquireAsync` yields until `minIntervalSeconds` have passed since the last caller's turn.
+const function createRateLimiter(minIntervalSeconds: number): RateLimiter
 	local nextAvailableAt = 0
 
-	local function acquireAsync()
-		local now = os.clock()
-		local reserved = math.max(now, nextAvailableAt)
+	const function acquireAsync()
+		const now = os.clock()
+		const reserved = math.max(now, nextAvailableAt)
 		nextAvailableAt = reserved + minIntervalSeconds
 
-		local wait = reserved - now
-		if wait > 0 then
-			task.wait(wait)
+		const waitSeconds = reserved - now
+		if waitSeconds > 0 then
+			task.wait(waitSeconds)
 		end
 	end
 

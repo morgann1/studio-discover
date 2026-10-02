@@ -4,7 +4,7 @@
 	The vocabulary both registries and the plugin share.
 
 	Anything only one registry understands belongs in that registry's own types
-	module, and anything that is only UI state belongs in the plugin.
+		module, and anything that is only UI state belongs in the plugin.
 ]]
 
 export type Realm = "shared" | "server"
@@ -15,81 +15,69 @@ export type ProgressCallback = (message: string) -> ()
 
 -- One package the user asked for directly, as opposed to one pulled in as a dependency.
 export type RootRequest = {
-	scope: string,
-	name: string,
-	version: string,
-	requestRealm: Realm,
-	alias: string,
+	read scope: string,
+	read name: string,
+	read version: string,
+	read requestRealm: Realm,
+	read alias: string,
 }
 
--- A root as it currently exists in the place, read back out of the lockfile.
+-- A root as it currently exists in the place, read back out of its link module.
 export type InstalledRoot = {
-	scope: string,
-	name: string,
-	version: string,
-	realm: Realm,
-	alias: string,
-	registry: Registry,
+	read scope: string,
+	read name: string,
+	read version: string,
+	read realm: Realm,
+	read alias: string,
+	read registry: Registry,
 }
 
-export type LockDependency = {
-	alias: string,
-	packageId: string,
-}
-
-export type LockEntry = {
-	name: string,
-	version: string,
-	realm: Realm,
-	dependencies: { LockDependency },
+--[[
+	One edge in a resolved graph: the name a package requires its dependency by,
+		and the id of the package that name points at.
+]]
+export type Dependency = {
+	read alias: string,
+	read packageId: string,
 }
 
 -- A search hit, before the full metadata for a package has been fetched.
 export type PackageBrief = {
-	registries: { Registry },
-	scope: string,
-	name: string,
-	description: string?,
-	latestVersion: string?,
+	read registries: { Registry },
+	read scope: string,
+	read name: string,
+	read description: string?,
+	read latestVersion: string?,
 }
+
+-- Alias to "scope/name@constraint", as a manifest writes it.
+export type DependencyMap = { [string]: string }
 
 --[[
 	The metadata the package screen renders.
 
 	This is a view model, not either registry's wire format. Wally's API happens to
-	return it almost verbatim; pesde's normalizes into it. Both registries produce
-	it so that the screen has one shape to render, and neither has to know the
-	other exists.
+		return it almost verbatim; pesde's normalizes into it. Both registries produce
+		it so that the screen has one shape to render, and neither has to know the
+		other exists.
 ]]
-
--- Alias to "scope/name@constraint", as a manifest writes it.
-export type DependencyMap = { [string]: string }
-
 export type PackageInfo = {
-	authors: { string },
-	description: string?,
-	license: string?,
-	name: string,
-	realm: string,
-	registry: string,
-	version: string,
-	homepage: string?,
-	repository: string?,
+	read authors: { string },
+	read description: string?,
+	read license: string?,
+	read realm: string,
+	read version: string,
 }
 
 export type PackageVersion = {
-	package: PackageInfo,
-	place: {
-		["shared-packages"]: string?,
-		["server-packages"]: string?,
-	},
-	dependencies: DependencyMap,
-	["server-dependencies"]: DependencyMap,
-	["dev-dependencies"]: DependencyMap,
+	read package: PackageInfo,
+	read dependencies: DependencyMap,
+	read ["server-dependencies"]: DependencyMap,
+	read ["dev-dependencies"]: DependencyMap,
 }
 
 export type PackageMetadata = {
-	versions: { PackageVersion },
+	read versions: { PackageVersion },
 }
 
 return nil

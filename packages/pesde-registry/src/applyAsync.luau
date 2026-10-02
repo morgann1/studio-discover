@@ -1,316 +1,252 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local createLogger = require(StudioDiscover.Core.createLogger)
+const buildPackageLink = require(StudioDiscover.PesdeRegistry.buildPackageLink)
+const containerName = require(StudioDiscover.PesdeRegistry.containerName)
+const coreTypes = require(StudioDiscover.Core.types)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const downloadAndExtractAsync = require(StudioDiscover.PesdeRegistry.downloadAndExtractAsync)
+const forwardTypes = require(StudioDiscover.PackageTypes.forwardTypes)
+const getOrCreateFolder = require(StudioDiscover.Core.getOrCreateFolder)
+const libPathSegments = require(StudioDiscover.PesdeRegistry.libPathSegments)
+const packagesFolder = require(StudioDiscover.PesdeRegistry.packagesFolder)
+const parseRootLink = require(StudioDiscover.PesdeRegistry.parseRootLink)
+const realms = require(StudioDiscover.Core.realms)
+const setScriptSourceAsync = require(StudioDiscover.Core.setScriptSourceAsync)
+const targetFromRealm = require(StudioDiscover.PesdeRegistry.targetFromRealm)
+const types = require(StudioDiscover.PesdeRegistry.types)
+const writePendingSourcesAsync = require(StudioDiscover.Core.writePendingSourcesAsync)
 
-local buildPackageLink = require(StudioDiscover.PesdeRegistry.buildPackageLink)
-local containerName = require(StudioDiscover.PesdeRegistry.containerName)
-local downloadAndExtractAsync = require(StudioDiscover.PesdeRegistry.downloadAndExtractAsync)
-local extractExports = require(StudioDiscover.PesdeRegistry.extractExports)
-local foldersModule = require(StudioDiscover.PesdeRegistry.getPackagesFolder)
-local setScriptSource = require(StudioDiscover.Core.setScriptSource)
-local types = require(StudioDiscover.PesdeRegistry.types)
+const logger = createLogger.createLogger("pesde.installer.apply")
 
-local logger = createLogger.createLogger("pesde.installer.apply")
-
-local getPackagesFolder = foldersModule.getPackagesFolder
-local getOrCreateContainer = foldersModule.getOrCreateContainer
-
-type Realm = types.Realm
-type Kind = types.Kind
 type PesdeResolvedPackage = types.PesdeResolvedPackage
-type ProgressCallback = types.ProgressCallback
 
-type ExistingEntry = {
-	outer: Folder,
-	realm: Realm,
+type InstalledPackage = {
+	read container: Folder,
+	read realm: coreTypes.Realm,
 }
 
-local function getOrCreateFolder(parent: Instance, name: string): Folder
-	local existing = parent:FindFirstChild(name)
-	if existing ~= nil and existing:IsA("Folder") then
-		return existing
-	end
-	local folder = Instance.new("Folder")
-	folder.Name = name
-	folder.Parent = parent
-	return folder
-end
+-- The package containers already in each realm's `.pesde` index, keyed by the package id they were installed as.
+const function findInstalledPackages(): { [string]: InstalledPackage? }
+	const installed: { [string]: InstalledPackage? } = {}
 
-local function destroyAllModuleScripts(parent: Instance)
-	for _, child in parent:GetChildren() do
-		if child:IsA("ModuleScript") then
-			child:Destroy()
-		end
-	end
-end
-
-local function parentPackageRoot(container: Folder, pkg: PesdeResolvedPackage, tree: Instance): (Folder, Instance)
-	if pkg.kind == "wally" then
-		local outerName = containerName.formatWallyName(pkg.scope, pkg.name, pkg.version)
-		local outer = getOrCreateFolder(container, outerName)
-		for _, child in outer:GetChildren() do
-			child:Destroy()
-		end
-		tree.Parent = outer
-		return outer, tree
-	end
-
-	local outerName = containerName.formatPesdeName(pkg.scope, pkg.name)
-	local outer = getOrCreateFolder(container, outerName)
-	local version = getOrCreateFolder(outer, pkg.version)
-	for _, child in version:GetChildren() do
-		child:Destroy()
-	end
-	tree.Parent = version
-	return outer, tree
-end
-
-local function snapshotExisting(): { [string]: ExistingEntry }
-	local existing: { [string]: ExistingEntry } = {}
-	for _, realm: Realm in { "shared", "server" } :: { Realm } do
-		local packagesFolder = getPackagesFolder(realm)
-		local container = packagesFolder:FindFirstChild(foldersModule.PACKAGES_CONTAINER_NAME)
-		if container == nil then
+	for _, realm in realms do
+		const index = packagesFolder.findIndex(realm)
+		if index == nil then
 			continue
 		end
-		for _, outer in container:GetChildren() do
-			if not outer:IsA("Folder") then
-				continue
+
+		for _, container in index:GetChildren() do
+			const id = container:GetAttribute("PackageId")
+			if container:IsA("Folder") and typeof(id) == "string" then
+				installed[id] = { container = container, realm = realm }
 			end
-			local packageId = outer:GetAttribute("PackageId")
-			if typeof(packageId) ~= "string" then
-				continue
-			end
-			existing[packageId] = {
-				outer = outer,
-				realm = realm,
-			}
 		end
 	end
-	return existing
+
+	return installed
 end
 
-local function applyAsync(
-	resolved: { [string]: PesdeResolvedPackage },
-	rootAliases: { [string]: string },
-	onProgress: ProgressCallback?
-): { string }
-	local failures: { string } = {}
+-- Puts a freshly built tree where the index expects it, replacing what was there, and returns its container.
+const function placePackage(pkg: PesdeResolvedPackage, tree: Instance): Folder
+	const index = packagesFolder.getIndex(pkg.realm)
+	const container = getOrCreateFolder(index, containerName(pkg.scope, pkg.name))
+	const parent = getOrCreateFolder(container, pkg.version)
 
-	for _, realm: Realm in { "shared", "server" } :: { Realm } do
-		local packagesFolder = getPackagesFolder(realm)
-		destroyAllModuleScripts(packagesFolder)
+	for _, child in parent:GetChildren() do
+		child:Destroy()
+	end
+	tree.Parent = parent
+
+	return container
+end
+
+const function findContainer(pkg: PesdeResolvedPackage): Instance?
+	const index = packagesFolder.findIndex(pkg.realm)
+	if index == nil then
+		return nil
 	end
 
-	local existing = snapshotExisting()
+	return index:FindFirstChild(containerName(pkg.scope, pkg.name))
+end
 
-	for packageId, entry in existing do
-		local pkg = resolved[packageId]
-		if pkg == nil or pkg.realm ~= entry.realm then
-			logger.debug(`drop {packageId} (realm={entry.realm})`)
-			entry.outer:Destroy()
-			existing[packageId] = nil
+-- The package's own root inside its container, under its version folder.
+const function findPackageRoot(container: Instance, pkg: PesdeResolvedPackage): Instance?
+	const parent = container:FindFirstChild(pkg.version)
+	if parent == nil then
+		return nil
+	end
+
+	return parent:FindFirstChild(pkg.name)
+end
+
+const function findLibModule(root: Instance, libPath: string?): ModuleScript?
+	local current: Instance? = root
+	for _, segment in libPathSegments(libPath) do
+		if current == nil then
+			return nil
+		end
+
+		current = current:FindFirstChild(segment)
+	end
+
+	if current ~= nil and current:IsA("ModuleScript") then
+		return current
+	end
+
+	return nil
+end
+
+const function writeLinkAsync(build: buildPackageLink.LinkBuild, parent: Instance, label: string)
+	-- The link takes its alias, so anything already holding that name goes.
+	const existing = parent:FindFirstChild(build.link.Name)
+	if existing ~= nil then
+		existing:Destroy()
+	end
+
+	build.link.Parent = parent
+
+	const ok, err = setScriptSourceAsync(build.link, build.source)
+	if not ok then
+		logger.warn(`link source write failed for {label}: {err}`)
+		build.link:Destroy()
+	end
+end
+
+--[[
+	Writes a resolved graph into the place: every package in its realm's `.pesde`
+		index, each package's `roblox_packages` links, and an alias in the realm's
+		packages folder for each root.
+
+	Packages already installed under the same id and realm are kept and only
+		relinked. Anything else in the index is removed. Sets `libPath` on `resolved`:
+		from the archive's manifest when it names one, otherwise from what a kept
+		package was installed with. Returns the non-fatal failures, each prefixed with
+		the package it came from. Run it inside a ChangeHistory recording.
+]]
+const function applyAsync(
+	resolved: { [string]: PesdeResolvedPackage },
+	rootAliases: { [string]: string },
+	onProgress: coreTypes.ProgressCallback?
+): { string }
+	const failures: { string } = {}
+
+	-- Root links are rewritten from `rootAliases` at the end. Any other module in the folder is left alone.
+	for _, realm in realms do
+		const folder = packagesFolder.find(realm)
+		if folder == nil then
+			continue
+		end
+
+		for _, child in folder:GetChildren() do
+			if child:IsA("ModuleScript") and parseRootLink(child.Source) ~= nil then
+				child:Destroy()
+			end
 		end
 	end
 
-	for packageId, pkg in resolved do
-		local packagesFolder = getPackagesFolder(pkg.realm)
-		local container = getOrCreateContainer(packagesFolder)
+	const installed = findInstalledPackages()
+	for id, existing in installed do
+		const pkg = resolved[id]
+		if pkg == nil or pkg.realm ~= existing.realm then
+			logger.debug(`drop {id} (realm={existing.realm})`)
+			existing.container:Destroy()
+			installed[id] = nil
+			continue
+		end
 
-		if existing[packageId] ~= nil then
-			local outer = existing[packageId].outer
-			for _, child in outer:GetDescendants() do
-				if child:IsA("ModuleScript") and child:GetAttribute("PesdeLink") == true then
-					child:Destroy()
-				end
+		for _, descendant in existing.container:GetDescendants() do
+			if descendant:IsA("ModuleScript") and descendant:GetAttribute("PesdeLink") == true then
+				descendant:Destroy()
 			end
-			logger.debug(`reuse {packageId}`)
+		end
+		logger.debug(`reuse {id}`)
+	end
+
+	for id, pkg in resolved do
+		if installed[id] ~= nil then
 			continue
 		end
 
 		if onProgress ~= nil then
 			onProgress(`Downloading {pkg.scope}/{pkg.name}@{pkg.version}...`)
 		end
-		logger.info(`downloading {packageId}`)
+		logger.info(`downloading {id}`)
 
-		local target: "roblox" | "roblox_server" = if pkg.realm == "server" then "roblox_server" else "roblox"
-		local tree, pending, extractedLibPath, err = downloadAndExtractAsync(pkg.scope, pkg.name, pkg.version, target)
-		if tree == nil then
-			logger.warn(`download failed for {packageId}: {err}`)
-			table.insert(failures, `{packageId}: {err}`)
+		const extracted = downloadAndExtractAsync(pkg.scope, pkg.name, pkg.version, targetFromRealm(pkg.realm))
+		if not extracted.ok then
+			logger.warn(`download failed for {id}: {extracted.error}`)
+			table.insert(failures, `{id}: {extracted.error}`)
 			continue
 		end
 
-		if extractedLibPath ~= nil then
-			pkg.libPath = extractedLibPath
+		if extracted.libPath ~= nil then
+			pkg.libPath = extracted.libPath
 		end
 
-		local outer = parentPackageRoot(container, pkg, tree)
-		outer:SetAttribute("PackageId", packageId)
-		outer:SetAttribute("Kind", pkg.kind)
+		const container = placePackage(pkg, extracted.tree)
+		container:SetAttribute("PackageId", id)
 		if pkg.libPath ~= nil then
-			outer:SetAttribute("LibPath", pkg.libPath)
+			container:SetAttribute("LibPath", pkg.libPath)
 		end
 
-		local sourceFailure: string? = nil
-		for _, item in pending :: { any } do
-			local ok, sourceErr = setScriptSource(item.script, item.content)
-			if not ok then
-				sourceFailure = `{item.path}: {sourceErr}`
-				break
-			end
-		end
+		const sourceFailure = writePendingSourcesAsync(extracted.pending)
 		if sourceFailure ~= nil then
-			logger.warn(`source write failed for {packageId}: {sourceFailure}`)
-			table.insert(failures, `{packageId}: {sourceFailure}`)
-			outer:Destroy()
+			logger.warn(`source write failed for {id}: {sourceFailure}`)
+			table.insert(failures, `{id}: {sourceFailure}`)
+			container:Destroy()
 		end
 	end
 
-	for _, pkg in resolved do
-		if pkg.libPath ~= nil then
+	const packageRoots: { [string]: Instance } = {}
+	const typeExports: { [string]: { string }? } = {}
+	for id, pkg in resolved do
+		const container = findContainer(pkg)
+		const root = if container ~= nil then findPackageRoot(container, pkg) else nil
+		if container == nil or root == nil then
 			continue
 		end
-		local packagesFolder = getPackagesFolder(pkg.realm)
-		local container = packagesFolder:FindFirstChild(foldersModule.PACKAGES_CONTAINER_NAME)
-		if container == nil then
-			continue
+
+		-- A kept package still knows the lib path it was installed with.
+		const storedLibPath = container:GetAttribute("LibPath")
+		if pkg.libPath == nil and typeof(storedLibPath) == "string" then
+			pkg.libPath = storedLibPath
 		end
-		local outerName = if pkg.kind == "wally"
-			then containerName.formatWallyName(pkg.scope, pkg.name, pkg.version)
-			else containerName.formatPesdeName(pkg.scope, pkg.name)
-		local outer = container:FindFirstChild(outerName)
-		if outer == nil then
-			continue
-		end
-		local stored = outer:GetAttribute("LibPath")
-		if typeof(stored) == "string" then
-			pkg.libPath = stored
+
+		packageRoots[id] = root
+
+		const libModule = findLibModule(root, pkg.libPath)
+		if libModule ~= nil then
+			typeExports[id] = forwardTypes(libModule.Source, "module")
 		end
 	end
 
-	local typeExportsByPackageId: { [string]: { string } } = {}
-	for packageId, pkg in resolved do
-		local packagesFolder = getPackagesFolder(pkg.realm)
-		local container = packagesFolder:FindFirstChild(foldersModule.PACKAGES_CONTAINER_NAME)
-		if container == nil then
-			continue
-		end
-		local outerName = if pkg.kind == "wally"
-			then containerName.formatWallyName(pkg.scope, pkg.name, pkg.version)
-			else containerName.formatPesdeName(pkg.scope, pkg.name)
-		local outer = container:FindFirstChild(outerName)
-		if outer == nil then
-			continue
-		end
-		local innerParent: Instance
-		if pkg.kind == "wally" then
-			innerParent = outer
-		else
-			local versionFolder = outer:FindFirstChild(pkg.version)
-			if versionFolder == nil then
+	for id, root in packageRoots do
+		const pkg = resolved[id]
+		const linkParent = getOrCreateFolder(root, "roblox_packages")
+
+		for _, dependency in pkg.dependencies do
+			const target = resolved[dependency.packageId]
+			if target == nil then
 				continue
 			end
-			innerParent = versionFolder
-		end
-		local current = innerParent:FindFirstChild(pkg.name) :: any
-		if current == nil then
-			continue
-		end
-		for _, segment in buildPackageLink.libPathSegments(pkg.libPath) do
-			current = current:FindFirstChild(segment) :: any
-			if current == nil then
-				break
-			end
-		end
-		if current ~= nil and current:IsA("ModuleScript") then
-			typeExportsByPackageId[packageId] = extractExports(current.Source)
-		end
-	end
 
-	for packageId, pkg in resolved do
-		if resolved[packageId] == nil then
-			continue
-		end
-		local packagesFolder = getPackagesFolder(pkg.realm)
-		local container = packagesFolder:FindFirstChild(foldersModule.PACKAGES_CONTAINER_NAME) :: Folder?
-		if container == nil then
-			continue
-		end
-
-		local outerName = if pkg.kind == "wally"
-			then containerName.formatWallyName(pkg.scope, pkg.name, pkg.version)
-			else containerName.formatPesdeName(pkg.scope, pkg.name)
-		local outer = container:FindFirstChild(outerName) :: Folder?
-		if outer == nil then
-			continue
-		end
-
-		local innerParent: Instance
-		if pkg.kind == "wally" then
-			innerParent = outer
-		else
-			local versionFolder = outer:FindFirstChild(pkg.version)
-			if versionFolder == nil then
-				continue
-			end
-			innerParent = versionFolder
-		end
-
-		local root = innerParent:FindFirstChild(pkg.name)
-		if root == nil then
-			continue
-		end
-
-		local linkerParent = getOrCreateFolder(root, "roblox_packages")
-		for _, dep in pkg.dependencies do
-			local depPkg = resolved[dep.packageId]
-			if depPkg == nil then
-				continue
-			end
-			local build = buildPackageLink.buildTransitiveLink(
-				pkg.kind,
-				dep.alias,
-				depPkg.scope,
-				depPkg.name,
-				depPkg.version,
-				depPkg.libPath,
-				depPkg.kind,
-				typeExportsByPackageId[dep.packageId]
-			)
+			const build =
+				buildPackageLink.buildTransitiveLink(dependency.alias, target, typeExports[dependency.packageId])
 			build.link:SetAttribute("PesdeLink", true)
-			build.link.Parent = linkerParent
-			local ok, linkErr = setScriptSource(build.link, build.source)
-			if not ok then
-				logger.warn(`link source write failed for {packageId} -> {dep.packageId}: {linkErr}`)
-				build.link:Destroy()
-			end
+			writeLinkAsync(build, linkParent, `{id} -> {dependency.packageId}`)
 		end
 	end
 
-	for packageId, alias in rootAliases do
-		local pkg = resolved[packageId]
+	for id, alias in rootAliases do
+		const pkg = resolved[id]
 		if pkg == nil then
 			continue
 		end
-		local packagesFolder = getPackagesFolder(pkg.realm)
-		local build = buildPackageLink.buildTopLevelLink(
-			alias,
-			pkg.scope,
-			pkg.name,
-			pkg.version,
-			pkg.libPath,
-			pkg.kind,
-			typeExportsByPackageId[packageId]
-		)
-		build.link.Parent = packagesFolder
-		local ok, linkErr = setScriptSource(build.link, build.source)
-		if not ok then
-			logger.warn(`root link source write failed for {packageId}: {linkErr}`)
-			build.link:Destroy()
-		end
+
+		const build = buildPackageLink.buildTopLevelLink(alias, pkg, typeExports[id])
+		writeLinkAsync(build, packagesFolder.get(pkg.realm), `root {id}`)
 	end
 
 	return failures

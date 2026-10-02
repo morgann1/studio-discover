@@ -11,6 +11,7 @@ const resolveAsync = require(StudioDiscover.WallyRegistry.resolveAsync)
 const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
 const types = require(StudioDiscover.Source.Installer.types)
+const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 const updateAllPesdeAsync = require(StudioDiscover.Source.Installer.updateAllPesdeAsync)
 
 const logger = createLogger.createLogger("wally.installer.updateAll")
@@ -60,14 +61,23 @@ const function updateWallyAsync(updates: { types.UpdateInfo }): types.OperationR
 	end
 
 	const lockData = lockfile.load()
-	const resolved, rootAliases, resolutionFailures = resolveAsync(nextRoots, lockData, nil)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = resolveAsync(nextRoots, lockData, nil)
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
+	const unresolvedError = unresolvedRootsError(unresolvedRoots, resolutionFailures)
+	if unresolvedError ~= nil then
+		return {
+			ok = false,
+			error = unresolvedError,
+			failures = resolutionFailures,
+		}
+	end
+
 	return applyRootsAsync(`Update {appliedCount} package(s)`, function()
 		const failures = applyAsync(resolved, rootAliases, nil)
-		lockfile.save(resolved)
+		lockfile.saveAsync(resolved)
 
 		return failures
 	end)

@@ -1,113 +1,72 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+--[[
+	The link modules that make `PesdePackages/Alias`, and each package's
+		`roblox_packages/Alias`, resolve into the `.pesde` index through string
+		requires.
+]]
 
-local containerName = require(StudioDiscover.PesdeRegistry.containerName)
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-type Kind = "pesde" | "wally"
+const containerName = require(StudioDiscover.PesdeRegistry.containerName)
+const libPathSegments = require(StudioDiscover.PesdeRegistry.libPathSegments)
+const types = require(StudioDiscover.PesdeRegistry.types)
 
-local function stripLeafExtension(leaf: string): string
-	local stripped = leaf:gsub("%.luau?$", "")
-	return stripped
-end
-
-local function libPathSegments(libPath: string?): { string }
-	if libPath == nil or libPath == "" then
-		return {}
-	end
-	local parts = string.split(libPath, "/")
-	local leaf = parts[#parts]
-	if leaf == "init.luau" or leaf == "init.lua" then
-		parts[#parts] = nil :: any
-	else
-		parts[#parts] = stripLeafExtension(leaf)
-	end
-	local result: { string } = {}
-	for _, part in parts do
-		if part == "" or part == "." then
-			continue
-		end
-		table.insert(result, part)
-	end
-	return result
-end
-
-local function depPathSegments(scope: string, name: string, version: string, libPath: string?, kind: Kind): { string }
-	local segments: { string } = {}
-	if kind == "wally" then
-		table.insert(segments, containerName.formatWallyName(scope, name, version))
-	else
-		table.insert(segments, containerName.formatPesdeName(scope, name))
-		table.insert(segments, version)
-	end
-	table.insert(segments, name)
-	for _, seg in libPathSegments(libPath) do
-		table.insert(segments, seg)
-	end
-	return segments
-end
-
-local function transitiveUpLevels(dependantKind: Kind): number
-	if dependantKind == "wally" then
-		return 3
-	end
-	return 4
-end
-
-local function formatSource(path: string, typeExports: { string }?): string
-	local body = `local module = require("{path}")\n`
-	if typeExports ~= nil then
-		for _, line in typeExports do
-			body ..= line .. "\n"
-		end
-	end
-	body ..= "return module"
-	return body
-end
-
+-- An unparented link and the source the caller writes through `setScriptSourceAsync`.
 export type LinkBuild = {
-	link: ModuleScript,
-	source: string,
+	read link: ModuleScript,
+	read source: string,
 }
 
-local function buildTopLevelLink(
-	alias: string,
-	scope: string,
-	name: string,
-	version: string,
-	libPath: string?,
-	kind: Kind,
-	typeExports: { string }?
-): LinkBuild
-	local segments = depPathSegments(scope, name, version, libPath, kind)
-	local path = `./.pesde/{table.concat(segments, "/")}`
-	local link = Instance.new("ModuleScript")
-	link.Name = alias
-	return { link = link, source = formatSource(path, typeExports) }
+-- The path inside `.pesde` to a package's library module: its container, its version folder, then its root.
+const function packagePath(dependency: types.PesdeResolvedPackage): string
+	const segments = { containerName(dependency.scope, dependency.name), dependency.version, dependency.name }
+	for _, segment in libPathSegments(dependency.libPath) do
+		table.insert(segments, segment)
+	end
+
+	return table.concat(segments, "/")
 end
 
-local function buildTransitiveLink(
-	dependantKind: Kind,
-	alias: string,
-	scope: string,
-	name: string,
-	version: string,
-	libPath: string?,
-	kind: Kind,
-	typeExports: { string }?
-): LinkBuild
-	local up = transitiveUpLevels(dependantKind)
-	local prefix = "./" .. string.rep("../", up)
-	local segments = depPathSegments(scope, name, version, libPath, kind)
-	local path = `{prefix}{table.concat(segments, "/")}`
-	local link = Instance.new("ModuleScript")
+const function makeLink(alias: string, path: string, typeExports: { string }?): LinkBuild
+	const lines = { `local module = require("{path}")` }
+	for _, line in typeExports or {} do
+		table.insert(lines, line)
+	end
+	table.insert(lines, "return module")
+
+	const link = Instance.new("ModuleScript")
 	link.Name = alias
-	return { link = link, source = formatSource(path, typeExports) }
+
+	return { link = link, source = table.concat(lines, "\n") }
 end
 
-return table.freeze({
+-- The alias a root gets in its realm's `PesdePackages` folder, which sits beside `.pesde`.
+const function buildTopLevelLink(
+	alias: string,
+	dependency: types.PesdeResolvedPackage,
+	typeExports: { string }?
+): LinkBuild
+	return makeLink(alias, `./.pesde/{packagePath(dependency)}`, typeExports)
+end
+
+--[[
+	The alias a package uses for one of its dependencies, from the `roblox_packages`
+		folder in its root. That folder sits four levels below `.pesde`: container,
+		version, root, then `roblox_packages` itself. Both packages are in the same
+		realm, since resolve rejects a dependency on the other target.
+]]
+const function buildTransitiveLink(
+	alias: string,
+	dependency: types.PesdeResolvedPackage,
+	typeExports: { string }?
+): LinkBuild
+	return makeLink(alias, `./{string.rep("../", 4)}{packagePath(dependency)}`, typeExports)
+end
+
+const buildPackageLink = table.freeze({
 	buildTopLevelLink = buildTopLevelLink,
 	buildTransitiveLink = buildTransitiveLink,
-	libPathSegments = libPathSegments,
-	depPathSegments = depPathSegments,
 })
+
+return buildPackageLink

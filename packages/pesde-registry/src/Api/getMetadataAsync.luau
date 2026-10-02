@@ -1,190 +1,100 @@
 --!strict
 
-local HttpService = game:GetService("HttpService")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const exhaustiveMatch = require(StudioDiscover.Core.exhaustiveMatch)
+const fetchMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.fetchMetadataAsync)
+const isNewerVersion = require(StudioDiscover.Semver.isNewerVersion)
+const realmFromTarget = require(StudioDiscover.PesdeRegistry.realmFromTarget)
+const types = require(StudioDiscover.Core.types)
 
-local buildUserAgent = require(StudioDiscover.Core.buildUserAgent)
-local cache = require(StudioDiscover.Core.cache)
-local createLogger = require(StudioDiscover.Core.createLogger)
-local rateLimiter = require(StudioDiscover.PesdeRegistry.Api.rateLimiter)
-local types = require(StudioDiscover.Core.types)
+type VersionEntry = fetchMetadataAsync.VersionEntry
 
-local logger = createLogger.createLogger("pesde.api.metadata")
-
-local API_BASE = "https://registry.pesde.daimond113.com/v1"
-
-type Realm = "shared" | "server"
-
-local function selectRobloxTarget(targets: any): (string?, any)
-	if typeof(targets) ~= "table" then
-		return nil, nil
+-- Each version's roblox target if it has one, otherwise its roblox_server target.
+const function pickTargets(entries: { VersionEntry }): { [string]: VersionEntry? }
+	const picked: { [string]: VersionEntry? } = {}
+	for _, entry in entries do
+		const current = picked[entry.version]
+		if current == nil or (current.target == "roblox_server" and entry.target == "roblox") then
+			picked[entry.version] = entry
+		end
 	end
-	local robloxTarget = targets.roblox
-	if robloxTarget ~= nil then
-		return "roblox", robloxTarget
-	end
-	local serverTarget = targets.roblox_server
-	if serverTarget ~= nil then
-		return "roblox_server", serverTarget
-	end
-	return nil, nil
+
+	return picked
 end
 
-local function formatDepValue(info: any): string?
-	if typeof(info) ~= "table" then
-		return nil
-	end
-	local version = info.version
-	if typeof(version) ~= "string" then
-		return nil
-	end
-	local path: string? = if typeof(info.name) == "string"
-		then info.name
-		elseif typeof(info.wally) == "string" then info.wally
-		else nil
-	if path == nil then
-		return nil
-	end
-	return `{path}@{version}`
-end
+const function toPackageVersion(entry: VersionEntry): types.PackageVersion
+	const realm = realmFromTarget(entry.target)
 
-local function extractDeps(rawDeps: any): (types.DependencyMap, types.DependencyMap, types.DependencyMap)
-	local standard: types.DependencyMap = {}
-	local peer: types.DependencyMap = {}
-	local dev: types.DependencyMap = {}
-	if typeof(rawDeps) ~= "table" then
-		return standard, peer, dev
-	end
-	for alias, entry in rawDeps do
-		if typeof(entry) ~= "table" then
-			continue
-		end
-		local info = entry[1]
-		local kind = entry[2]
-		local formatted = formatDepValue(info)
-		if formatted == nil then
-			continue
-		end
-		if kind == "dev" then
-			dev[alias] = formatted
-		elseif kind == "peer" then
-			peer[alias] = formatted
+	-- The package screen lists peer dependencies alongside the standard ones.
+	const standard: types.DependencyMap = {}
+	const peer: types.DependencyMap = {}
+	const dev: types.DependencyMap = {}
+	for _, dependency in entry.dependencies do
+		const value = `{dependency.name}@{dependency.versionReq}`
+		const ty = dependency.ty
+		if ty == "dev" then
+			dev[dependency.alias] = value
+		elseif ty == "peer" then
+			peer[dependency.alias] = value
+		elseif ty == "standard" then
+			standard[dependency.alias] = value
 		else
-			standard[alias] = formatted
+			exhaustiveMatch(ty)
 		end
 	end
-	return standard, peer, dev
+
+	for alias, value in peer do
+		if standard[alias] == nil then
+			standard[alias] = value
+		end
+	end
+
+	return {
+		package = {
+			authors = entry.authors,
+			description = entry.description,
+			license = entry.license,
+			realm = realm,
+			version = entry.version,
+		},
+		dependencies = if realm == "shared" then standard else {},
+		["server-dependencies"] = if realm == "server" then standard else {},
+		["dev-dependencies"] = dev,
+	}
 end
 
-local function toWallyShape(rawName: string, rawVersions: any): types.PackageMetadata?
-	local _, name = rawName:match("^(.+)/(.+)$")
-	if name == nil then
-		return nil
+--[[
+	Fetches every version of a package published for a Roblox target, newest first,
+		in the shape the package screen renders, or returns nil and why not.
+]]
+const function getMetadataAsync(scope: string, name: string): (types.PackageMetadata?, string?)
+	const metadata, err = fetchMetadataAsync(scope, name)
+	if metadata == nil then
+		return nil, err
 	end
 
-	local versionKeys: { string } = {}
-	for versionKey in rawVersions do
-		table.insert(versionKeys, versionKey)
+	const picked = pickTargets(metadata.versions)
+
+	const versionKeys: { string } = {}
+	for version in picked do
+		table.insert(versionKeys, version)
 	end
+	table.sort(versionKeys, isNewerVersion)
 
-	table.sort(versionKeys, function(a, b)
-		return a > b
-	end)
-
-	local versions: { types.PackageVersion } = {}
-	for _, versionKey in versionKeys do
-		local versionData = rawVersions[versionKey]
-		local targetKind, target = selectRobloxTarget(versionData.targets)
-		if target == nil then
-			continue
+	const versions: { types.PackageVersion } = {}
+	for _, version in versionKeys do
+		const entry = picked[version]
+		if entry ~= nil then
+			table.insert(versions, toPackageVersion(entry))
 		end
-
-		local realm: Realm = if targetKind == "roblox_server" then "server" else "shared"
-		local standard, peer, dev = extractDeps(target.dependencies)
-		for alias, value in peer do
-			if standard[alias] == nil then
-				standard[alias] = value
-			end
-		end
-
-		local sharedDeps: types.DependencyMap = if realm == "shared" then standard else {}
-		local serverDeps: types.DependencyMap = if realm == "server" then standard else {}
-
-		table.insert(versions, {
-			package = {
-				authors = target.authors or {},
-				description = versionData.description,
-				license = target.license,
-				name = name,
-				realm = realm,
-				registry = "pesde",
-				version = versionKey,
-				homepage = nil,
-				repository = target.repository,
-			},
-			place = {
-				["shared-packages"] = nil,
-				["server-packages"] = nil,
-			},
-			dependencies = sharedDeps,
-			["server-dependencies"] = serverDeps,
-			["dev-dependencies"] = dev,
-		})
 	end
 
 	if #versions == 0 then
-		return nil
-	end
-
-	return { versions = versions }
-end
-
-local function getPesdeMetadataAsync(scope: string, name: string): (types.PackageMetadata?, string?)
-	local slug = HttpService:UrlEncode(`{scope}/{name}`)
-	local path = `/packages/{slug}`
-	local cacheKey = `pesde:{path}`
-
-	local cached = cache.get(cacheKey)
-	if cached ~= nil then
-		return cached, nil
-	end
-
-	rateLimiter.acquireAsync()
-	local ok, response = pcall(function()
-		return HttpService:RequestAsync({
-			Url = `{API_BASE}{path}`,
-			Method = "GET",
-			Headers = {
-				["X-Real-User-Agent"] = buildUserAgent(),
-			},
-		})
-	end)
-	if not ok then
-		logger.warn(`request failed: {response}`)
-		return nil, tostring(response)
-	end
-	if response.StatusCode < 200 or response.StatusCode >= 300 then
-		logger.warn(`HTTP {response.StatusCode}`)
-		return nil, `HTTP {response.StatusCode}`
-	end
-
-	local decodeOk, decoded = pcall(function()
-		return HttpService:JSONDecode(response.Body)
-	end)
-	if not decodeOk then
-		return nil, `JSON decode failed: {decoded}`
-	end
-
-	local raw = decoded :: any
-	local metadata = toWallyShape(raw.name or `{scope}/{name}`, raw.versions)
-	if metadata == nil then
 		return nil, "No Roblox-compatible versions found"
 	end
 
-	cache.set(cacheKey, metadata)
-	logger.info(`{scope}/{name}: {#metadata.versions} Roblox-compatible version(s)`)
-	return metadata, nil
+	return { versions = versions }, nil
 end
 
-return getPesdeMetadataAsync
+return getMetadataAsync

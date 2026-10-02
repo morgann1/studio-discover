@@ -1,256 +1,253 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local compareSemver = require(StudioDiscover.Semver.compareSemver)
-local parseSemver = require(StudioDiscover.Semver.parseSemver)
-local pesdeSemver = require(StudioDiscover.Semver.pesde)
+const coreTypes = require(StudioDiscover.Core.types)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const fetchMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.fetchMetadataAsync)
+const formatPackageId = require(StudioDiscover.PesdeRegistry.formatPackageId)
+const isNewerVersion = require(StudioDiscover.Semver.isNewerVersion)
+const pesdeSemver = require(StudioDiscover.Semver.pesde)
+const realmFromTarget = require(StudioDiscover.PesdeRegistry.realmFromTarget)
+const splitFullName = require(StudioDiscover.Core.splitFullName)
+const targetFromRealm = require(StudioDiscover.PesdeRegistry.targetFromRealm)
+const types = require(StudioDiscover.PesdeRegistry.types)
 
-local createLogger = require(StudioDiscover.Core.createLogger)
+const logger = createLogger.createLogger("pesde.installer.resolve")
 
-local fetchMetadataAsync = require(StudioDiscover.PesdeRegistry.fetchMetadataAsync)
-local packageId = require(StudioDiscover.PesdeRegistry.packageId)
-local types = require(StudioDiscover.PesdeRegistry.types)
-
-local logger = createLogger.createLogger("pesde.installer.resolve")
-
-type Realm = types.Realm
-type Kind = types.Kind
+type Realm = coreTypes.Realm
 type PesdeResolvedPackage = types.PesdeResolvedPackage
-type PesdeDependency = types.PesdeDependency
-type ProgressCallback = types.ProgressCallback
+type VersionEntry = fetchMetadataAsync.VersionEntry
 
-export type RootRequest = {
-	scope: string,
-	name: string,
-	version: string,
-	realm: Realm,
-	alias: string,
+type DependencyRequest = {
+	read parentId: string,
+	read alias: string,
+	read scope: string,
+	read name: string,
+	read versionReq: string,
+	read target: types.Target,
 }
 
-type DepRequest = {
-	parentId: string,
-	alias: string,
-	scope: string,
-	name: string,
-	versionReq: string,
-	target: "roblox" | "roblox_server",
-}
-
-local function targetFromRealm(realm: Realm): "roblox" | "roblox_server"
-	return if realm == "server" then "roblox_server" else "roblox"
-end
-
-local function realmFromTarget(target: string): Realm
-	return if target == "roblox_server" then "server" else "shared"
-end
-
-local function findVersion(
+const function findVersion(
 	metadata: fetchMetadataAsync.PesdeMetadata,
-	target: "roblox" | "roblox_server",
-	exactVersion: string?
-): fetchMetadataAsync.VersionEntry?
-	if exactVersion == nil then
-		return nil
-	end
+	target: types.Target,
+	version: string
+): VersionEntry?
 	for _, entry in metadata.versions do
-		if entry.target == target and entry.version == exactVersion then
+		if entry.target == target and entry.version == version then
 			return entry
 		end
 	end
+
 	return nil
 end
 
-local function pickMatchingVersion(
+const function pickNewestMatch(
 	metadata: fetchMetadataAsync.PesdeMetadata,
-	target: "roblox" | "roblox_server",
+	target: types.Target,
 	versionReq: string
-): fetchMetadataAsync.VersionEntry?
-	local satisfies = pesdeSemver.buildSatisfies(versionReq)
-	local candidates: { fetchMetadataAsync.VersionEntry } = {}
+): VersionEntry?
+	const satisfies = pesdeSemver.buildSatisfies(versionReq)
+
+	local newest: VersionEntry? = nil
 	for _, entry in metadata.versions do
-		if entry.target == target and satisfies(entry.version) then
-			table.insert(candidates, entry)
+		if entry.target ~= target or not satisfies(entry.version) then
+			continue
+		end
+
+		if newest == nil or isNewerVersion(entry.version, newest.version) then
+			newest = entry
 		end
 	end
-	if #candidates == 0 then
-		return nil
-	end
-	table.sort(candidates, function(a, b)
-		local aSv = parseSemver(a.version)
-		local bSv = parseSemver(b.version)
-		if aSv ~= nil and bSv ~= nil then
-			return compareSemver(aSv, bSv) > 0
-		end
-		return a.version > b.version
-	end)
-	return candidates[1]
+
+	return newest
 end
 
-local function resolveAsync(
-	roots: { RootRequest },
-	onProgress: ProgressCallback?
-): ({ [string]: PesdeResolvedPackage }, { [string]: string }, { string })
-	local resolved: { [string]: PesdeResolvedPackage } = {}
-	local rootAliases: { [string]: string } = {}
-	local failures: { string } = {}
+--[[
+	Reads the dependency requests out of one published version, along with the
+		entries it cannot install.
 
-	local activatedByName: { [string]: { PesdeResolvedPackage } } = {}
+	A root's peer dependencies install with it, since nothing above it provides
+		them. Below the roots, peers are left to whoever depends on the package. Dev
+		dependencies never install. Wally-proxied dependencies, and dependencies on the
+		other target, are not supported yet: a link across realms would need a path
+		out of its own packages folder.
+]]
+const function readDependencies(
+	entry: VersionEntry,
+	parentId: string,
+	isRoot: boolean
+): ({ DependencyRequest }, { string })
+	const requests: { DependencyRequest } = {}
+	const failures: { string } = {}
 
-	local function activate(pkg: PesdeResolvedPackage)
-		resolved[pkg.packageId] = pkg
-		local key = `{pkg.scope}/{pkg.name}`
-		if activatedByName[key] == nil then
-			activatedByName[key] = {}
+	for _, dependency in entry.dependencies do
+		if dependency.ty == "dev" or (dependency.ty == "peer" and not isRoot) then
+			continue
 		end
-		table.insert(activatedByName[key], pkg)
+
+		const scope, name = splitFullName(dependency.name)
+		if scope == nil or name == nil then
+			table.insert(failures, `{dependency.alias}: could not parse "{dependency.name}"`)
+			continue
+		elseif dependency.kind == "wally" then
+			table.insert(failures, `{dependency.alias}: wally-proxied dep "{dependency.name}" not yet supported`)
+			continue
+		elseif dependency.target ~= nil and dependency.target ~= entry.target then
+			table.insert(
+				failures,
+				`{dependency.alias}: dependency on another target "{dependency.target}" not yet supported`
+			)
+			continue
+		end
+
+		table.insert(requests, {
+			parentId = parentId,
+			alias = dependency.alias,
+			scope = scope,
+			name = name,
+			versionReq = dependency.versionReq,
+			target = entry.target,
+		})
 	end
 
-	local queue: { DepRequest } = {}
+	return requests, failures
+end
+
+--[[
+	Resolves `roots` and everything they depend on against pesde's registry, taking
+		the newest version that satisfies each request.
+
+	Returns the graph keyed by package id, each root's alias keyed the same way, the
+		failures along the way, and the roots it could not resolve at all. Applying
+		without those roots would uninstall them, so callers stop instead.
+
+	A request reuses a version already in the graph for the same realm when it
+		satisfies it.
+]]
+const function resolveAsync(
+	roots: { coreTypes.RootRequest },
+	onProgress: coreTypes.ProgressCallback?
+): (
+	{ [string]: PesdeResolvedPackage },
+	{ [string]: string },
+	{ string },
+	{ coreTypes.RootRequest }
+)
+	const resolved: { [string]: PesdeResolvedPackage } = {}
+	const rootAliases: { [string]: string } = {}
+	const failures: { string } = {}
+	const unresolvedRoots: { coreTypes.RootRequest } = {}
+	const activatedByName: { [string]: { PesdeResolvedPackage }? } = {}
+	const queue: { DependencyRequest } = {}
+
+	const function activate(entry: VersionEntry, scope: string, name: string, realm: Realm): PesdeResolvedPackage
+		const pkg: PesdeResolvedPackage = {
+			packageId = formatPackageId(scope, name, entry.version, entry.target),
+			scope = scope,
+			name = name,
+			version = entry.version,
+			realm = realm,
+			libPath = entry.libPath,
+			dependencies = {},
+		}
+		resolved[pkg.packageId] = pkg
+
+		const fullName = `{scope}/{name}`
+		const activated = activatedByName[fullName] or {}
+		table.insert(activated, pkg)
+		activatedByName[fullName] = activated
+
+		return pkg
+	end
+
+	const function enqueueDependencies(entry: VersionEntry, parentId: string, isRoot: boolean)
+		const requests, readFailures = readDependencies(entry, parentId, isRoot)
+		table.move(requests, 1, #requests, #queue + 1, queue)
+		table.move(readFailures, 1, #readFailures, #failures + 1, failures)
+	end
 
 	for _, root in roots do
-		local target: "roblox" | "roblox_server" = targetFromRealm(root.realm)
+		const target = targetFromRealm(root.requestRealm)
 		if onProgress ~= nil then
 			onProgress(`Resolving {root.scope}/{root.name}@{root.version}...`)
 		end
 
-		local metadata, err = fetchMetadataAsync(root.scope, root.name)
+		const metadata, err = fetchMetadataAsync(root.scope, root.name)
 		if metadata == nil then
 			table.insert(failures, `{root.scope}/{root.name}: {err}`)
+			table.insert(unresolvedRoots, root)
 			continue
 		end
 
-		local entry = findVersion(metadata, target, root.version)
+		const entry = findVersion(metadata, target, root.version)
 		if entry == nil then
 			table.insert(failures, `{root.scope}/{root.name}@{root.version}: version not found for target {target}`)
+			table.insert(unresolvedRoots, root)
 			continue
 		end
 
-		local pkgId = packageId.format(root.scope, root.name, root.version, target)
-		local pkg: PesdeResolvedPackage = {
-			packageId = pkgId,
-			scope = root.scope,
-			name = root.name,
-			version = root.version,
-			realm = root.realm,
-			kind = "pesde",
-			libPath = entry.libPath,
-			dependencies = {},
-		}
-		activate(pkg)
-		rootAliases[pkgId] = root.alias
-
-		for _, dep in entry.dependencies do
-			if dep.ty == "dev" then
-				continue
-			end
-			local depScope, depName = dep.name:match("^(.+)/(.+)$")
-			if depScope == nil or depName == nil then
-				table.insert(failures, `{dep.alias}: could not parse "{dep.name}"`)
-				continue
-			end
-			if dep.kind == "wally" then
-				table.insert(failures, `{dep.alias}: wally-proxied dep "{dep.name}" not yet supported`)
-				continue
-			end
-			local depTarget: "roblox" | "roblox_server" = (dep.target or target) :: any
-			table.insert(queue, {
-				parentId = pkgId,
-				alias = dep.alias,
-				scope = depScope :: string,
-				name = depName :: string,
-				versionReq = dep.versionReq,
-				target = depTarget,
-			})
-		end
+		const pkg = activate(entry, root.scope, root.name, root.requestRealm)
+		rootAliases[pkg.packageId] = root.alias
+		enqueueDependencies(entry, pkg.packageId, true)
 	end
 
-	while #queue > 0 do
-		local req = table.remove(queue, 1) :: DepRequest
-		local fullName = `{req.scope}/{req.name}`
+	-- A version already in the graph for the request's realm, when one satisfies it.
+	const function findReusable(request: DependencyRequest): PesdeResolvedPackage?
+		const realm = realmFromTarget(request.target)
+		const satisfies = pesdeSemver.buildSatisfies(request.versionReq)
 
-		local existingMatches = activatedByName[fullName]
-		local reused: PesdeResolvedPackage? = nil
-		if existingMatches ~= nil then
-			local satisfies = pesdeSemver.buildSatisfies(req.versionReq)
-			for _, pkg in existingMatches do
-				if pkg.realm == realmFromTarget(req.target) and satisfies(pkg.version) then
-					reused = pkg
-					break
-				end
+		for _, pkg in activatedByName[`{request.scope}/{request.name}`] or {} do
+			if pkg.realm == realm and satisfies(pkg.version) then
+				return pkg
 			end
 		end
 
-		local chosen: PesdeResolvedPackage? = reused
+		return nil
+	end
+
+	-- Adds the newest version that satisfies the request to the graph, or records why there is none.
+	const function resolveRequestAsync(request: DependencyRequest): PesdeResolvedPackage?
+		const fullName = `{request.scope}/{request.name}`
+		if onProgress ~= nil then
+			onProgress(`Resolving {fullName}...`)
+		end
+
+		const metadata, err = fetchMetadataAsync(request.scope, request.name)
+		if metadata == nil then
+			table.insert(failures, `{fullName}: {err}`)
+			return nil
+		end
+
+		const entry = pickNewestMatch(metadata, request.target, request.versionReq)
+		if entry == nil then
+			table.insert(failures, `{fullName}: no version matches "{request.versionReq}" for target {request.target}`)
+			return nil
+		end
+
+		const pkg = activate(entry, request.scope, request.name, realmFromTarget(entry.target))
+		logger.debug(`resolved {pkg.packageId}`)
+		enqueueDependencies(entry, pkg.packageId, false)
+		return pkg
+	end
+
+	local head = 1
+	while head <= #queue do
+		const request = queue[head]
+		head += 1
+
+		const chosen = findReusable(request) or resolveRequestAsync(request)
 		if chosen == nil then
-			if onProgress ~= nil then
-				onProgress(`Resolving {fullName}...`)
-			end
-
-			local metadata, err = fetchMetadataAsync(req.scope, req.name)
-			if metadata == nil then
-				table.insert(failures, `{fullName}: {err}`)
-				continue
-			end
-
-			local entry = pickMatchingVersion(metadata, req.target, req.versionReq)
-			if entry == nil then
-				table.insert(failures, `{fullName}: no version matches "{req.versionReq}" for target {req.target}`)
-				continue
-			end
-
-			local realm: Realm = realmFromTarget(entry.target)
-			local pkgId = packageId.format(req.scope, req.name, entry.version, entry.target)
-			local pkg: PesdeResolvedPackage = {
-				packageId = pkgId,
-				scope = req.scope,
-				name = req.name,
-				version = entry.version,
-				realm = realm,
-				kind = "pesde",
-				libPath = entry.libPath,
-				dependencies = {},
-			}
-			activate(pkg)
-			logger.debug(`resolved {pkgId}`)
-
-			for _, dep in entry.dependencies do
-				if dep.ty == "dev" or dep.ty == "peer" then
-					continue
-				end
-				local depScope, depName = dep.name:match("^(.+)/(.+)$")
-				if depScope == nil or depName == nil then
-					table.insert(failures, `{dep.alias}: could not parse "{dep.name}"`)
-					continue
-				end
-				if dep.kind == "wally" then
-					table.insert(failures, `{dep.alias}: wally-proxied dep "{dep.name}" not yet supported`)
-					continue
-				end
-				local depTarget: "roblox" | "roblox_server" = dep.target or entry.target
-				table.insert(queue, {
-					parentId = pkgId,
-					alias = dep.alias,
-					scope = depScope :: string,
-					name = depName :: string,
-					versionReq = dep.versionReq,
-					target = depTarget,
-				})
-			end
-
-			chosen = pkg
+			continue
 		end
 
-		local parent = resolved[req.parentId]
-		if parent ~= nil and chosen ~= nil then
-			table.insert(parent.dependencies, {
-				alias = req.alias,
-				packageId = chosen.packageId,
-			})
+		const parent = resolved[request.parentId]
+		if parent ~= nil then
+			table.insert(parent.dependencies, { alias = request.alias, packageId = chosen.packageId })
 		end
 	end
 
-	return resolved, rootAliases, failures
+	return resolved, rootAliases, failures, unresolvedRoots
 end
 
 return resolveAsync

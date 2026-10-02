@@ -8,7 +8,6 @@ const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const coreTypes = require(StudioDiscover.Core.types)
 const searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
 const searchWallyAsync = require(StudioDiscover.WallyRegistry.Api.searchAsync)
-const wallyTypes = require(StudioDiscover.WallyRegistry.types)
 
 const DEBOUNCE_SECONDS = 0.25
 const MIN_QUERY_LENGTH = 2
@@ -22,22 +21,6 @@ export type SearchState = {
 const IDLE: SearchState = { loading = false }
 const LOADING: SearchState = { loading = true }
 
-const function briefsFromWally(results: { wallyTypes.WallyPackageBrief }): { coreTypes.PackageBrief }
-	const briefs: { coreTypes.PackageBrief } = {}
-	for _, pkg in results do
-		const brief: coreTypes.PackageBrief = {
-			registries = { "wally" },
-			scope = pkg.scope,
-			name = pkg.name,
-			description = pkg.description,
-			latestVersion = pkg.versions[1],
-		}
-		table.insert(briefs, brief)
-	end
-
-	return briefs
-end
-
 -- Merges results for the same scope/name from both registries into one brief, sorted by scope/name.
 const function mergeBriefs(...: { coreTypes.PackageBrief }): { coreTypes.PackageBrief }
 	const byKey: { [string]: coreTypes.PackageBrief } = {}
@@ -49,25 +32,25 @@ const function mergeBriefs(...: { coreTypes.PackageBrief }): { coreTypes.Package
 			const existing = byKey[key]
 
 			if existing == nil then
-				byKey[key] = {
-					registries = table.clone(brief.registries),
-					scope = brief.scope,
-					name = brief.name,
-					description = brief.description,
-					latestVersion = brief.latestVersion,
-				}
+				byKey[key] = brief
 				table.insert(keys, key)
 				continue
 			end
 
+			const registries = table.clone(existing.registries)
 			for _, registry in brief.registries do
-				if table.find(existing.registries, registry) == nil then
-					table.insert(existing.registries, registry)
+				if table.find(registries, registry) == nil then
+					table.insert(registries, registry)
 				end
 			end
 
-			existing.description = existing.description or brief.description
-			existing.latestVersion = existing.latestVersion or brief.latestVersion
+			byKey[key] = {
+				registries = registries,
+				scope = existing.scope,
+				name = existing.name,
+				description = existing.description or brief.description,
+				latestVersion = existing.latestVersion or brief.latestVersion,
+			}
 		end
 	end
 
@@ -134,7 +117,7 @@ const function useSearchPackages(query: string): SearchState
 				if wallyEnabled then
 					task.spawn(function()
 						const results, err = searchWallyAsync(query)
-						wallyResults = if results ~= nil then briefsFromWally(results) else nil
+						wallyResults = results
 						wallyError = err
 						finish()
 					end)

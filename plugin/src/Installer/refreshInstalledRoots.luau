@@ -28,7 +28,7 @@ const function refreshInstalledRoots()
 			scope = root.scope,
 			name = root.name,
 			version = root.version,
-			realm = root.realm,
+			realm = root.requestRealm,
 			alias = root.alias,
 			registry = "pesde",
 		}

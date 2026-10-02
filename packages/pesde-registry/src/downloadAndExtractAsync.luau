@@ -1,111 +1,83 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local zzlib = require(StudioDiscover.Packages.zzlib)
+const zzlib = require(StudioDiscover.Core.zzlib)
 
-local downloadAsync = require(StudioDiscover.PesdeRegistry.Api.downloadAsync)
+const asString = require(StudioDiscover.Core.asString)
+const asTable = require(StudioDiscover.Core.asTable)
+const buildTree = require(StudioDiscover.Core.buildTree)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const downloadAsync = require(StudioDiscover.PesdeRegistry.Api.downloadAsync)
+const parseTar = require(StudioDiscover.PesdeRegistry.parseTar)
+const parseToml = require(StudioDiscover.Core.parseToml)
+const types = require(StudioDiscover.PesdeRegistry.types)
 
-local createLogger = require(StudioDiscover.Core.createLogger)
-local toml = require(StudioDiscover.Core.toml)
+const logger = createLogger.createLogger("pesde.installer.download")
 
-local buildTree = require(StudioDiscover.Core.buildTree)
-local tarAsync = require(StudioDiscover.PesdeRegistry.tarAsync)
+-- `libPath` is the manifest's `target.lib`, when the archive's `pesde.toml` names one.
+export type Extracted =
+	{
+		read ok: true,
+		read tree: Instance,
+		read pending: { buildTree.PendingSource },
+		read libPath: string?,
+	}
+	| {
+		read ok: false,
+		read error: string,
+	}
 
-local logger = createLogger.createLogger("pesde.installer.download")
-
-type Entry = buildTree.Entry
-type PendingSource = buildTree.PendingSource
-type Target = "roblox" | "roblox_server"
-
-local IGNORED_FILES: { [string]: true } = {
-	["foreman.toml"] = true,
-	["aftman.toml"] = true,
-	["rokit.toml"] = true,
-	[".DS_Store"] = true,
-	["default.project.json"] = true,
-}
-
-local function baseName(path: string): string
-	return path:match("([^/]+)$") or path
-end
-
-local function isUnderDotGit(path: string): boolean
-	return path == ".git" or path:sub(1, 5) == ".git/" or path:find("/%.git/") ~= nil or path:match("/%.git$") ~= nil
-end
-
-local function isGzip(data: string): boolean
+const function isGzip(data: string): boolean
 	return #data >= 2 and string.byte(data, 1) == 0x1f and string.byte(data, 2) == 0x8b
 end
 
-local function extractLibPath(manifestSource: string): string?
-	local ok, decoded = pcall(toml.deserialize, manifestSource)
-	if not ok then
-		return nil
-	end
-	local target = (decoded :: any).target
-	if typeof(target) ~= "table" then
-		return nil
-	end
-	local lib = target.lib
-	if typeof(lib) == "string" then
-		return lib
-	end
-	return nil
+const function extractLibPath(manifestSource: string): string?
+	const ok, manifest = pcall(parseToml, manifestSource)
+	const target = if ok then asTable(manifest.target) else nil
+	return if target ~= nil then asString(target.lib) else nil
 end
 
-local function downloadAndExtractAsync(
-	scope: string,
-	name: string,
-	version: string,
-	target: Target
-): (Instance?, { PendingSource }?, string?, string?)
+-- Downloads one package version for `target` and builds it into an unparented tree.
+const function downloadAndExtractAsync(scope: string, name: string, version: string, target: types.Target): Extracted
 	logger.debug(`fetch {scope}/{name}@{version} {target}`)
-	local archive, err = downloadAsync(scope, name, version, target)
+
+	const archive, err = downloadAsync(scope, name, version, target)
 	if archive == nil then
-		return nil, nil, nil, `Failed to download: {err}`
+		return { ok = false, error = `Failed to download: {err}` }
 	end
 
-	local tarData: string = archive :: string
-	if isGzip(tarData) then
-		local gunzipOk, result = pcall(zzlib.gunzip, tarData)
+	local tarData = archive
+	if isGzip(archive) then
+		const gunzipOk, result = pcall(zzlib.gunzip, archive)
 		if not gunzipOk then
 			logger.warn(`gunzip failed for {scope}/{name}@{version}: {result}`)
-			return nil, nil, nil, `Failed to decompress: {result}`
+			return { ok = false, error = `Failed to decompress: {result}` }
 		end
-		tarData = result :: string
+
+		tarData = result
 	end
 
-	local parseOk, parseResult = pcall(tarAsync.parse, tarData)
+	const parseOk, tarEntries = pcall(parseTar, tarData)
 	if not parseOk then
-		logger.warn(`tar parse failed for {scope}/{name}@{version}: {parseResult}`)
-		return nil, nil, nil, `Failed to extract: {parseResult}`
+		logger.warn(`tar parse failed for {scope}/{name}@{version}: {tarEntries}`)
+		return { ok = false, error = `Failed to extract: {tarEntries}` }
 	end
 
-	local entries: { Entry } = {}
+	const entries: { buildTree.Entry } = {}
 	local libPath: string? = nil
-	for _, tarEntry in parseResult :: { tarAsync.TarEntry } do
-		if tarEntry.kind ~= "file" then
-			continue
-		end
+	for _, tarEntry in tarEntries do
 		if tarEntry.path == "pesde.toml" then
 			libPath = extractLibPath(tarEntry.content)
 		end
-		if isUnderDotGit(tarEntry.path) then
-			continue
-		end
-		if IGNORED_FILES[baseName(tarEntry.path)] then
-			continue
-		end
-		table.insert(entries, {
-			path = `{name}/{tarEntry.path}`,
-			content = tarEntry.content,
-		})
+
+		table.insert(entries, { path = `{name}/{tarEntry.path}`, content = tarEntry.content })
 	end
 
 	logger.debug(`extracted {#entries} entries from {scope}/{name}@{version}, libPath={libPath or "nil"}`)
-	local tree, pending = buildTree(entries, name)
-	return tree, pending, libPath, nil
+
+	const tree, pending = buildTree(entries, name)
+	return { ok = true, tree = tree, pending = pending, libPath = libPath }
 end
 
 return downloadAndExtractAsync

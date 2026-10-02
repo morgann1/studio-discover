@@ -11,6 +11,7 @@ const resolveAsync = require(StudioDiscover.WallyRegistry.resolveAsync)
 const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
 const types = require(StudioDiscover.Source.Installer.types)
+const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 const uninstallPesdeAsync = require(StudioDiscover.Source.Installer.uninstallPesdeAsync)
 
 const logger = createLogger.createLogger("wally.installer.uninstall")
@@ -43,15 +44,24 @@ const function runUninstallAsync(root: coreTypes.InstalledRoot): types.Operation
 
 	const lockData = lockfile.load()
 	logger.info(`resolve starting ({#remaining} remaining root(s))`)
-	const resolved, rootAliases, resolutionFailures = resolveAsync(remaining, lockData, nil)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = resolveAsync(remaining, lockData, nil)
 
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
+	const unresolvedError = unresolvedRootsError(unresolvedRoots, resolutionFailures)
+	if unresolvedError ~= nil then
+		return {
+			ok = false,
+			error = unresolvedError,
+			failures = resolutionFailures,
+		}
+	end
+
 	return applyRootsAsync(`Uninstall {scope}/{name}`, function()
 		const failures = applyAsync(resolved, rootAliases, nil)
-		lockfile.save(resolved)
+		lockfile.saveAsync(resolved)
 
 		return failures
 	end)

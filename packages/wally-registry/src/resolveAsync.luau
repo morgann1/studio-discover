@@ -1,209 +1,227 @@
 --!strict
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local getPackageMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
+const coreTypes = require(StudioDiscover.Core.types)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const getMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
+const isDependencyValid = require(StudioDiscover.WallyRegistry.isDependencyValid)
+const isNewerVersion = require(StudioDiscover.Semver.isNewerVersion)
+const packageId = require(StudioDiscover.WallyRegistry.packageId)
+const parseSemver = require(StudioDiscover.Semver.parseSemver)
+const promoteRealm = require(StudioDiscover.WallyRegistry.promoteRealm)
+const splitFullName = require(StudioDiscover.Core.splitFullName)
+const types = require(StudioDiscover.WallyRegistry.types)
+const wallySemver = require(StudioDiscover.Semver.wally)
 
-local isDependencyValid = require(StudioDiscover.WallyRegistry.isDependencyValid)
-local packageId = require(StudioDiscover.WallyRegistry.packageId)
-local promoteRealm = require(StudioDiscover.WallyRegistry.promoteRealm)
-local types = require(StudioDiscover.WallyRegistry.types)
+const logger = createLogger.createLogger("wally.installer.resolve")
 
-local compareSemver = require(StudioDiscover.Semver.compareSemver)
-local parseSemver = require(StudioDiscover.Semver.parseSemver)
-local semver = require(StudioDiscover.Semver.wally)
-
-local coreTypes = require(StudioDiscover.Core.types)
-local createLogger = require(StudioDiscover.Core.createLogger)
-
-local logger = createLogger.createLogger("wally.installer.resolve")
-
-type ResolvedPackage = types.ResolvedPackage
-type RootRequest = coreTypes.RootRequest
-type LockEntry = coreTypes.LockEntry
 type Realm = coreTypes.Realm
-type ProgressCallback = coreTypes.ProgressCallback
-type Semver = parseSemver.Semver
+type PackageVersion = coreTypes.PackageVersion
+type ResolvedPackage = types.ResolvedPackage
 
-type ActivatedEntry = {
-	scope: string,
-	name: string,
-	version: string,
-	semver: Semver,
-	realm: Realm,
-	packageId: string,
+-- A version already in the graph, which a later request reuses when it satisfies it.
+type Activated = {
+	read resolved: ResolvedPackage,
+	read semver: parseSemver.Semver,
 }
 
 type DependencyRequest = {
-	scope: string,
-	name: string,
-	constraints: string,
-	requestRealm: Realm,
-	originRealm: Realm,
-	requestedBy: string,
-	alias: string,
+	read scope: string,
+	read name: string,
+	read constraints: string,
+	read requestRealm: Realm,
+	read originRealm: Realm,
+	read requestedBy: string,
+	read alias: string,
 }
 
-local function resolveAsync(
-	roots: { RootRequest },
-	lockfile: { [string]: LockEntry },
-	onProgress: ProgressCallback?
-): ({ [string]: ResolvedPackage }, { [string]: string }, { string })
-	local resolved: { [string]: ResolvedPackage } = {}
-	local rootAliases: { [string]: string } = {}
-	local failures: { string } = {}
+const function findVersion(metadata: coreTypes.PackageMetadata, version: string): PackageVersion?
+	for _, versionData in metadata.versions do
+		if versionData.package.version == version then
+			return versionData
+		end
+	end
 
-	local activated: { [string]: ActivatedEntry } = {}
-	local activatedByName: { [string]: { ActivatedEntry } } = {}
+	return nil
+end
 
-	local queue: { DependencyRequest } = {}
+const function packageRealm(versionData: PackageVersion): Realm
+	return if versionData.package.realm == "server" then "server" else "shared"
+end
 
-	local function activate(scope: string, name: string, version: string, pkgRealm: Realm, pkgId: string)
-		local sv = parseSemver(version)
-		if sv == nil then
+--[[
+	Reads the dependency requests out of one version's manifest, along with the
+		entries it could not parse.
+
+	A root's dependencies are requested from the realm their section names. Below
+		the roots, a shared parent pulls its dependencies into shared as well, so
+		`parentRealm` is nil for a root.
+]]
+const function readDependencies(
+	versionData: PackageVersion,
+	requestedBy: string,
+	parentRealm: Realm?
+): ({ DependencyRequest }, { string })
+	const requests: { DependencyRequest } = {}
+	const failures: { string } = {}
+
+	const function readSection(dependencies: coreTypes.DependencyMap, requestRealm: Realm)
+		for alias, value in dependencies do
+			const path, constraints = value:match("^([^@]+)@(.+)$")
+			const scope, name = splitFullName(path or "")
+			if scope == nil or name == nil or constraints == nil then
+				logger.warn(`could not parse dependency "{value}" (alias={alias})`)
+				table.insert(failures, `{alias}: could not parse "{value}"`)
+				continue
+			end
+
+			logger.debug(`queued {scope}/{name}@{constraints} (alias={alias}, realm={requestRealm})`)
+			table.insert(requests, {
+				scope = scope,
+				name = name,
+				constraints = constraints,
+				requestRealm = requestRealm,
+				originRealm = promoteRealm(requestRealm, parentRealm or requestRealm),
+				requestedBy = requestedBy,
+				alias = alias,
+			})
+		end
+	end
+
+	readSection(versionData.dependencies, "shared")
+	readSection(versionData["server-dependencies"], "server")
+
+	return requests, failures
+end
+
+--[[
+	Resolves `roots` and everything they depend on against Wally's registry.
+
+	Returns the graph keyed by `_Index` id, each root's alias keyed the same way, the
+		failures along the way, and the roots it could not resolve at all. Applying
+		without those roots would uninstall them, so callers stop instead.
+
+	Versions in `lockedIds` win over newer ones, so an install only moves what it
+		has to. Two versions of a package coexist only when they are
+		semver-incompatible, as in wally.
+]]
+const function resolveAsync(
+	roots: { coreTypes.RootRequest },
+	lockedIds: { [string]: true? },
+	onProgress: coreTypes.ProgressCallback?
+): (
+	{ [string]: ResolvedPackage },
+	{ [string]: string },
+	{ string },
+	{ coreTypes.RootRequest }
+)
+	const resolved: { [string]: ResolvedPackage } = {}
+	const rootAliases: { [string]: string } = {}
+	const failures: { string } = {}
+	const unresolvedRoots: { coreTypes.RootRequest } = {}
+	const activatedByName: { [string]: { Activated }? } = {}
+	const queue: { DependencyRequest } = {}
+
+	const function activate(resolvedPackage: ResolvedPackage)
+		resolved[resolvedPackage.packageId] = resolvedPackage
+
+		const semver = parseSemver(resolvedPackage.version)
+		if semver == nil then
 			return
 		end
-		local entry: ActivatedEntry = {
-			scope = scope,
-			name = name,
-			version = version,
-			semver = sv,
-			realm = pkgRealm,
-			packageId = pkgId,
-		}
-		activated[pkgId] = entry
-		local fullName = `{scope}/{name}`
-		if activatedByName[fullName] == nil then
-			activatedByName[fullName] = {}
+
+		const fullName = `{resolvedPackage.scope}/{resolvedPackage.name}`
+		const activated = activatedByName[fullName] or {}
+		table.insert(activated, { resolved = resolvedPackage, semver = semver })
+		activatedByName[fullName] = activated
+	end
+
+	const function enqueueDependencies(versionData: PackageVersion, requestedBy: string, parentRealm: Realm?)
+		const requests, readFailures = readDependencies(versionData, requestedBy, parentRealm)
+		table.move(requests, 1, #requests, #queue + 1, queue)
+		table.move(readFailures, 1, #readFailures, #failures + 1, failures)
+	end
+
+	const function addEdge(request: DependencyRequest, dependencyId: string)
+		const parent = resolved[request.requestedBy]
+		if parent ~= nil then
+			table.insert(parent.dependencies, { alias = request.alias, packageId = dependencyId })
 		end
-		table.insert(activatedByName[fullName], entry)
 	end
 
 	for _, root in roots do
-		local rootRealm: Realm = root.requestRealm
-		local rootPackageId = packageId.format(root.scope, root.name, root.version)
-
-		logger.info(`root {root.scope}/{root.name}@{root.version} realm={rootRealm} alias={root.alias}`)
+		const rootPackageId = packageId.format(root.scope, root.name, root.version)
+		logger.info(`root {root.scope}/{root.name}@{root.version} realm={root.requestRealm} alias={root.alias}`)
 
 		if onProgress ~= nil then
 			onProgress(`Resolving {root.scope}/{root.name}@{root.version}...`)
 		end
 
-		local rootMeta = getPackageMetadataAsync(root.scope, root.name)
-		if rootMeta == nil or rootMeta.versions == nil then
-			logger.warn(`metadata unavailable for {root.scope}/{root.name}`)
-			table.insert(failures, `{root.scope}/{root.name}: metadata unavailable`)
+		const metadata, err = getMetadataAsync(root.scope, root.name)
+		if metadata == nil then
+			logger.warn(`metadata unavailable for {root.scope}/{root.name}: {err}`)
+			table.insert(failures, `{root.scope}/{root.name}: {err}`)
+			table.insert(unresolvedRoots, root)
 			continue
 		end
 
-		local rootVersionData = nil
-		for _, versionData in rootMeta.versions do
-			if versionData.package.version == root.version then
-				rootVersionData = versionData
-				break
-			end
-		end
-		if rootVersionData == nil then
+		const versionData = findVersion(metadata, root.version)
+		if versionData == nil then
 			logger.warn(`version {root.version} not found in metadata for {root.scope}/{root.name}`)
 			table.insert(failures, `{root.scope}/{root.name}@{root.version}: version not found`)
+			table.insert(unresolvedRoots, root)
 			continue
 		end
 
-		local rootPackageRealm = rootVersionData.package.realm
-		if rootPackageRealm ~= nil and rootPackageRealm ~= "dev" then
-			rootRealm = promoteRealm(rootRealm, rootPackageRealm :: Realm)
-		end
+		-- A root lands where the user asked, unless its manifest says it has to be shared.
+		const manifestRealm = versionData.package.realm
+		const realm = if manifestRealm == "shared" or manifestRealm == "server"
+			then promoteRealm(root.requestRealm, manifestRealm)
+			else root.requestRealm
 
-		activate(root.scope, root.name, root.version, rootRealm, rootPackageId)
-		rootAliases[rootPackageId] = root.alias
-
-		resolved[rootPackageId] = {
+		activate({
 			scope = root.scope,
 			name = root.name,
 			version = root.version,
-			realm = rootRealm,
+			realm = realm,
 			packageId = rootPackageId,
 			dependencies = {},
-		}
-
-		local depSources: { { deps: { [string]: string }, requestRealm: Realm } } = {}
-		if rootVersionData.dependencies ~= nil then
-			table.insert(depSources, { deps = rootVersionData.dependencies, requestRealm = "shared" })
-		end
-		if rootVersionData["server-dependencies"] ~= nil then
-			table.insert(depSources, { deps = rootVersionData["server-dependencies"], requestRealm = "server" })
-		end
-
-		for _, source in depSources do
-			for depAlias, depValue in source.deps do
-				local depPath, depConstraints = depValue:match("^([^@]+)@(.+)$")
-				if depPath == nil or depConstraints == nil then
-					logger.warn(`could not parse root dep "{depValue}" (alias={depAlias})`)
-					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
-					continue
-				end
-				local depScope, depName = depPath:match("^(.+)/(.+)$")
-				if depScope == nil or depName == nil then
-					logger.warn(`could not parse root dep path "{depPath}" (alias={depAlias})`)
-					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
-					continue
-				end
-				logger.debug(
-					`queued {depScope}/{depName}@{depConstraints} (alias={depAlias}, realm={source.requestRealm})`
-				)
-				table.insert(queue, {
-					scope = depScope :: string,
-					name = depName :: string,
-					constraints = depConstraints :: string,
-					requestRealm = source.requestRealm,
-					originRealm = source.requestRealm,
-					requestedBy = rootPackageId,
-					alias = depAlias,
-				})
-			end
-		end
+		})
+		rootAliases[rootPackageId] = root.alias
+		enqueueDependencies(versionData, rootPackageId, nil)
 	end
 
-	while #queue > 0 do
-		local request = table.remove(queue, 1) :: DependencyRequest
-		local fullName = `{request.scope}/{request.name}`
-		local satisfies = semver.buildSatisfies(request.constraints)
+	local head = 1
+	while head <= #queue do
+		const request = queue[head]
+		head += 1
 
+		const fullName = `{request.scope}/{request.name}`
+		const satisfies = wallySemver.buildSatisfies(request.constraints)
 		logger.debug(
 			`visit {fullName}@{request.constraints} (requestedBy={request.requestedBy}, realm={request.requestRealm})`
 		)
 
-		local existingMatches = activatedByName[fullName]
-		local reused = false
-		if existingMatches ~= nil then
-			for _, entry in existingMatches do
-				if satisfies(entry.version) then
-					local promoted: Realm = promoteRealm(entry.realm, request.originRealm)
-					if promoted ~= entry.realm then
-						logger.debug(`promote realm for {entry.packageId}: {entry.realm} -> {promoted}`)
-						entry.realm = promoted
-						local resolvedEntry = resolved[entry.packageId]
-						if resolvedEntry ~= nil then
-							resolvedEntry.realm = promoted
-						end
-					end
+		const activated = activatedByName[fullName] or {}
 
-					local parentResolved = resolved[request.requestedBy]
-					if parentResolved ~= nil then
-						local dep: types.Dependency = {
-							alias = request.alias,
-							packageId = entry.packageId,
-							realm = promoted,
-						}
-						table.insert(parentResolved.dependencies, dep)
-					end
-					reused = true
-					logger.debug(`reused {entry.packageId} for {fullName}@{request.constraints}`)
-					break
-				end
+		local reused: ResolvedPackage? = nil
+		for _, entry in activated do
+			if satisfies(entry.resolved.version) then
+				reused = entry.resolved
+				break
 			end
 		end
-		if reused then
+
+		if reused ~= nil then
+			const promoted = promoteRealm(reused.realm, request.originRealm)
+			if promoted ~= reused.realm then
+				logger.debug(`promote realm for {reused.packageId}: {reused.realm} -> {promoted}`)
+				reused.realm = promoted
+			end
+
+			addEdge(request, reused.packageId)
+			logger.debug(`reused {reused.packageId} for {fullName}@{request.constraints}`)
 			continue
 		end
 
@@ -211,64 +229,52 @@ local function resolveAsync(
 			onProgress(`Resolving {fullName}...`)
 		end
 
-		local meta = getPackageMetadataAsync(request.scope, request.name)
-		if meta == nil or meta.versions == nil then
-			logger.warn(`metadata unavailable for {fullName}`)
-			table.insert(failures, `{fullName}: metadata unavailable`)
+		const metadata, err = getMetadataAsync(request.scope, request.name)
+		if metadata == nil then
+			logger.warn(`metadata unavailable for {fullName}: {err}`)
+			table.insert(failures, `{fullName}: {err}`)
 			continue
 		end
 
-		local candidates = {}
-		for _, versionData in meta.versions do
+		const candidates: { PackageVersion } = {}
+		for _, versionData in metadata.versions do
 			if satisfies(versionData.package.version) then
 				table.insert(candidates, versionData)
 			end
 		end
-		logger.debug(`{#candidates} of {#meta.versions} candidate(s) match "{request.constraints}"`)
+		logger.debug(`{#candidates} of {#metadata.versions} candidate(s) match "{request.constraints}"`)
 
-		table.sort(candidates, function(a, b)
-			local aId = packageId.format(request.scope, request.name, a.package.version)
-			local bId = packageId.format(request.scope, request.name, b.package.version)
-			local aLocked = lockfile[aId] ~= nil
-			local bLocked = lockfile[bId] ~= nil
+		-- Locked versions first, then newest first.
+		table.sort(candidates, function(a: PackageVersion, b: PackageVersion): boolean
+			const aLocked = lockedIds[packageId.format(request.scope, request.name, a.package.version)] ~= nil
+			const bLocked = lockedIds[packageId.format(request.scope, request.name, b.package.version)] ~= nil
 			if aLocked ~= bLocked then
 				return aLocked
 			end
-			local aSv = parseSemver(a.package.version)
-			local bSv = parseSemver(b.package.version)
-			if aSv ~= nil and bSv ~= nil then
-				return compareSemver(aSv, bSv) > 0
-			end
-			return false
+
+			return isNewerVersion(a.package.version, b.package.version)
 		end)
 
-		local chosen = nil
+		-- The first candidate the requester may depend on that does not clash with a version already in the graph.
+		local chosen: PackageVersion? = nil
 		for _, candidate in candidates do
-			local candidateRealm: Realm = if candidate.package.realm == "server" then "server" else "shared"
-			if not isDependencyValid(request.requestRealm, candidateRealm) then
+			const candidateSemver = parseSemver(candidate.package.version)
+			if candidateSemver == nil or not isDependencyValid(request.requestRealm, packageRealm(candidate)) then
 				continue
 			end
 
-			local candidateSv = parseSemver(candidate.package.version)
-			if candidateSv == nil then
-				continue
-			end
-
-			local hasConflict = false
-			if existingMatches ~= nil then
-				for _, entry in existingMatches do
-					if semver.compatible(candidateSv, entry.semver) then
-						hasConflict = true
-						break
-					end
+			local conflicts = false
+			for _, entry in activated do
+				if wallySemver.compatible(candidateSemver, entry.semver) then
+					conflicts = true
+					break
 				end
 			end
-			if hasConflict then
-				continue
-			end
 
-			chosen = candidate
-			break
+			if not conflicts then
+				chosen = candidate
+				break
+			end
 		end
 
 		if chosen == nil then
@@ -277,69 +283,24 @@ local function resolveAsync(
 			continue
 		end
 
-		local chosenVersion = chosen.package.version
-		local chosenPackageRealm: Realm = if chosen.package.realm == "server" then "server" else "shared"
-		local chosenRealm: Realm = promoteRealm(chosenPackageRealm, request.originRealm)
-		local chosenPackageId = packageId.format(request.scope, request.name, chosenVersion)
-
+		const chosenVersion = chosen.package.version
+		const chosenRealm = promoteRealm(packageRealm(chosen), request.originRealm)
+		const chosenPackageId = packageId.format(request.scope, request.name, chosenVersion)
 		logger.debug(`chose {fullName}@{chosenVersion} (realm={chosenRealm})`)
 
-		activate(request.scope, request.name, chosenVersion, chosenRealm, chosenPackageId)
-
-		local newResolved: ResolvedPackage = {
+		activate({
 			scope = request.scope,
 			name = request.name,
 			version = chosenVersion,
 			realm = chosenRealm,
 			packageId = chosenPackageId,
 			dependencies = {},
-		}
-		resolved[chosenPackageId] = newResolved
-
-		local parentResolved = resolved[request.requestedBy]
-		if parentResolved ~= nil then
-			local dep: types.Dependency = {
-				alias = request.alias,
-				packageId = chosenPackageId,
-				realm = chosenRealm,
-			}
-			table.insert(parentResolved.dependencies, dep)
-		end
-
-		local chosenDepSources: { { deps: { [string]: string }, requestRealm: Realm } } = {}
-		if chosen.dependencies ~= nil then
-			table.insert(chosenDepSources, { deps = chosen.dependencies, requestRealm = "shared" })
-		end
-		if chosen["server-dependencies"] ~= nil then
-			table.insert(chosenDepSources, { deps = chosen["server-dependencies"], requestRealm = "server" })
-		end
-
-		for _, source in chosenDepSources do
-			for depAlias, depValue in source.deps do
-				local depPath, depConstraints = depValue:match("^([^@]+)@(.+)$")
-				if depPath == nil or depConstraints == nil then
-					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
-					continue
-				end
-				local depScope, depName = depPath:match("^(.+)/(.+)$")
-				if depScope == nil or depName == nil then
-					table.insert(failures, `{depAlias}: could not parse "{depValue}"`)
-					continue
-				end
-				table.insert(queue, {
-					scope = depScope :: string,
-					name = depName :: string,
-					constraints = depConstraints :: string,
-					requestRealm = source.requestRealm,
-					originRealm = promoteRealm(source.requestRealm, chosenRealm),
-					requestedBy = chosenPackageId,
-					alias = depAlias,
-				})
-			end
-		end
+		})
+		addEdge(request, chosenPackageId)
+		enqueueDependencies(chosen, chosenPackageId, chosenRealm)
 	end
 
-	return resolved, rootAliases, failures
+	return resolved, rootAliases, failures, unresolvedRoots
 end
 
 return resolveAsync

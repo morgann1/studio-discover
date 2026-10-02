@@ -1,128 +1,147 @@
 --!strict
 
-local HttpService = game:GetService("HttpService")
+const HttpService = game:GetService("HttpService")
 
-local StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-local zzlib = require(StudioDiscover.Packages.zzlib)
+const zzlib = require(StudioDiscover.Core.zzlib)
 
-local downloadPackageAsync = require(StudioDiscover.WallyRegistry.Api.downloadAsync)
+const asTable = require(StudioDiscover.Core.asTable)
+const buildFileFilter = require(StudioDiscover.WallyRegistry.buildFileFilter)
+const buildTree = require(StudioDiscover.Core.buildTree)
+const createLogger = require(StudioDiscover.Core.createLogger)
+const downloadAsync = require(StudioDiscover.WallyRegistry.Api.downloadAsync)
 
-local createLogger = require(StudioDiscover.Core.createLogger)
+const logger = createLogger.createLogger("wally.installer.download")
 
-local buildFileFilter = require(StudioDiscover.WallyRegistry.fileFilter)
-local buildTree = require(StudioDiscover.Core.buildTree)
+export type Extracted =
+	{
+		read ok: true,
+		read tree: Instance,
+		read pending: { buildTree.PendingSource },
+	}
+	| {
+		read ok: false,
+		read error: string,
+	}
 
-local logger = createLogger.createLogger("wally.installer.download")
-
-type Entry = buildTree.Entry
-type PendingSource = buildTree.PendingSource
-
-local function detectPrefix(zipData: string): string
-	for _, filename in zzlib.files(zipData) do
-		if
-			string.match(filename, "wally%.toml$") ~= nil
-			or string.match(filename, "default%.project%.json$") ~= nil
-		then
-			local dir = filename:match("^(.+/)[^/]+$")
-			return dir or ""
+const function listZipFiles(zipData: string): { string }
+	const names: { string } = {}
+	for _, name in zzlib.files(zipData) do
+		if name ~= nil then
+			table.insert(names, name)
 		end
 	end
-	return ""
+
+	return names
 end
 
-local function findSourcePath(zipData: string, prefix: string): string?
-	local projectFileName = prefix .. "default.project.json"
-	local projectJson: string? = nil
-	pcall(function()
-		projectJson = zzlib.unzip(zipData, projectFileName)
-	end)
+const function unzipFile(zipData: string, fileName: string): string?
+	const ok, content = pcall(zzlib.unzip, zipData, fileName)
+	return if ok then content else nil
+end
+
+-- Archives usually wrap the package in one directory. Its manifest marks where that directory ends.
+const function detectPrefix(fileNames: { string }): string
+	local prefix: string? = nil
+	for _, fileName in fileNames do
+		const directory, baseName = fileName:match("^(.-)([^/]+)$")
+		if directory == nil or (baseName ~= "wally.toml" and baseName ~= "default.project.json") then
+			continue
+		end
+
+		-- The shallowest manifest is the package's own; deeper ones belong to nested projects.
+		if prefix == nil or #directory < #prefix then
+			prefix = directory
+		end
+	end
+
+	return prefix or ""
+end
+
+-- Returns the Rojo project's root `$path`, which is the part of the archive that installs.
+const function findSourcePath(zipData: string, prefix: string): string?
+	const projectJson = unzipFile(zipData, `{prefix}default.project.json`)
 	if projectJson == nil then
 		return nil
 	end
 
-	local success, decoded = pcall(function()
-		return HttpService:JSONDecode(projectJson :: string)
-	end)
-	if not success or typeof(decoded) ~= "table" or decoded.tree == nil then
-		return nil
-	end
+	const ok, decoded = pcall(HttpService.JSONDecode, HttpService, projectJson)
+	const project = if ok then asTable(decoded) else nil
+	const tree = if project ~= nil then asTable(project.tree) else nil
+	const path = if tree ~= nil then tree["$path"] else nil
 
-	local path = decoded.tree["$path"]
 	if typeof(path) == "string" and path ~= "" and path ~= "." then
 		return (string.gsub(path, "^%./", ""))
 	end
+
 	return nil
 end
 
-local function downloadAndExtractAsync(
-	scope: string,
-	name: string,
-	version: string
-): (Instance?, { PendingSource }?, string?)
-	logger.debug(`fetch {scope}/{name}@{version}`)
-	local zipData, err = downloadPackageAsync(scope, name, version)
-	if zipData == nil then
-		logger.warn(`download failed for {scope}/{name}@{version}: {err}`)
-		return nil, nil, `Failed to download: {err}`
+-- Maps an archive path to its place in the package, or returns nil when it falls outside `sourcePath`.
+const function relativeToSource(path: string, sourcePath: string?): string?
+	if sourcePath == nil or path == sourcePath then
+		return path
+	elseif string.sub(path, 1, #sourcePath + 1) == `{sourcePath}/` then
+		return string.sub(path, #sourcePath + 2)
+	elseif path == `{sourcePath}.luau` or path == `{sourcePath}.lua` then
+		return "init.luau"
 	end
 
-	local prefix = detectPrefix(zipData :: string)
-	logger.debug(`zip prefix: "{prefix}"`)
+	return nil
+end
 
-	local wallyToml: string? = nil
-	pcall(function()
-		wallyToml = zzlib.unzip(zipData :: string, prefix .. "wally.toml")
-	end)
+--[[
+	Downloads one package version and builds it into an unparented tree, keeping only
+		the files the package's `wally.toml` and Rojo project say install.
+]]
+const function downloadAndExtractAsync(scope: string, name: string, version: string): Extracted
+	logger.debug(`fetch {scope}/{name}@{version}`)
 
-	local shouldInclude = buildFileFilter(wallyToml)
-	local sourcePath = findSourcePath(zipData :: string, prefix)
-	logger.debug(`source path: {sourcePath or "(none)"}`)
+	const zipData, err = downloadAsync(scope, name, version)
+	if zipData == nil then
+		logger.warn(`download failed for {scope}/{name}@{version}: {err}`)
+		return { ok = false, error = `Failed to download: {err}` }
+	end
 
-	local entries: { Entry } = {}
-	local extractOk, extractErr = pcall(function()
-		for _, filename in zzlib.files(zipData :: string) do
-			if filename:sub(-1) == "/" then
+	const extractOk, extracted = pcall(function()
+		const fileNames = listZipFiles(zipData)
+		const prefix = detectPrefix(fileNames)
+		const shouldInclude = buildFileFilter(unzipFile(zipData, `{prefix}wally.toml`))
+		const sourcePath = findSourcePath(zipData, prefix)
+		logger.debug(`zip prefix: "{prefix}", source path: {sourcePath or "(none)"}`)
+
+		const entries: { buildTree.Entry } = {}
+		for _, fileName in fileNames do
+			if fileName:sub(-1) == "/" then
 				continue
 			end
-			local relativePath = string.sub(filename, #prefix + 1)
+
+			const relativePath = string.sub(fileName, #prefix + 1)
 			if not shouldInclude(relativePath) then
 				continue
 			end
 
-			if sourcePath ~= nil then
-				local sourcePathStr = sourcePath :: string
-				local isUnderSource = string.sub(relativePath, 1, #sourcePathStr + 1) == sourcePathStr .. "/"
-				local isSourceLuau = relativePath == sourcePathStr .. ".luau" or relativePath == sourcePathStr .. ".lua"
-				local isSourceFile = relativePath == sourcePathStr
-				if not isUnderSource and not isSourceFile and not isSourceLuau then
-					continue
-				end
+			const path = relativeToSource(relativePath, sourcePath)
+			if path == nil or path == "" then
+				continue
 			end
 
-			local content = zzlib.unzip(zipData :: string, filename)
-			local path = relativePath
-			if sourcePath ~= nil then
-				local sourcePathStr = sourcePath :: string
-				if string.sub(path, 1, #sourcePathStr + 1) == sourcePathStr .. "/" then
-					path = string.sub(path, #sourcePathStr + 2)
-				elseif path == sourcePathStr .. ".luau" or path == sourcePathStr .. ".lua" then
-					path = "init.luau"
-				end
-			end
-			if path ~= "" then
-				table.insert(entries, { path = name .. "/" .. path, content = content })
-			end
+			table.insert(entries, { path = `{name}/{path}`, content = zzlib.unzip(zipData, fileName) })
 		end
+
+		return entries
 	end)
+
 	if not extractOk then
-		logger.warn(`extract failed for {scope}/{name}@{version}: {extractErr}`)
-		return nil, nil, `Failed to extract ZIP: {extractErr}`
+		logger.warn(`extract failed for {scope}/{name}@{version}: {extracted}`)
+		return { ok = false, error = `Failed to extract ZIP: {extracted}` }
 	end
 
-	logger.debug(`extracted {#entries} entries from {scope}/{name}@{version}`)
-	local tree, pending = buildTree(entries, name)
-	return tree, pending, nil
+	logger.debug(`extracted {#extracted} entries from {scope}/{name}@{version}`)
+
+	const tree, pending = buildTree(extracted, name)
+	return { ok = true, tree = tree, pending = pending }
 end
 
 return downloadAndExtractAsync

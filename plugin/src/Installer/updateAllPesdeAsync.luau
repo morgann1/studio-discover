@@ -3,26 +3,25 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
+const coreTypes = require(StudioDiscover.Core.types)
 const createLogger = require(StudioDiscover.Core.createLogger)
 const types = require(StudioDiscover.Source.Installer.types)
+const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 
 const pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
-const pesdeLockfile = require(StudioDiscover.PesdeRegistry.lockfile)
 const pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
 const pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
+const savePesdeLockfileAsync = require(StudioDiscover.PesdeRegistry.saveLockfileAsync)
 
 const logger = createLogger.createLogger("pesde.installer.updateAll")
 
-const function findUpdate(
-	updates: { types.UpdateInfo },
-	snapshot: pesdeSnapshotRoots.PesdeRootSnapshot
-): types.UpdateInfo?
-	if snapshot.kind ~= "pesde" then
-		return nil
-	end
-
+const function findUpdate(updates: { types.UpdateInfo }, snapshot: coreTypes.RootRequest): types.UpdateInfo?
 	for _, update in updates do
-		if update.realm == snapshot.realm and update.scope == snapshot.scope and update.name == snapshot.name then
+		if
+			update.realm == snapshot.requestRealm
+			and update.scope == snapshot.scope
+			and update.name == snapshot.name
+		then
 			return update
 		end
 	end
@@ -37,7 +36,7 @@ end
 const function updateAllPesdeAsync(updates: { types.UpdateInfo }): types.OperationResult
 	logger.info(`updateAll starting ({#updates} pesde package(s))`)
 
-	const nextRoots: { pesdeResolveAsync.RootRequest } = {}
+	const nextRoots: { coreTypes.RootRequest } = {}
 	local appliedCount = 0
 	for _, prior in pesdeSnapshotRoots() do
 		const update = findUpdate(updates, prior)
@@ -50,7 +49,7 @@ const function updateAllPesdeAsync(updates: { types.UpdateInfo }): types.Operati
 			scope = prior.scope,
 			name = prior.name,
 			version = if update ~= nil then update.latestVersion else prior.version,
-			realm = prior.realm,
+			requestRealm = prior.requestRealm,
 			alias = prior.alias,
 		})
 	end
@@ -65,14 +64,23 @@ const function updateAllPesdeAsync(updates: { types.UpdateInfo }): types.Operati
 		}
 	end
 
-	const resolved, rootAliases, resolutionFailures = pesdeResolveAsync(nextRoots, nil)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(nextRoots, nil)
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end
 
+	const unresolvedError = unresolvedRootsError(unresolvedRoots, resolutionFailures)
+	if unresolvedError ~= nil then
+		return {
+			ok = false,
+			error = unresolvedError,
+			failures = resolutionFailures,
+		}
+	end
+
 	return applyRootsAsync(`Update {appliedCount} pesde package(s)`, function()
 		const failures = pesdeApplyAsync(resolved, rootAliases, nil)
-		pesdeLockfile.save(resolved)
+		savePesdeLockfileAsync(resolved)
 
 		return failures
 	end)

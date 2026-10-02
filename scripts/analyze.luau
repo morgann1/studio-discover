@@ -1,10 +1,10 @@
 --!strict
 
 --[[
-	Type checks with luau-lsp. The scripts run under Lute and are checked against
-		the standard platform. The plugin, the packages, and the tasks that run inside
-		Roblox are checked against the Roblox platform through the plugin's sourcemap,
-		the plugin with the new solver and the rest with the old one.
+	Type checks with luau-lsp and the new solver. The scripts run under Lute and are
+		checked against the standard platform. The plugin, the packages, and the tasks
+		that run inside Roblox are checked against the Roblox platform through the
+		plugin's sourcemap.
 
 	Usage: lute scripts/analyze.luau
 ]]
@@ -64,28 +64,15 @@ then
 	failureCount += 1
 end
 
--- The plugin is checked with the new solver, which the editor settings also turn on.
+-- The editor settings turn the new solver on too, so this pass sees what the editor sees.
 if
 	not analyzeAsync({
 		"--platform=roblox",
 		"--flag:LuauSolverV2=true",
 		`--sourcemap={project.SOURCEMAP_PATH}`,
 		`--definitions={project.GLOBAL_DEFS_PATH}`,
-		`--ignore={project.PACKAGES_PATH}/**`,
 		project.PLUGIN_BIN_PATH,
 		project.PLUGIN_SRC_PATH,
-	})
-then
-	failureCount += 1
-end
-
--- The packages are still on the old solver until they are migrated, so this pass leaves out
--- the editor settings.
-if
-	not analyzeAsync({
-		"--platform=roblox",
-		`--sourcemap={project.SOURCEMAP_PATH}`,
-		`--definitions={project.GLOBAL_DEFS_PATH}`,
 		project.PACKAGES_PATH,
 		project.TASKS_PATH,
 	})
