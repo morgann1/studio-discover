@@ -12,14 +12,15 @@ const types = require(StudioDiscover.Source.Installer.types)
 
 --[[
 	Returns the roots that have a newer version on their registry, asking each
-		registry in turn. Roots from a registry the user turned off are skipped, and so
-		is any root whose metadata fails to load.
+		registry in turn, and how many roots couldn't be checked because their metadata
+		failed to load. Roots from a registry the user turned off are skipped.
 ]]
 const function findUpdatesAsync(
 	roots: { coreTypes.InstalledRoot },
 	registries: SettingsStore.RegistryEnableMap
-): { types.UpdateInfo }
+): ({ types.UpdateInfo }, number)
 	const updates: { types.UpdateInfo } = {}
+	local failed = 0
 
 	for _, root in roots do
 		const enabled = if root.registry == "pesde" then registries.pesde else registries.wally
@@ -30,7 +31,10 @@ const function findUpdatesAsync(
 		const metadata = if root.registry == "pesde"
 			then getPesdeMetadataAsync(root.scope, root.name)
 			else getWallyMetadataAsync(root.scope, root.name)
-		if metadata == nil or #metadata.versions == 0 then
+		if metadata == nil then
+			failed += 1
+			continue
+		elseif #metadata.versions == 0 then
 			continue
 		end
 
@@ -48,7 +52,7 @@ const function findUpdatesAsync(
 		end
 	end
 
-	return updates
+	return updates, failed
 end
 
 return findUpdatesAsync

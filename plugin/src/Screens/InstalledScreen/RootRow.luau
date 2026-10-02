@@ -26,11 +26,11 @@ const InputSize = Foundation.Enums.InputSize
 const e = React.createElement
 
 const EXPANDED_HEIGHT = 54
-const DOCKED_HEIGHT = 60
+const DOCKED_MIN_HEIGHT = 60
 
 --[[
 	One installed root: its alias, version, and source, with Update when it has an
-		update and a "…" menu to remove it otherwise. Activating the row opens its
+		update and a "…" menu to open or remove it. Activating the row opens its
 		package page. A failed action shows under the row.
 ]]
 const function RootRow(props: {
@@ -42,6 +42,7 @@ const function RootRow(props: {
 	const root = props.entry.root
 	const update = props.entry.update
 	const operation = useOperation()
+	const runningText, setRunningText = React.useState("")
 	const isBusy = Installer.useIsBusy()
 	const nextOrder = createNextOrder()
 
@@ -56,19 +57,7 @@ const function RootRow(props: {
 	if operation.isRunning then
 		action = e(Text, {
 			tag = "auto-xy text-body-small content-muted",
-			Text = if update ~= nil then "Updating..." else "Removing...",
-		})
-	elseif update ~= nil then
-		action = e(Button, {
-			text = "Update",
-			size = InputSize.XSmall,
-			variant = ButtonVariant.Standard,
-			isDisabled = isBusy,
-			onActivated = function()
-				operation.run(function()
-					return Installer.updateAllAsync({ update })
-				end)
-			end,
+			Text = runningText,
 		})
 	else
 		const actions: { MoreMenu.MenuAction } = {
@@ -77,6 +66,7 @@ const function RootRow(props: {
 				id = "remove",
 				text = "Remove from this place",
 				onActivated = function()
+					setRunningText("Removing...")
 					operation.run(function()
 						return Installer.uninstallAsync(root)
 					end)
@@ -84,9 +74,27 @@ const function RootRow(props: {
 			},
 		}
 
-		action = e(MoreMenu, {
-			label = `More for {root.alias}`,
-			actions = actions,
+		action = e(View, {
+			tag = "auto-xy row align-y-center gap-xsmall",
+		}, {
+			Update = update ~= nil and e(Button, {
+				text = "Update",
+				size = InputSize.XSmall,
+				variant = ButtonVariant.Standard,
+				isDisabled = isBusy,
+				onActivated = function()
+					setRunningText("Updating...")
+					operation.run(function()
+						return Installer.updateAllAsync({ update })
+					end)
+				end,
+				LayoutOrder = 1,
+			}),
+			More = e(MoreMenu, {
+				label = `More for {root.alias}`,
+				actions = actions,
+				LayoutOrder = 2,
+			}),
 		})
 	end
 
@@ -108,19 +116,22 @@ const function RootRow(props: {
 
 	local body: React.Node
 	if props.isDocked then
+		-- Lines up with the realm heading, and grows when the version and source wrap.
 		body = e(View, {
-			tag = "size-full-0 row align-y-center gap-small padding-x-medium",
-			Size = UDim2.new(1, 0, 0, DOCKED_HEIGHT),
+			tag = "size-full-0 auto-y row align-y-center gap-small padding-x-large padding-y-small",
 			onActivated = open,
 			LayoutOrder = nextOrder(),
 		}, {
+			MinHeight = e("UISizeConstraint", {
+				MinSize = Vector2.new(0, DOCKED_MIN_HEIGHT),
+			}),
 			Info = e(View, {
 				tag = "grow auto-y col gap-xxsmall",
 				LayoutOrder = 1,
 			}, {
 				Name = name,
 				Meta = e(View, {
-					tag = "size-full-0 auto-y row align-y-center gap-medium",
+					tag = "size-full-0 auto-y row wrap align-y-center gap-medium",
 					LayoutOrder = 2,
 				}, {
 					Version = version,

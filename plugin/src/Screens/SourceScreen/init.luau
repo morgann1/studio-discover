@@ -4,6 +4,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const React = require(StudioDiscover.Packages.React)
 
+const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const LoadError = require(StudioDiscover.Source.Common.LoadError)
 const Message = require(StudioDiscover.Source.Common.Message)
 const Navigation = require(StudioDiscover.Source.Navigation)
@@ -32,12 +33,15 @@ const function SourceScreen(props: {
 })
 	const registry = props.registry
 	const label = registryLabel(registry)
+	const layout = LayoutContext.useLayout()
 	const query, setQuery = React.useState("")
 	const enabled = isRegistryEnabled(SettingsStore.useSettings().registries, registry)
 
+	-- The search row only shows docked, so a wider widget goes back to the listing.
+	const activeQuery = if layout.isDocked then query else ""
 	const listing = useListing(registry)
-	const results = useSearchPackages(query, if enabled then { registry } else {})
-	const isSearching = #query >= 2
+	const results = useSearchPackages(activeQuery, if enabled then { registry } else {})
+	const isSearching = #activeQuery >= 2
 	const state = if isSearching then results else listing
 	const data = state.data
 
@@ -53,7 +57,7 @@ const function SourceScreen(props: {
 		body = e(LoadError, { text = `Couldn't load {label}: {state.error}` })
 	elseif data == nil or #data == 0 then
 		body = e(Message, {
-			text = if isSearching then `No {label} packages match "{query}".` else `{label} listed no packages.`,
+			text = if isSearching then `No {label} packages match "{activeQuery}".` else `{label} listed no packages.`,
 		})
 	else
 		body = e(PackageTable, {

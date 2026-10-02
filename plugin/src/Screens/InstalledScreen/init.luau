@@ -16,6 +16,7 @@ const capitalize = require(StudioDiscover.Source.Util.capitalize)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
 const packagesPath = require(StudioDiscover.Source.Util.packagesPath)
+const plural = require(StudioDiscover.Source.Util.plural)
 const registries = require(StudioDiscover.Libraries.Core.registries)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
 
@@ -33,7 +34,7 @@ const COLUMNS: { Table.Column } = {
 	{ key = "name", label = "Name" },
 	{ key = "version", label = "Version", width = 168 },
 	{ key = "source", label = "Source", width = 128 },
-	{ key = "action", label = "", width = 96 },
+	{ key = "action", label = "", width = 104 },
 }
 
 const MONOSPACE = Font.fromEnum(Enum.Font.RobotoMono)
@@ -93,7 +94,9 @@ const function InstalledScreen(props: {
 	const enabled = SettingsStore.useSettings().registries
 	const query, setQuery = React.useState("")
 
-	const groups = groupRoots(installed.roots, updates.updates, query, props.onlyUpdates)
+	-- The search row only shows docked, so a wider widget drops the filter along with it.
+	const activeQuery = if layout.isDocked then query else ""
+	const groups = groupRoots(installed.roots, updates.updates, activeQuery, props.onlyUpdates)
 
 	local firstSource = nil
 	for _, registry in registries do
@@ -118,10 +121,15 @@ const function InstalledScreen(props: {
 				}
 				else nil,
 		})
-	elseif #groups == 0 and query ~= "" then
-		body = e(Message, { text = `Nothing installed matches "{query}".` })
+	elseif #groups == 0 and activeQuery ~= "" then
+		body = e(Message, { text = `Nothing installed matches "{activeQuery}".` })
 	elseif #groups == 0 and updates.loading then
 		body = e(Message, { text = "Checking for updates..." })
+	elseif #groups == 0 and updates.failed > 0 then
+		body = e(Message, {
+			text = `Couldn't check {plural(updates.failed, "package")} for updates.`,
+			action = { text = "Try again", onActivated = Installer.refreshInstalledRoots },
+		})
 	elseif #groups == 0 then
 		body = e(Message, { text = "Everything is up to date." })
 	else

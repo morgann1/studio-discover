@@ -19,6 +19,7 @@ const SidebarStore = require(StudioDiscover.Source.SidebarStore)
 const SourceScreen = require(StudioDiscover.Source.Screens.SourceScreen)
 const buildConfig = require(StudioDiscover.Source.buildConfig)
 const exhaustiveMatch = require(StudioDiscover.Libraries.Core.exhaustiveMatch)
+const plural = require(StudioDiscover.Source.Util.plural)
 const useBreakpoint = require(StudioDiscover.Source.Common.useBreakpoint)
 
 const Divider = Foundation.Divider
@@ -74,7 +75,7 @@ const function App(props: {
 	const updatesCount = #Installer.useUpdates().updates
 	React.useEffect(function()
 		widget.Title = if updatesCount > 0
-			then `{buildConfig.widgetTitle} · {updatesCount} update{if updatesCount == 1 then "" else "s"}`
+			then `{buildConfig.widgetTitle} · {plural(updatesCount, "update")}`
 			else buildConfig.widgetTitle
 	end, { widget, updatesCount } :: { unknown })
 

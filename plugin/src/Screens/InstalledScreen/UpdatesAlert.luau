@@ -7,6 +7,7 @@ const React = require(StudioDiscover.Packages.React)
 
 const Installer = require(StudioDiscover.Source.Installer)
 const installerTypes = require(StudioDiscover.Source.Installer.types)
+const plural = require(StudioDiscover.Source.Util.plural)
 const useOperation = require(StudioDiscover.Source.Common.useOperation)
 
 const Alert = Foundation.Alert
@@ -15,10 +16,6 @@ const AlertSeverity = Foundation.Enums.AlertSeverity
 const AlertVariant = Foundation.Enums.AlertVariant
 
 const e = React.createElement
-
-const function plural(count: number, noun: string): string
-	return if count == 1 then `1 {noun}` else `{count} {noun}s`
-end
 
 --[[
 	How many updates are waiting, with Update all. While the updates run it says so in

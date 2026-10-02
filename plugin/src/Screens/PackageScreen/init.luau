@@ -202,9 +202,11 @@ const function PackageScreen(props: {
 				end,
 			}
 		else
+			const isDowngrade = root ~= nil and not isUpdate
+
 			action = {
-				text = if isUpdate then "Update" else "Install",
-				isEmphasized = true,
+				text = if isUpdate then "Update" elseif isDowngrade then "Downgrade" else "Install",
+				isEmphasized = not isDowngrade,
 				isDisabled = isDev or isBusy,
 				onActivated = function()
 					if settings.confirmBeforeInstall then

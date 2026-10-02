@@ -9,13 +9,15 @@ const findUpdatesAsync = require(StudioDiscover.Source.Installer.findUpdatesAsyn
 const installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
 const types = require(StudioDiscover.Source.Installer.types)
 
+-- `failed` counts the roots the last check couldn't reach their registry for.
 export type UpdatesState = {
 	read updates: { types.UpdateInfo },
+	read failed: number,
 	read loading: boolean,
 }
 
 -- The installed roots with a newer version, checked once and shared by every screen.
-const updatesAtom = Charm.atom({ updates = {}, loading = true } :: UpdatesState)
+const updatesAtom = Charm.atom({ updates = {}, failed = 0, loading = true } :: UpdatesState)
 
 -- Only the registry switches, so changing an unrelated setting doesn't check again.
 const registriesAtom = Charm.computed(function()
@@ -34,13 +36,13 @@ Charm.effect(function()
 
 	if roots ~= nil then
 		updatesAtom(function(previous)
-			return { updates = previous.updates, loading = true }
+			return { updates = previous.updates, failed = previous.failed, loading = true }
 		end)
 
 		task.spawn(function()
-			const updates = findUpdatesAsync(roots, registries)
+			const updates, failed = findUpdatesAsync(roots, registries)
 			if not cancelled then
-				updatesAtom({ updates = updates, loading = false })
+				updatesAtom({ updates = updates, failed = failed, loading = false })
 			end
 		end)
 	end
