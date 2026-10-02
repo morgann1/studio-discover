@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const isDependencyValid = require(ServerScriptService.StudioDiscover.WallyRegistry.isDependencyValid)
+const isDependencyValid = require(ServerScriptService.StudioDiscover.Libraries.WallyRegistry.isDependencyValid)
 
 -- A shared package replicates to clients, so it cannot reach into ServerStorage.
 describe("isDependencyValid", function()

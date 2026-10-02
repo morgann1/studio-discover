@@ -4,12 +4,12 @@ const HttpService = game:GetService("HttpService")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const asString = require(StudioDiscover.Core.asString)
-const asStringList = require(StudioDiscover.Core.asStringList)
-const asTable = require(StudioDiscover.Core.asTable)
-const createCache = require(StudioDiscover.Core.createCache)
-const httpClient = require(StudioDiscover.WallyRegistry.Api.httpClient)
-const types = require(StudioDiscover.Core.types)
+const asString = require(StudioDiscover.Libraries.Core.asString)
+const asStringList = require(StudioDiscover.Libraries.Core.asStringList)
+const asTable = require(StudioDiscover.Libraries.Core.asTable)
+const createCache = require(StudioDiscover.Libraries.Core.createCache)
+const httpClient = require(StudioDiscover.Libraries.WallyRegistry.Api.httpClient)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const MIN_QUERY_LENGTH = 2
 

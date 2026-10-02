@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const parseToml = require(ServerScriptService.StudioDiscover.Core.parseToml)
+const parseToml = require(ServerScriptService.StudioDiscover.Libraries.Core.parseToml)
 
 describe("parseToml", function()
 	it("reads keys into the table their header names", function()

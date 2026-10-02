@@ -2,16 +2,16 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const fetchMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.fetchMetadataAsync)
-const formatPackageId = require(StudioDiscover.PesdeRegistry.formatPackageId)
-const isNewerVersion = require(StudioDiscover.Semver.isNewerVersion)
-const pesdeSemver = require(StudioDiscover.Semver.pesde)
-const realmFromTarget = require(StudioDiscover.PesdeRegistry.realmFromTarget)
-const splitFullName = require(StudioDiscover.Core.splitFullName)
-const targetFromRealm = require(StudioDiscover.PesdeRegistry.targetFromRealm)
-const types = require(StudioDiscover.PesdeRegistry.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const fetchMetadataAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.fetchMetadataAsync)
+const formatPackageId = require(StudioDiscover.Libraries.PesdeRegistry.formatPackageId)
+const isNewerVersion = require(StudioDiscover.Libraries.Semver.isNewerVersion)
+const pesdeSemver = require(StudioDiscover.Libraries.Semver.pesde)
+const realmFromTarget = require(StudioDiscover.Libraries.PesdeRegistry.realmFromTarget)
+const splitFullName = require(StudioDiscover.Libraries.Core.splitFullName)
+const targetFromRealm = require(StudioDiscover.Libraries.PesdeRegistry.targetFromRealm)
+const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 
 const logger = createLogger.createLogger("pesde.installer.resolve")
 

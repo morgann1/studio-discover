@@ -3,15 +3,15 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
-const coreTypes = require(StudioDiscover.Core.types)
-const createLogger = require(StudioDiscover.Core.createLogger)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const types = require(StudioDiscover.Source.Installer.types)
 const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 
-const pesdeApplyAsync = require(StudioDiscover.PesdeRegistry.applyAsync)
-const pesdeResolveAsync = require(StudioDiscover.PesdeRegistry.resolveAsync)
-const pesdeSnapshotRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
-const savePesdeLockfileAsync = require(StudioDiscover.PesdeRegistry.saveLockfileAsync)
+const pesdeApplyAsync = require(StudioDiscover.Libraries.PesdeRegistry.applyAsync)
+const pesdeResolveAsync = require(StudioDiscover.Libraries.PesdeRegistry.resolveAsync)
+const pesdeSnapshotRoots = require(StudioDiscover.Libraries.PesdeRegistry.snapshotRoots)
+const savePesdeLockfileAsync = require(StudioDiscover.Libraries.PesdeRegistry.saveLockfileAsync)
 
 const logger = createLogger.createLogger("pesde.installer.updateAll")
 

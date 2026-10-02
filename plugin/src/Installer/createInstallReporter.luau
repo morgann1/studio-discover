@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const installerAtom = require(StudioDiscover.Source.Installer.installerAtom)
 const types = require(StudioDiscover.Source.Installer.types)
 

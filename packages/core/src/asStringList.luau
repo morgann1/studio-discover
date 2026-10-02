@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const asTable = require(StudioDiscover.Core.asTable)
+const asTable = require(StudioDiscover.Libraries.Core.asTable)
 
 -- Reads the strings out of a decoded array, skipping anything else. Anything but a table reads as empty.
 const function asStringList(value: unknown): { string }

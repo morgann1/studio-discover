@@ -6,7 +6,7 @@ const React = require(StudioDiscover.Packages.React)
 
 const installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
 const refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 const NO_ROOTS: { types.InstalledRoot } = {}

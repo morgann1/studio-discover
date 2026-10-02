@@ -3,7 +3,7 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
-const createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const formatName = require(StudioDiscover.Source.Util.formatName)
 
 const logger = createLogger.createLogger("installer.alias")

@@ -8,8 +8,8 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const compareSemver = require(ServerScriptService.StudioDiscover.Semver.compareSemver)
-const parseSemver = require(ServerScriptService.StudioDiscover.Semver.parseSemver)
+const compareSemver = require(ServerScriptService.StudioDiscover.Libraries.Semver.compareSemver)
+const parseSemver = require(ServerScriptService.StudioDiscover.Libraries.Semver.parseSemver)
 
 const function compare(a: string, b: string): number
 	const left = parseSemver(a)

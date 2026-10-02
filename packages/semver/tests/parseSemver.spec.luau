@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const parseSemver = require(ServerScriptService.StudioDiscover.Semver.parseSemver)
+const parseSemver = require(ServerScriptService.StudioDiscover.Libraries.Semver.parseSemver)
 
 describe("parseSemver", function()
 	it("strips a leading v and build metadata", function()

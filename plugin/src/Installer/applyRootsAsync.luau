@@ -4,7 +4,7 @@ const ChangeHistoryService = game:GetService("ChangeHistoryService")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const permissionError = require(StudioDiscover.Source.Installer.permissionError)
 const refreshInstalledRoots = require(StudioDiscover.Source.Installer.refreshInstalledRoots)
 const types = require(StudioDiscover.Source.Installer.types)

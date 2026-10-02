@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const parseExportedTypes = require(StudioDiscover.PackageTypes.parseExportedTypes)
+const parseExportedTypes = require(StudioDiscover.Libraries.PackageTypes.parseExportedTypes)
 
 --[[
 	Returns the `export type` lines that re-export every type `source` exports,

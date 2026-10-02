@@ -4,11 +4,11 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const React = require(StudioDiscover.Packages.React)
 
-const getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
-const getWallyMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
+const getPesdeMetadataAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.getMetadataAsync)
+const getWallyMetadataAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.getMetadataAsync)
 
-const compareSemver = require(StudioDiscover.Semver.compareSemver)
-const parseSemver = require(StudioDiscover.Semver.parseSemver)
+const compareSemver = require(StudioDiscover.Libraries.Semver.compareSemver)
+const parseSemver = require(StudioDiscover.Libraries.Semver.parseSemver)
 
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const types = require(StudioDiscover.Source.Installer.types)

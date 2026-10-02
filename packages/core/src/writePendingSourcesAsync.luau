@@ -2,8 +2,8 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const buildTree = require(StudioDiscover.Core.buildTree)
-const setScriptSourceAsync = require(StudioDiscover.Core.setScriptSourceAsync)
+const buildTree = require(StudioDiscover.Libraries.Core.buildTree)
+const setScriptSourceAsync = require(StudioDiscover.Libraries.Core.setScriptSourceAsync)
 
 --[[
 	Writes the sources `buildTree` left pending, stopping at the first that fails.

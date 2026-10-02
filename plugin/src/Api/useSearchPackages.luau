@@ -5,9 +5,9 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const React = require(StudioDiscover.Packages.React)
 
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
-const coreTypes = require(StudioDiscover.Core.types)
-const searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
-const searchWallyAsync = require(StudioDiscover.WallyRegistry.Api.searchAsync)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const searchPesdeAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.searchAsync)
+const searchWallyAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.searchAsync)
 
 const DEBOUNCE_SECONDS = 0.25
 const MIN_QUERY_LENGTH = 2

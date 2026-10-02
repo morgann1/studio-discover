@@ -10,7 +10,7 @@ const RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const formatName = require(StudioDiscover.Source.Util.formatName)
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 const Text = Foundation.Text

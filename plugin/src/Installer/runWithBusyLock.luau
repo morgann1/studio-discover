@@ -3,7 +3,7 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const busyAtom = require(StudioDiscover.Source.Installer.busyAtom)
-const createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const types = require(StudioDiscover.Source.Installer.types)
 
 const logger = createLogger.createLogger("installer.busyLock")

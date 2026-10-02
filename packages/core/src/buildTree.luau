@@ -2,9 +2,9 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const classifyFile = require(StudioDiscover.Core.classifyFile)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const exhaustiveMatch = require(StudioDiscover.Core.exhaustiveMatch)
+const classifyFile = require(StudioDiscover.Libraries.Core.classifyFile)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const exhaustiveMatch = require(StudioDiscover.Libraries.Core.exhaustiveMatch)
 
 const logger = createLogger.createLogger("core.buildTree")
 

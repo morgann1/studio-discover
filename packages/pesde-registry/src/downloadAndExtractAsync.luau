@@ -2,16 +2,16 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const zzlib = require(StudioDiscover.Core.zzlib)
+const zzlib = require(StudioDiscover.Libraries.Core.zzlib)
 
-const asString = require(StudioDiscover.Core.asString)
-const asTable = require(StudioDiscover.Core.asTable)
-const buildTree = require(StudioDiscover.Core.buildTree)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const downloadAsync = require(StudioDiscover.PesdeRegistry.Api.downloadAsync)
-const parseTar = require(StudioDiscover.PesdeRegistry.parseTar)
-const parseToml = require(StudioDiscover.Core.parseToml)
-const types = require(StudioDiscover.PesdeRegistry.types)
+const asString = require(StudioDiscover.Libraries.Core.asString)
+const asTable = require(StudioDiscover.Libraries.Core.asTable)
+const buildTree = require(StudioDiscover.Libraries.Core.buildTree)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const downloadAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.downloadAsync)
+const parseTar = require(StudioDiscover.Libraries.PesdeRegistry.parseTar)
+const parseToml = require(StudioDiscover.Libraries.Core.parseToml)
+const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 
 const logger = createLogger.createLogger("pesde.installer.download")
 

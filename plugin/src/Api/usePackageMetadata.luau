@@ -4,9 +4,9 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const React = require(StudioDiscover.Packages.React)
 
-const coreTypes = require(StudioDiscover.Core.types)
-const getPesdeMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.getMetadataAsync)
-const getWallyMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const getPesdeMetadataAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.getMetadataAsync)
+const getWallyMetadataAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.getMetadataAsync)
 
 export type MetadataState = {
 	read loading: boolean,

@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const buildPackageLink = require(ServerScriptService.StudioDiscover.WallyRegistry.buildPackageLink)
+const buildPackageLink = require(ServerScriptService.StudioDiscover.Libraries.WallyRegistry.buildPackageLink)
 
 const buildRootPackageLink = buildPackageLink.buildRootPackageLink
 const buildSiblingPackageLink = buildPackageLink.buildSiblingPackageLink

@@ -2,8 +2,8 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const trim = require(StudioDiscover.Core.trim)
-const wallySemver = require(StudioDiscover.Semver.wally)
+const trim = require(StudioDiscover.Libraries.Core.trim)
+const wallySemver = require(StudioDiscover.Libraries.Semver.wally)
 
 --[[
 	Reduces a pesde constraint to the Wally form `buildSatisfies` reads, or to "" for

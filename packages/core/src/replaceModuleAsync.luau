@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const setScriptSourceAsync = require(StudioDiscover.Core.setScriptSourceAsync)
+const setScriptSourceAsync = require(StudioDiscover.Libraries.Core.setScriptSourceAsync)
 
 --[[
 	Replaces the ModuleScript named `name` under `parent` with a new one holding

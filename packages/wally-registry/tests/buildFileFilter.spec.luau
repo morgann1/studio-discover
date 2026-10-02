@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const buildFileFilter = require(ServerScriptService.StudioDiscover.WallyRegistry.buildFileFilter)
+const buildFileFilter = require(ServerScriptService.StudioDiscover.Libraries.WallyRegistry.buildFileFilter)
 
 describe("the default exclude list", function()
 	const keep = buildFileFilter(nil)

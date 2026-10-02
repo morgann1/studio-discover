@@ -4,13 +4,13 @@ const HttpService = game:GetService("HttpService")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const asString = require(StudioDiscover.Core.asString)
-const asTable = require(StudioDiscover.Core.asTable)
-const createCache = require(StudioDiscover.Core.createCache)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const httpClient = require(StudioDiscover.PesdeRegistry.Api.httpClient)
-const splitFullName = require(StudioDiscover.Core.splitFullName)
-const types = require(StudioDiscover.Core.types)
+const asString = require(StudioDiscover.Libraries.Core.asString)
+const asTable = require(StudioDiscover.Libraries.Core.asTable)
+const createCache = require(StudioDiscover.Libraries.Core.createCache)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const httpClient = require(StudioDiscover.Libraries.PesdeRegistry.Api.httpClient)
+const splitFullName = require(StudioDiscover.Libraries.Core.splitFullName)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const logger = createLogger.createLogger("pesde.api.search")
 

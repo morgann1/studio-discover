@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createHttpClient = require(StudioDiscover.Core.createHttpClient)
+const createHttpClient = require(StudioDiscover.Libraries.Core.createHttpClient)
 
 -- The wally CLI version whose API Discover speaks. The registry rejects requests without it.
 const WALLY_VERSION = "0.3.2"

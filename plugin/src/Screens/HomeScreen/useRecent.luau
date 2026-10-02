@@ -4,8 +4,8 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const React = require(StudioDiscover.Packages.React)
 
-const searchPesdeAsync = require(StudioDiscover.PesdeRegistry.Api.searchAsync)
-const types = require(StudioDiscover.Core.types)
+const searchPesdeAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.searchAsync)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const LIMIT = 12
 

@@ -14,10 +14,10 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createLogger = require(StudioDiscover.Core.createLogger)
-const forwardTypes = require(StudioDiscover.PackageTypes.forwardTypes)
-const parseLink = require(StudioDiscover.PackageTypes.parseLink)
-const setScriptSourceAsync = require(StudioDiscover.Core.setScriptSourceAsync)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const forwardTypes = require(StudioDiscover.Libraries.PackageTypes.forwardTypes)
+const parseLink = require(StudioDiscover.Libraries.PackageTypes.parseLink)
+const setScriptSourceAsync = require(StudioDiscover.Libraries.Core.setScriptSourceAsync)
 
 const logger = createLogger.createLogger("packageTypes")
 

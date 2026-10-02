@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const buildTree = require(ServerScriptService.StudioDiscover.Core.buildTree)
+const buildTree = require(ServerScriptService.StudioDiscover.Libraries.Core.buildTree)
 
 -- Archives arrive with everything under one top-level directory, which buildTree drops.
 const function entry(path: string, content: string?): buildTree.Entry

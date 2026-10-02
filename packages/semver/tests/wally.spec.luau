@@ -8,8 +8,8 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const parseSemver = require(ServerScriptService.StudioDiscover.Semver.parseSemver)
-const wally = require(ServerScriptService.StudioDiscover.Semver.wally)
+const parseSemver = require(ServerScriptService.StudioDiscover.Libraries.Semver.parseSemver)
+const wally = require(ServerScriptService.StudioDiscover.Libraries.Semver.wally)
 
 describe("wally.buildSatisfies", function()
 	it("treats a bare version as a caret range", function()

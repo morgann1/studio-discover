@@ -4,9 +4,9 @@ const ServerStorage = game:GetService("ServerStorage")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createLogger = require(StudioDiscover.Core.createLogger)
-const replaceModuleAsync = require(StudioDiscover.Core.replaceModuleAsync)
-const types = require(StudioDiscover.PesdeRegistry.types)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const replaceModuleAsync = require(StudioDiscover.Libraries.Core.replaceModuleAsync)
+const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 
 const logger = createLogger.createLogger("pesde.installer.lockfile")
 

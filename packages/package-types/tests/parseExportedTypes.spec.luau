@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const parseExportedTypes = require(ServerScriptService.StudioDiscover.PackageTypes.parseExportedTypes)
+const parseExportedTypes = require(ServerScriptService.StudioDiscover.Libraries.PackageTypes.parseExportedTypes)
 
 const extractExportedTypes = parseExportedTypes.extractExportedTypes
 const extractDefaultType = parseExportedTypes.extractDefaultType

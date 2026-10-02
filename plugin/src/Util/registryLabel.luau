@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const LABELS: { [types.Registry]: string } = {
 	wally = "Wally",

@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 --[[
 	Whether a package in `requestRealm` may depend on one in `dependencyRealm`.

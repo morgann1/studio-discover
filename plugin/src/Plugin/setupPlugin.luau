@@ -5,8 +5,8 @@ const StudioService = game:GetService("StudioService")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const buildConfig = require(StudioDiscover.Generated.buildConfig)
-const createLogger = require(StudioDiscover.Core.createLogger)
+const buildConfig = require(StudioDiscover.Source.buildConfig)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const pluginAtom = require(StudioDiscover.Source.Plugin.pluginAtom)
 
 const logger = createLogger.createLogger("plugin.bootstrap")

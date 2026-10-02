@@ -2,35 +2,35 @@
   "name": "StudioDiscover",
   "tree": {
     "$className": "Folder",
-    "Bin": {
-      "$path": "bin/"
+    "Main": {
+      "$path": "bin/Main.plugin.luau"
     },
     "Source": {
-      "$path": "src/"
-    },
-    "Core": {
-      "$path": "../packages/core/src"
-    },
-    "PackageTypes": {
-      "$path": "../packages/package-types/src"
-    },
-    "PesdeRegistry": {
-      "$path": "../packages/pesde-registry/src"
-    },
-    "Semver": {
-      "$path": "../packages/semver/src"
-    },
-    "WallyRegistry": {
-      "$path": "../packages/wally-registry/src"
-    },
-    "Packages": {
-      "$path": "Packages/"
-    },
-    "Generated": {
-      "$className": "Folder",
+      "$path": "src/",
       "buildConfig": {
         "$path": "generated/buildConfig.luau"
       }
+    },
+    "Libraries": {
+      "$className": "Folder",
+      "Core": {
+        "$path": "../packages/core/src"
+      },
+      "PackageTypes": {
+        "$path": "../packages/package-types/src"
+      },
+      "PesdeRegistry": {
+        "$path": "../packages/pesde-registry/src"
+      },
+      "Semver": {
+        "$path": "../packages/semver/src"
+      },
+      "WallyRegistry": {
+        "$path": "../packages/wally-registry/src"
+      }
+    },
+    "Packages": {
+      "$path": "Packages/"
     }
   }
 }

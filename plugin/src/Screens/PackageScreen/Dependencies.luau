@@ -6,7 +6,7 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const Navigation = require(StudioDiscover.Source.Navigation)
-const coreTypes = require(StudioDiscover.Core.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
 

@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 
 const logger = createLogger.createLogger("wally.installer.fileFilter")
 

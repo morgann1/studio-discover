@@ -8,9 +8,9 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const containerName = require(StudioDiscover.PesdeRegistry.containerName)
-const libPathSegments = require(StudioDiscover.PesdeRegistry.libPathSegments)
-const types = require(StudioDiscover.PesdeRegistry.types)
+const containerName = require(StudioDiscover.Libraries.PesdeRegistry.containerName)
+const libPathSegments = require(StudioDiscover.Libraries.PesdeRegistry.libPathSegments)
+const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 
 -- An unparented link and the source the caller writes through `setScriptSourceAsync`.
 export type LinkBuild = {

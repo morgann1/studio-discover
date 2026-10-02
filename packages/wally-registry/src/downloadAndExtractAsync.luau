@@ -4,13 +4,13 @@ const HttpService = game:GetService("HttpService")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const zzlib = require(StudioDiscover.Core.zzlib)
+const zzlib = require(StudioDiscover.Libraries.Core.zzlib)
 
-const asTable = require(StudioDiscover.Core.asTable)
-const buildFileFilter = require(StudioDiscover.WallyRegistry.buildFileFilter)
-const buildTree = require(StudioDiscover.Core.buildTree)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const downloadAsync = require(StudioDiscover.WallyRegistry.Api.downloadAsync)
+const asTable = require(StudioDiscover.Libraries.Core.asTable)
+const buildFileFilter = require(StudioDiscover.Libraries.WallyRegistry.buildFileFilter)
+const buildTree = require(StudioDiscover.Libraries.Core.buildTree)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const downloadAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.downloadAsync)
 
 const logger = createLogger.createLogger("wally.installer.download")
 

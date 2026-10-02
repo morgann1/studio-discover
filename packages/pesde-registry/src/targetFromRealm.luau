@@ -2,8 +2,8 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
-const types = require(StudioDiscover.PesdeRegistry.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 
 -- The pesde target a package installs from for each realm.
 const function targetFromRealm(realm: coreTypes.Realm): types.Target

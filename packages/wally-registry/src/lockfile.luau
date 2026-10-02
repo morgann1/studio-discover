@@ -10,13 +10,13 @@ const ServerStorage = game:GetService("ServerStorage")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const asString = require(StudioDiscover.Core.asString)
-const asTable = require(StudioDiscover.Core.asTable)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const packageId = require(StudioDiscover.WallyRegistry.packageId)
-const replaceModuleAsync = require(StudioDiscover.Core.replaceModuleAsync)
-const splitFullName = require(StudioDiscover.Core.splitFullName)
-const types = require(StudioDiscover.WallyRegistry.types)
+const asString = require(StudioDiscover.Libraries.Core.asString)
+const asTable = require(StudioDiscover.Libraries.Core.asTable)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const packageId = require(StudioDiscover.Libraries.WallyRegistry.packageId)
+const replaceModuleAsync = require(StudioDiscover.Libraries.Core.replaceModuleAsync)
+const splitFullName = require(StudioDiscover.Libraries.Core.splitFullName)
+const types = require(StudioDiscover.Libraries.WallyRegistry.types)
 
 const logger = createLogger.createLogger("wally.installer.lockfile")
 

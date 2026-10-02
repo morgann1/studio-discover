@@ -2,17 +2,17 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const buildPackageLink = require(StudioDiscover.WallyRegistry.buildPackageLink)
-const coreTypes = require(StudioDiscover.Core.types)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const downloadAndExtractAsync = require(StudioDiscover.WallyRegistry.downloadAndExtractAsync)
-const parseLink = require(StudioDiscover.PackageTypes.parseLink)
-const packagesFolder = require(StudioDiscover.WallyRegistry.packagesFolder)
-const processLinkAsync = require(StudioDiscover.PackageTypes)
-const realms = require(StudioDiscover.Core.realms)
-const setScriptSourceAsync = require(StudioDiscover.Core.setScriptSourceAsync)
-const types = require(StudioDiscover.WallyRegistry.types)
-const writePendingSourcesAsync = require(StudioDiscover.Core.writePendingSourcesAsync)
+const buildPackageLink = require(StudioDiscover.Libraries.WallyRegistry.buildPackageLink)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const downloadAndExtractAsync = require(StudioDiscover.Libraries.WallyRegistry.downloadAndExtractAsync)
+const parseLink = require(StudioDiscover.Libraries.PackageTypes.parseLink)
+const packagesFolder = require(StudioDiscover.Libraries.WallyRegistry.packagesFolder)
+const processLinkAsync = require(StudioDiscover.Libraries.PackageTypes.processLinkAsync)
+const realms = require(StudioDiscover.Libraries.Core.realms)
+const setScriptSourceAsync = require(StudioDiscover.Libraries.Core.setScriptSourceAsync)
+const types = require(StudioDiscover.Libraries.WallyRegistry.types)
+const writePendingSourcesAsync = require(StudioDiscover.Libraries.Core.writePendingSourcesAsync)
 
 const logger = createLogger.createLogger("wally.installer.apply")
 

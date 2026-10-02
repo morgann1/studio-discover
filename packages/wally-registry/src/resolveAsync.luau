@@ -2,17 +2,17 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const getMetadataAsync = require(StudioDiscover.WallyRegistry.Api.getMetadataAsync)
-const isDependencyValid = require(StudioDiscover.WallyRegistry.isDependencyValid)
-const isNewerVersion = require(StudioDiscover.Semver.isNewerVersion)
-const packageId = require(StudioDiscover.WallyRegistry.packageId)
-const parseSemver = require(StudioDiscover.Semver.parseSemver)
-const promoteRealm = require(StudioDiscover.WallyRegistry.promoteRealm)
-const splitFullName = require(StudioDiscover.Core.splitFullName)
-const types = require(StudioDiscover.WallyRegistry.types)
-const wallySemver = require(StudioDiscover.Semver.wally)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const getMetadataAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.getMetadataAsync)
+const isDependencyValid = require(StudioDiscover.Libraries.WallyRegistry.isDependencyValid)
+const isNewerVersion = require(StudioDiscover.Libraries.Semver.isNewerVersion)
+const packageId = require(StudioDiscover.Libraries.WallyRegistry.packageId)
+const parseSemver = require(StudioDiscover.Libraries.Semver.parseSemver)
+const promoteRealm = require(StudioDiscover.Libraries.WallyRegistry.promoteRealm)
+const splitFullName = require(StudioDiscover.Libraries.Core.splitFullName)
+const types = require(StudioDiscover.Libraries.WallyRegistry.types)
+const wallySemver = require(StudioDiscover.Libraries.Semver.wally)
 
 const logger = createLogger.createLogger("wally.installer.resolve")
 

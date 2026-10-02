@@ -2,10 +2,10 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const compareSemver = require(StudioDiscover.Semver.compareSemver)
-const exhaustiveMatch = require(StudioDiscover.Core.exhaustiveMatch)
-const parseSemver = require(StudioDiscover.Semver.parseSemver)
-const trim = require(StudioDiscover.Core.trim)
+const compareSemver = require(StudioDiscover.Libraries.Semver.compareSemver)
+const exhaustiveMatch = require(StudioDiscover.Libraries.Core.exhaustiveMatch)
+const parseSemver = require(StudioDiscover.Libraries.Semver.parseSemver)
+const trim = require(StudioDiscover.Libraries.Core.trim)
 
 type Semver = parseSemver.Semver
 

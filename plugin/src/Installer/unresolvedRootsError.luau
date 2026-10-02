@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
 
 --[[
 	Describes the roots a resolve could not place, or returns nil when it placed

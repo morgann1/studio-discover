@@ -5,7 +5,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Charm = require(StudioDiscover.Packages.Charm)
 const GreenTea = require(StudioDiscover.Packages.GreenTea)
 
-const createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const createPluginSettingsStore = require(StudioDiscover.Source.Plugin.createPluginSettingsStore)
 const useAtom = require(StudioDiscover.Source.Common.useAtom)
 

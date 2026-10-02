@@ -10,7 +10,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
 
 export type InstallStatus = "idle" | "running" | "success" | "error"
 

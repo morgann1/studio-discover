@@ -6,7 +6,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const Charm = require(StudioDiscover.Packages.Charm)
 
-const createLogger = require(StudioDiscover.Core.createLogger)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const mergeSettings = require(StudioDiscover.Source.Plugin.mergeSettings)
 const pluginAtom = require(StudioDiscover.Source.Plugin.pluginAtom)
 

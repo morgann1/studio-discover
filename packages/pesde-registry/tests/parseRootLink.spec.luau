@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const PesdeRegistry = ServerScriptService.StudioDiscover.PesdeRegistry
+const PesdeRegistry = ServerScriptService.StudioDiscover.Libraries.PesdeRegistry
 const buildPackageLink = require(PesdeRegistry.buildPackageLink)
 const parseRootLink = require(PesdeRegistry.parseRootLink)
 

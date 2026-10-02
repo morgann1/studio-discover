@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const isNewerVersion = require(ServerScriptService.StudioDiscover.Semver.isNewerVersion)
+const isNewerVersion = require(ServerScriptService.StudioDiscover.Libraries.Semver.isNewerVersion)
 
 describe("isNewerVersion", function()
 	it("sorts versions newest first by semver, not by text", function()

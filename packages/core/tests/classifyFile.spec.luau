@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const classifyFile = require(ServerScriptService.StudioDiscover.Core.classifyFile)
+const classifyFile = require(ServerScriptService.StudioDiscover.Libraries.Core.classifyFile)
 
 describe("classifyFile", function()
 	it("maps a file suffix to the class of script it becomes", function()

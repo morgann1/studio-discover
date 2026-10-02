@@ -6,7 +6,7 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const PackageGrid = require(script.Parent.PackageGrid)
 

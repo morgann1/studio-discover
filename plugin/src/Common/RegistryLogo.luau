@@ -5,7 +5,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const Image = Foundation.Image
 

@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const promoteRealm = require(ServerScriptService.StudioDiscover.WallyRegistry.promoteRealm)
+const promoteRealm = require(ServerScriptService.StudioDiscover.Libraries.WallyRegistry.promoteRealm)
 
 --[[
 	This decides whether a package lands in ReplicatedStorage or ServerStorage,

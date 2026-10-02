@@ -2,11 +2,11 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const packagesFolder = require(StudioDiscover.PesdeRegistry.packagesFolder)
-const parseRootLink = require(StudioDiscover.PesdeRegistry.parseRootLink)
-const realms = require(StudioDiscover.Core.realms)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const packagesFolder = require(StudioDiscover.Libraries.PesdeRegistry.packagesFolder)
+const parseRootLink = require(StudioDiscover.Libraries.PesdeRegistry.parseRootLink)
+const realms = require(StudioDiscover.Libraries.Core.realms)
 
 const logger = createLogger.createLogger("pesde.installer.snapshot")
 

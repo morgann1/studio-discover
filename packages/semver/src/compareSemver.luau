@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const parseSemver = require(StudioDiscover.Semver.parseSemver)
+const parseSemver = require(StudioDiscover.Libraries.Semver.parseSemver)
 
 type Semver = parseSemver.Semver
 type PrereleaseIdent = parseSemver.PrereleaseIdent

@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const pesde = require(ServerScriptService.StudioDiscover.Semver.pesde)
+const pesde = require(ServerScriptService.StudioDiscover.Libraries.Semver.pesde)
 
 describe("pesde.normalizeConstraint", function()
 	it("drops a caret or tilde prefix", function()

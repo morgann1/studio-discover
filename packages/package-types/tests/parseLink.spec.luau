@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const parseLink = require(ServerScriptService.StudioDiscover.PackageTypes.parseLink)
+const parseLink = require(ServerScriptService.StudioDiscover.Libraries.PackageTypes.parseLink)
 
 describe("parseLink", function()
 	it("reads a link the wally CLI writes", function()

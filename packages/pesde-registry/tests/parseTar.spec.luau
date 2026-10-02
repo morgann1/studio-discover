@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const parseTar = require(ServerScriptService.StudioDiscover.PesdeRegistry.parseTar)
+const parseTar = require(ServerScriptService.StudioDiscover.Libraries.PesdeRegistry.parseTar)
 
 const BLOCK_SIZE = 512
 

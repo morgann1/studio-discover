@@ -2,12 +2,12 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createLogger = require(StudioDiscover.Core.createLogger)
-const packageId = require(StudioDiscover.WallyRegistry.packageId)
-const parseLink = require(StudioDiscover.PackageTypes.parseLink)
-const packagesFolder = require(StudioDiscover.WallyRegistry.packagesFolder)
-const realms = require(StudioDiscover.Core.realms)
-const types = require(StudioDiscover.Core.types)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const packageId = require(StudioDiscover.Libraries.WallyRegistry.packageId)
+const parseLink = require(StudioDiscover.Libraries.PackageTypes.parseLink)
+const packagesFolder = require(StudioDiscover.Libraries.WallyRegistry.packagesFolder)
+const realms = require(StudioDiscover.Libraries.Core.realms)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const logger = createLogger.createLogger("wally.installer.snapshot")
 

@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const asTable = require(StudioDiscover.Core.asTable)
+const asTable = require(StudioDiscover.Libraries.Core.asTable)
 
 --[[
 	Reads the string-to-string pairs out of a decoded object, skipping anything

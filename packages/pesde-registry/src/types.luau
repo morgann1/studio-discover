@@ -7,7 +7,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
 
 -- pesde publishes a package per target. `roblox_server` is the server realm.
 export type Target = "roblox" | "roblox_server"

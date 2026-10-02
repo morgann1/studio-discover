@@ -4,9 +4,9 @@ const HttpService = game:GetService("HttpService")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const buildUserAgent = require(StudioDiscover.Core.buildUserAgent)
-const createLogger = require(StudioDiscover.Core.createLogger)
-const createRateLimiter = require(StudioDiscover.Core.createRateLimiter)
+const buildUserAgent = require(StudioDiscover.Libraries.Core.buildUserAgent)
+const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const createRateLimiter = require(StudioDiscover.Libraries.Core.createRateLimiter)
 
 const MIN_REQUEST_INTERVAL_SECONDS = 1
 

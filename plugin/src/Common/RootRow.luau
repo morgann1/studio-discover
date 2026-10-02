@@ -9,7 +9,7 @@ const Installer = require(StudioDiscover.Source.Installer)
 const Navigation = require(StudioDiscover.Source.Navigation)
 const RegistryLogo = require(StudioDiscover.Source.Common.RegistryLogo)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-const coreTypes = require(StudioDiscover.Core.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const installerTypes = require(StudioDiscover.Source.Installer.types)
 
 const Button = Foundation.Button

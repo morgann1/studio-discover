@@ -7,7 +7,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const createPackagesFolders = require(StudioDiscover.Core.createPackagesFolders)
+const createPackagesFolders = require(StudioDiscover.Libraries.Core.createPackagesFolders)
 
 const packagesFolder = createPackagesFolders({
 	shared = "Packages",

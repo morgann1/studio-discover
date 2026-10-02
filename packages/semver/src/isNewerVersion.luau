@@ -2,8 +2,8 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const compareSemver = require(StudioDiscover.Semver.compareSemver)
-const parseSemver = require(StudioDiscover.Semver.parseSemver)
+const compareSemver = require(StudioDiscover.Libraries.Semver.compareSemver)
+const parseSemver = require(StudioDiscover.Libraries.Semver.parseSemver)
 
 --[[
 	A `table.sort` comparator that puts newer versions first. Versions that do not

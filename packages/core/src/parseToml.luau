@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const trim = require(StudioDiscover.Core.trim)
+const trim = require(StudioDiscover.Libraries.Core.trim)
 
 export type TomlTable = { [string]: unknown }
 

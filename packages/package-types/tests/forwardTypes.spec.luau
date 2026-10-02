@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const forwardTypes = require(ServerScriptService.StudioDiscover.PackageTypes.forwardTypes)
+const forwardTypes = require(ServerScriptService.StudioDiscover.Libraries.PackageTypes.forwardTypes)
 
 describe("forwardTypes", function()
 	it("forwards a plain alias and a generic one through the module variable", function()

@@ -11,7 +11,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const trim = require(StudioDiscover.Core.trim)
+const trim = require(StudioDiscover.Libraries.Core.trim)
 
 -- The names a forwarded default may use: type names that are in scope in the rewritten link module.
 export type ResolvedTypes = { [string]: true? }

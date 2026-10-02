@@ -7,7 +7,7 @@ const React = require(StudioDiscover.Packages.React)
 
 const CompactContext = require(StudioDiscover.Source.Common.CompactContext)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 const PackageCard = require(script.Parent.PackageCard)
 

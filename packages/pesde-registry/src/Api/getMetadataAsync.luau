@@ -2,11 +2,11 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const exhaustiveMatch = require(StudioDiscover.Core.exhaustiveMatch)
-const fetchMetadataAsync = require(StudioDiscover.PesdeRegistry.Api.fetchMetadataAsync)
-const isNewerVersion = require(StudioDiscover.Semver.isNewerVersion)
-const realmFromTarget = require(StudioDiscover.PesdeRegistry.realmFromTarget)
-const types = require(StudioDiscover.Core.types)
+const exhaustiveMatch = require(StudioDiscover.Libraries.Core.exhaustiveMatch)
+const fetchMetadataAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.fetchMetadataAsync)
+const isNewerVersion = require(StudioDiscover.Libraries.Semver.isNewerVersion)
+const realmFromTarget = require(StudioDiscover.Libraries.PesdeRegistry.realmFromTarget)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 type VersionEntry = fetchMetadataAsync.VersionEntry
 

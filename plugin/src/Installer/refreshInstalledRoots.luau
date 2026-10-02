@@ -3,9 +3,9 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const installedRootsAtom = require(StudioDiscover.Source.Installer.installedRootsAtom)
-const snapshotPesdeRoots = require(StudioDiscover.PesdeRegistry.snapshotRoots)
-const snapshotRoots = require(StudioDiscover.WallyRegistry.snapshotRoots)
-const types = require(StudioDiscover.Core.types)
+const snapshotPesdeRoots = require(StudioDiscover.Libraries.PesdeRegistry.snapshotRoots)
+const snapshotRoots = require(StudioDiscover.Libraries.WallyRegistry.snapshotRoots)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 -- Reads both registries' roots back out of the place into `installedRootsAtom`.
 const function refreshInstalledRoots()

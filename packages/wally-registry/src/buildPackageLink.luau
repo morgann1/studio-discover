@@ -13,7 +13,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const types = require(StudioDiscover.Core.types)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 -- An unparented link and the source the caller writes through `setScriptSourceAsync`.
 export type LinkBuild = {

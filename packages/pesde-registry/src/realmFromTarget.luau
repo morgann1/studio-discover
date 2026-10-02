@@ -2,8 +2,8 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const coreTypes = require(StudioDiscover.Core.types)
-const types = require(StudioDiscover.PesdeRegistry.types)
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 
 -- The realm a package published for `target` installs into.
 const function realmFromTarget(target: types.Target): coreTypes.Realm

@@ -8,7 +8,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
-const packageId = require(ServerScriptService.StudioDiscover.WallyRegistry.packageId)
+const packageId = require(ServerScriptService.StudioDiscover.Libraries.WallyRegistry.packageId)
 
 describe("packageId.format", function()
 	it("joins scope and name with an underscore and the version with an at sign", function()

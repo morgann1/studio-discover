@@ -2,7 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const types = require(StudioDiscover.PesdeRegistry.types)
+const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 
 --[[
 	The id resolve keys a pesde package by. It carries a target as well as a

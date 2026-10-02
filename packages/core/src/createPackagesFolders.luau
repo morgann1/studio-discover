@@ -5,8 +5,8 @@ const ServerStorage = game:GetService("ServerStorage")
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const getOrCreateFolder = require(StudioDiscover.Core.getOrCreateFolder)
-const types = require(StudioDiscover.Core.types)
+const getOrCreateFolder = require(StudioDiscover.Libraries.Core.getOrCreateFolder)
+const types = require(StudioDiscover.Libraries.Core.types)
 
 -- Where one registry writes: the folder name for each realm, and the name of the index inside it.
 export type Names = {
