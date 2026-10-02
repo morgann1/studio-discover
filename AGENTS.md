@@ -67,7 +67,7 @@ The most common defect in this repo is a change that works on the path you teste
 - **Themes.** Foundation gives you light and dark for free, and only if you use its tokens. Never hardcode a color.
 - **Settings.** Behavior a user might want off belongs in `SettingsStore`: a default, a GreenTea validator, and a row on the Settings screen. A corrupt saved value must fall back to the default, not crash the plugin.
 - **Reverse states.** If you added a way in, add the way out and the way to see it. Install needs uninstall. A one-way door is a bug.
-- **Docs.** `docs/process/` is written for us. `README.md` is written for the user, in shipped-product voice, with no repo tooling or source paths.
+- **Docs.** `README.md` is written for the user, in shipped-product voice, with no repo tooling or source paths.
 
 ## Commands
 
@@ -134,7 +134,6 @@ Three rules hold the shape together. A package requires its siblings through the
 - `plugin/src/Util/` - one function per file, file named for the function. Anything a package would also want belongs in `packages/core/` instead.
 - `plugin/src/Plugin/` - Studio-facing glue: the plugin handle, widget mounting, settings persistence.
 - `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` - generated, gitignored, never edited by hand.
-- `docs/ui/` - vendored Foundation component reference. Read it before inventing a component that already exists.
 - `.repos/` - local read-only references, gitignored and absent until you run `lute scripts/sync.luau`. Prefer their patterns over invented ones. Never edit or import from them. Sync again when bumping the matching dependency.
 
 ## Taste
@@ -150,5 +149,4 @@ Three rules hold the shape together. A package requires its siblings through the
 
 ## Additional tips
 
-- When writing React-Luau code, refer to the pattern guide at `docs/process/react-patterns.md`.
 - Don't verify with browsers or computer use unless the user explicitly agrees or requests it.
