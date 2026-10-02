@@ -1,32 +1,36 @@
 --!strict
 
-local json = require("@std/json")
+const json = require("@std/json")
 
-local fetch = require("@scripts/lib/fetch")
-
-type BinaryInputResponse = {
-	path: string,
-	uploadUri: string,
-}
+const fetchAsync = require("@scripts/lib/fetchAsync")
+const readJsonField = require("@scripts/lib/readJsonField")
 
 --[[
 	Uploads `contents` as a binary input for a Luau Execution task, and returns the
 		path to pass as `createLuauTaskAsync`'s `binaryInput`.
 ]]
-local function uploadBinaryInputAsync(universeId: string, apiKey: string, contents: string): string
-	local created =
-		fetch(`https://apis.roblox.com/cloud/v2/universes/{universeId}/luau-execution-session-task-binary-inputs`, {
+const function uploadBinaryInputAsync(universeId: string, apiKey: string, contents: string): string
+	const created = fetchAsync(
+		`https://apis.roblox.com/cloud/v2/universes/{universeId}/luau-execution-session-task-binary-inputs`,
+		{
 			method = "POST",
 			headers = {
 				["Content-Type"] = "application/json",
 				["x-api-key"] = apiKey,
 			},
 			body = json.serialize({ size = #contents }),
-		})
+		}
+	)
 
-	local binaryInput: BinaryInputResponse = json.deserialize(created.body) :: any
+	const binaryInput = json.deserialize(created.body)
 
-	fetch(binaryInput.uploadUri, {
+	const path = readJsonField(binaryInput, "path")
+	assert(typeof(path) == "string", "Expected the binary input to have a path")
+
+	const uploadUri = readJsonField(binaryInput, "uploadUri")
+	assert(typeof(uploadUri) == "string", "Expected the binary input to have an upload URI")
+
+	fetchAsync(uploadUri, {
 		method = "PUT",
 		headers = {
 			["Content-Type"] = "application/octet-stream",
@@ -35,7 +39,7 @@ local function uploadBinaryInputAsync(universeId: string, apiKey: string, conten
 		body = contents,
 	})
 
-	return binaryInput.path
+	return path
 end
 
 return uploadBinaryInputAsync

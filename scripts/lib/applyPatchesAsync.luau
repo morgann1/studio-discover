@@ -1,10 +1,10 @@
 --!strict
 
-local fs = require("@std/fs")
+const fs = require("@std/fs")
 
-local color = require("@scripts/lib/color")
-local project = require("@root/project")
-local run = require("@scripts/lib/run")
+const color = require("@scripts/lib/color")
+const project = require("@root/project")
+const runAsync = require("@scripts/lib/runAsync")
 
 --[[
 	Applies every git-format patch in `plugin/patches/` to the installed package it
@@ -16,12 +16,12 @@ local run = require("@scripts/lib/run")
 	A patch for a package that is no longer installed is skipped with a warning.
 		One that no longer applies errors.
 ]]
-local function applyPatches()
+const function applyPatchesAsync(): ()
 	if not fs.exists(project.PATCHES_PATH) then
 		return
 	end
 
-	local patchFiles: { string } = {}
+	const patchFiles: { string } = {}
 	for _, entry in fs.listDirectory(project.PATCHES_PATH) do
 		if string.match(entry.name, "%.patch$") ~= nil then
 			table.insert(patchFiles, entry.name)
@@ -31,16 +31,16 @@ local function applyPatches()
 	table.sort(patchFiles)
 
 	for _, patchFile in patchFiles do
-		local packageDir = string.gsub(patchFile, "%.patch$", "")
-		local packagePath = `{project.VENDORED_PACKAGES_PATH}/_Index/{packageDir}`
+		const packageDir = string.gsub(patchFile, "%.patch$", "")
+		const packagePath = `{project.VENDORED_PACKAGES_PATH}/_Index/{packageDir}`
 
 		if not fs.exists(packagePath) then
 			print(color.yellow(`Skipping {patchFile}: {packagePath} is not installed`))
 			continue
 		end
 
-		run("git", { "apply", "--directory", packagePath, `{project.PATCHES_PATH}/{patchFile}` })
+		runAsync("git", { "apply", "--directory", packagePath, `{project.PATCHES_PATH}/{patchFile}` })
 	end
 end
 
-return applyPatches
+return applyPatchesAsync

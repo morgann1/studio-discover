@@ -8,14 +8,15 @@
 	Usage: lute scripts/build.luau [--dev] [--output <path>]
 ]]
 
-local codegen = require("@scripts/lib/codegen")
-local parseArgs = require("@scripts/lib/args")
-local project = require("@root/project")
-local run = require("@scripts/lib/run")
+const codegenAsync = require("@scripts/lib/codegenAsync")
+const parseArgs = require("@scripts/lib/parseArgs")
+const project = require("@root/project")
+const runAsync = require("@scripts/lib/runAsync")
 
-local args = parseArgs({ "output", "o" })
-local dev = args.flags.dev or args.flags.d or false
-local output = args.values.output or args.values.o or (if dev then "StudioDiscover-Dev.rbxm" else "StudioDiscover.rbxm")
+const args = parseArgs({ "output", "o" })
+const dev = args.flags.dev or args.flags.d or false
+const defaultOutput = if dev then "StudioDiscover-Dev.rbxm" else "StudioDiscover.rbxm"
+const output = args.values.output or args.values.o or defaultOutput
 
-codegen({ dev = dev })
-run("rojo", { "build", project.PROJECT_PATH, "--output", output })
+codegenAsync({ dev = dev })
+runAsync("rojo", { "build", project.PROJECT_PATH, "--output", output })

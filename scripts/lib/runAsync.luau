@@ -1,11 +1,11 @@
 --!strict
 
-local process = require("@lute/process")
+const process = require("@lute/process")
 
-local color = require("@scripts/lib/color")
+const color = require("@scripts/lib/color")
 
 export type Options = {
-	cwd: string?,
+	read cwd: string?,
 }
 
 --[[
@@ -14,13 +14,13 @@ export type Options = {
 
 	Scripts that should keep going after a failed step wrap the call in `pcall`.
 ]]
-local function run(program: string, params: { string }, options: Options?)
+const function runAsync(program: string, params: { string }, options: Options?): ()
 	print(color.bold(`> {program} {table.concat(params, " ")}`))
 
-	local argv = table.clone(params)
+	const argv = table.clone(params)
 	table.insert(argv, 1, program)
 
-	local result = process.run(argv, {
+	const result = process.run(argv, {
 		stdio = "inherit",
 		cwd = if options ~= nil then options.cwd else nil,
 	})
@@ -30,4 +30,4 @@ local function run(program: string, params: { string }, options: Options?)
 	end
 end
 
-return run
+return runAsync

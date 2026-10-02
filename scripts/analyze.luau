@@ -8,56 +8,55 @@
 	Usage: lute scripts/analyze.luau
 ]]
 
-local process = require("@lute/process")
+const process = require("@lute/process")
 
-local codegen = require("@scripts/lib/codegen")
-local downloadPinned = require("@scripts/lib/downloadPinned")
-local project = require("@root/project")
-local run = require("@scripts/lib/run")
+const codegenAsync = require("@scripts/lib/codegenAsync")
+const downloadPinnedAsync = require("@scripts/lib/downloadPinnedAsync")
+const project = require("@root/project")
+const runAsync = require("@scripts/lib/runAsync")
 
--- Specs resolve against the test place, not the plugin, so running them is what checks them.
-local IGNORE_PATTERNS = {
-	"plugin/Packages/**",
+const IGNORE_PATTERNS = table.freeze({
+	`{project.VENDORED_PACKAGES_PATH}/**`,
 	"**/.lute/typedefs/**",
-	"packages/*/tests/**",
-}
+
+	-- Specs resolve against the test place, not the plugin, so running them is what checks them.
+	`{project.PACKAGES_PATH}/*/tests/**`,
+})
 
 -- Returns whether luau-lsp found nothing, so the second pass still runs after the first fails.
-local function analyze(args: { string }): boolean
-	local analyzeArgs = { "analyze" }
+const function analyzeAsync(args: { string }): boolean
+	const analyzeArgs = { "analyze" }
 
 	for _, pattern in IGNORE_PATTERNS do
 		table.insert(analyzeArgs, `--ignore={pattern}`)
 	end
 
-	for _, arg in args do
-		table.insert(analyzeArgs, arg)
-	end
+	table.move(args, 1, #args, #analyzeArgs + 1, analyzeArgs)
 
-	local ok = pcall(function()
-		run("luau-lsp", analyzeArgs)
+	const ok = pcall(function()
+		runAsync("luau-lsp", analyzeArgs)
 	end)
 
 	return ok
 end
 
-downloadPinned(
+downloadPinnedAsync(
 	`https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/{project.LUAU_LSP_COMMIT}/scripts/globalTypes.d.luau`,
 	project.GLOBAL_DEFS_PATH,
 	project.LUAU_LSP_GLOBAL_TYPES_SHA256
 )
 
-codegen({ sourcemap = true })
+codegenAsync({ sourcemap = true })
 
 local failureCount = 0
 
 -- Lute's typedefs are written for the new solver.
 if
-	not analyze({
+	not analyzeAsync({
 		"--platform=standard",
 		"--flag:LuauSolverV2=true",
-		"--ignore=scripts/tasks/**",
-		"project.luau",
+		`--ignore={project.TASKS_PATH}/**`,
+		project.PROJECT_MODULE_PATH,
 		project.SCRIPTS_PATH,
 	})
 then
@@ -65,15 +64,15 @@ then
 end
 
 if
-	not analyze({
+	not analyzeAsync({
 		"--platform=roblox",
 		`--sourcemap={project.SOURCEMAP_PATH}`,
 		`--definitions={project.GLOBAL_DEFS_PATH}`,
 		"--settings=.vscode/settings.json",
 		project.PACKAGES_PATH,
-		"plugin/bin",
-		"plugin/src",
-		"scripts/tasks",
+		project.PLUGIN_BIN_PATH,
+		project.PLUGIN_SRC_PATH,
+		project.TASKS_PATH,
 	})
 then
 	failureCount += 1
