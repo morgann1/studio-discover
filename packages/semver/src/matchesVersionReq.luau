@@ -73,7 +73,11 @@ end
 
 --[[
 	Whether `version` passes every comparator from `parseVersionReq`, the way
-		semver 1.x evaluates a requirement. No comparators match every version.
+		semver 1.x evaluates a requirement. No comparators match every release.
+
+	A prerelease also needs a comparator that names a prerelease on its own
+		major.minor.patch, so `^1.0.0` never picks up `2.0.0-rc.1` while
+		`>=2.0.0-rc.1` accepts `2.0.0-rc.2`. Both CLIs apply this rule.
 ]]
 const function matchesVersionReq(comparators: { Comparator }, version: Semver): boolean
 	for _, comparator in comparators do
@@ -82,7 +86,22 @@ const function matchesVersionReq(comparators: { Comparator }, version: Semver): 
 		end
 	end
 
-	return true
+	if #version.prerelease == 0 then
+		return true
+	end
+
+	for _, comparator in comparators do
+		if
+			#comparator.prerelease > 0
+			and comparator.major == version.major
+			and comparator.minor == version.minor
+			and comparator.patch == version.patch
+		then
+			return true
+		end
+	end
+
+	return false
 end
 
 return matchesVersionReq
