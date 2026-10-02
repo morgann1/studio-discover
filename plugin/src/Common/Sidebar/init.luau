@@ -133,7 +133,7 @@ const function Sidebar(props: {
 			then e(IconButton, {
 				icon = IconName.MagnifyingGlass,
 				size = InputSize.Medium,
-				variant = ButtonVariant.Text,
+				variant = ButtonVariant.Utility,
 				onActivated = onSearchIconActivated,
 				LayoutOrder = nextOrder(),
 			})

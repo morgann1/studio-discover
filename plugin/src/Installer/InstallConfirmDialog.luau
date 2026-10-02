@@ -28,6 +28,7 @@ const function InstallConfirmDialog(props: {
 
 	return e(Dialog.Root, {
 		size = DialogSize.Small,
+		disablePortal = false,
 		hasBackdrop = true,
 		onClose = props.onCancel,
 	}, {

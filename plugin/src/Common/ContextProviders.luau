@@ -14,7 +14,7 @@ const function ContextProviders(props: {
 	read children: React.Node,
 })
 	return e(Foundation.FoundationProvider, {
-		theme = useThemeName(),
+		colorMode = useThemeName(),
 		overlayGui = props.overlayGui,
 	}, props.children)
 end

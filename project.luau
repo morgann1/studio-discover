@@ -33,7 +33,7 @@ const project = table.freeze({
 	LUAU_LSP_GLOBAL_TYPES_SHA256 = "bbaab2025896fa3b6ea8bbcc09dcb8b72f777b264ab95b5086374dd3672574ef",
 
 	-- The Roblox client version that roblox-packages pulls Foundation and friends from.
-	ROBLOX_PACKAGES_VERSION = "0.716.0.7160873",
+	ROBLOX_PACKAGES_VERSION = "0.741.19.7411056",
 })
 
 return project
