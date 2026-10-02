@@ -64,7 +64,8 @@ const function updateAllPesdeAsync(updates: { types.UpdateInfo }): types.Operati
 		}
 	end
 
-	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(nextRoots, nil)
+	-- Like `pesde update`, an update ignores the lockfile and moves every dependency to its newest match.
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(nextRoots, {}, nil)
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
 	end

@@ -9,6 +9,7 @@ const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const types = require(StudioDiscover.Source.Installer.types)
 const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 
+const loadPesdeLockfile = require(StudioDiscover.Libraries.PesdeRegistry.loadLockfile)
 const pesdeApplyAsync = require(StudioDiscover.Libraries.PesdeRegistry.applyAsync)
 const pesdeResolveAsync = require(StudioDiscover.Libraries.PesdeRegistry.resolveAsync)
 const pesdeSnapshotRoots = require(StudioDiscover.Libraries.PesdeRegistry.snapshotRoots)
@@ -42,8 +43,9 @@ const function runUninstallAsync(root: coreTypes.InstalledRoot): types.Operation
 		}
 	end
 
+	const locked = loadPesdeLockfile()
 	logger.info(`resolve starting ({#remaining} remaining root(s))`)
-	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(remaining, nil)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(remaining, locked, nil)
 
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
