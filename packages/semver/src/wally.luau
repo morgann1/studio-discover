@@ -2,24 +2,16 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const compareSemver = require(StudioDiscover.Libraries.Semver.compareSemver)
-const exhaustiveMatch = require(StudioDiscover.Libraries.Core.exhaustiveMatch)
+const matchesVersionReq = require(StudioDiscover.Libraries.Semver.matchesVersionReq)
 const parseSemver = require(StudioDiscover.Libraries.Semver.parseSemver)
-const trim = require(StudioDiscover.Libraries.Core.trim)
+const parseVersionReq = require(StudioDiscover.Libraries.Semver.parseVersionReq)
 
 type Semver = parseSemver.Semver
-
-type Operator = ">=" | ">" | "<=" | "<" | "="
-
-type Check = {
-	read operator: Operator,
-	read version: Semver,
-}
 
 --[[
 	Whether two versions are semver-compatible, so a graph that already holds one
 		cannot take the other as well. The breaking part is the first non-zero one of
-		major, minor, and patch, the same part `caretUpperBound` bumps.
+		major, minor, and patch, the same part a caret range holds fixed.
 ]]
 const function compatible(a: Semver, b: Semver): boolean
 	if a.major ~= 0 or b.major ~= 0 then
@@ -31,78 +23,26 @@ const function compatible(a: Semver, b: Semver): boolean
 	return a.patch == b.patch
 end
 
--- The first version a caret range on `version` excludes.
-const function caretUpperBound(version: Semver): Semver
-	if version.major ~= 0 then
-		return { major = version.major + 1, minor = 0, patch = 0, prerelease = {} }
-	elseif version.minor ~= 0 then
-		return { major = 0, minor = version.minor + 1, patch = 0, prerelease = {} }
-	end
-
-	return { major = 0, minor = 0, patch = version.patch + 1, prerelease = {} }
-end
-
-const function parseOperator(raw: string): Operator?
-	if raw == ">=" or raw == ">" or raw == "<=" or raw == "<" or raw == "=" then
-		return raw
-	end
-
-	return nil
-end
-
-const function passes(check: Check, version: Semver): boolean
-	const comparison = compareSemver(version, check.version)
-	const operator = check.operator
-
-	if operator == ">=" then
-		return comparison >= 0
-	elseif operator == ">" then
-		return comparison > 0
-	elseif operator == "<=" then
-		return comparison <= 0
-	elseif operator == "<" then
-		return comparison < 0
-	elseif operator == "=" then
-		return comparison == 0
-	end
-
-	return exhaustiveMatch(operator)
-end
-
 --[[
-	Builds a predicate over version strings from a Wally constraint: comma-separated
-		comparators, where a bare version means a caret range on it.
+	Builds a predicate over version strings from a Wally constraint, or returns nil
+		when any part of it does not parse.
 
-	A comparator that does not parse adds no check.
+	Wally's index holds constraints as semver 0.11 prints them: alternatives joined
+		by ` || `, each a comma-separated set of full-version comparators. A version
+		satisfies the constraint when it passes every comparator of one alternative.
+
+	Each alternative is evaluated by pesde's semver 1.x rules. That is safe because
+		0.11 and 1.x only disagree on partial versions, which 0.11 never prints.
 ]]
-const function buildSatisfies(constraints: string): (version: string) -> boolean
-	const checks: { Check } = {}
-
-	for raw in constraints:gmatch("[^,]+") do
-		const constraint = trim(raw)
-		if constraint == "" then
-			continue
+const function buildSatisfies(constraints: string): ((version: string) -> boolean)?
+	const alternatives: { { parseVersionReq.Comparator } } = {}
+	for _, alternative in string.split(constraints, "||") do
+		const comparators = parseVersionReq(alternative)
+		if comparators == nil then
+			return nil
 		end
 
-		const rawOperator, rawVersion = constraint:match("^([><=]+)(.+)$")
-		if rawOperator == nil or rawVersion == nil then
-			const version = parseSemver(constraint)
-			if version ~= nil then
-				const lower: Check = { operator = ">=", version = version }
-				const upper: Check = { operator = "<", version = caretUpperBound(version) }
-				table.insert(checks, lower)
-				table.insert(checks, upper)
-			end
-
-			continue
-		end
-
-		const operator = parseOperator(rawOperator)
-		const version = parseSemver(rawVersion)
-		if operator ~= nil and version ~= nil then
-			const check: Check = { operator = operator, version = version }
-			table.insert(checks, check)
-		end
+		table.insert(alternatives, comparators)
 	end
 
 	return function(version: string): boolean
@@ -111,13 +51,13 @@ const function buildSatisfies(constraints: string): (version: string) -> boolean
 			return false
 		end
 
-		for _, check in checks do
-			if not passes(check, parsed) then
-				return false
+		for _, comparators in alternatives do
+			if matchesVersionReq(comparators, parsed) then
+				return true
 			end
 		end
 
-		return true
+		return false
 	end
 end
 

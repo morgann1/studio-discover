@@ -11,26 +11,42 @@ const it = JestGlobals.it
 const parseSemver = require(ServerScriptService.StudioDiscover.Libraries.Semver.parseSemver)
 const wally = require(ServerScriptService.StudioDiscover.Libraries.Semver.wally)
 
+-- The versions in `versions` that satisfy `constraint`, in order.
+const function matching(constraint: string, versions: { string }): { string }
+	const satisfies = wally.buildSatisfies(constraint)
+	assert(satisfies ~= nil, "expected the constraint to parse")
+
+	const matched = {}
+	for _, version in versions do
+		if satisfies(version) then
+			table.insert(matched, version)
+		end
+	end
+
+	return matched
+end
+
 describe("wally.buildSatisfies", function()
 	it("treats a bare version as a caret range", function()
-		const satisfies = wally.buildSatisfies("1.2.0")
-		expect(satisfies("1.2.0")).toBe(true)
-		expect(satisfies("1.9.0")).toBe(true)
-		expect(satisfies("2.0.0")).toBe(false)
-		expect(satisfies("1.1.0")).toBe(false)
+		expect(matching("1.2.0", { "1.1.0", "1.2.0", "1.9.0", "2.0.0" })).toEqual({ "1.2.0", "1.9.0" })
 	end)
 
 	it("keeps a 0.x caret range inside the same minor", function()
-		const satisfies = wally.buildSatisfies("0.3.1")
-		expect(satisfies("0.3.9")).toBe(true)
-		expect(satisfies("0.4.0")).toBe(false)
+		expect(matching("0.3.1", { "0.3.9", "0.4.0" })).toEqual({ "0.3.9" })
 	end)
 
 	it("applies every comma-separated comparator", function()
-		const satisfies = wally.buildSatisfies(">=1.0.0, <1.5.0")
-		expect(satisfies("1.4.9")).toBe(true)
-		expect(satisfies("1.5.0")).toBe(false)
-		expect(satisfies("0.9.0")).toBe(false)
+		expect(matching(">=1.0.0, <1.5.0", { "0.9.0", "1.4.9", "1.5.0" })).toEqual({ "1.4.9" })
+	end)
+
+	it("matches a version that satisfies any alternative joined by ||", function()
+		const versions = { "0.9.9", "1.0.0", "1.9.9", "2.0.0", "2.5.0", "3.0.0", "3.9.9", "4.0.0" }
+		expect(matching(">=1.0.0, <2.0.0 || >=3.0.0, <4.0.0", versions)).toEqual({ "1.0.0", "1.9.9", "3.0.0", "3.9.9" })
+	end)
+
+	it("fails a constraint that does not parse instead of matching everything", function()
+		expect(wally.buildSatisfies("not a version")).toBe(nil)
+		expect(wally.buildSatisfies(">=1.0.0 || banana")).toBe(nil)
 	end)
 end)
 

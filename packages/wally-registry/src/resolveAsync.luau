@@ -199,6 +199,12 @@ const function resolveAsync(
 
 		const fullName = `{request.scope}/{request.name}`
 		const satisfies = wallySemver.buildSatisfies(request.constraints)
+		if satisfies == nil then
+			logger.warn(`could not parse constraint for {fullName}@{request.constraints}`)
+			table.insert(failures, `{fullName}: could not parse constraint "{request.constraints}"`)
+			continue
+		end
+
 		logger.debug(
 			`visit {fullName}@{request.constraints} (requestedBy={request.requestedBy}, realm={request.requestRealm})`
 		)

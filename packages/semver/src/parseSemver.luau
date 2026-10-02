@@ -1,6 +1,10 @@
 --!strict
 
-export type PrereleaseIdent = number | string
+const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
+
+const parsePrerelease = require(StudioDiscover.Libraries.Semver.parsePrerelease)
+
+export type PrereleaseIdent = parsePrerelease.PrereleaseIdent
 
 export type Semver = {
 	read major: number,
@@ -8,16 +12,6 @@ export type Semver = {
 	read patch: number,
 	read prerelease: { PrereleaseIdent },
 }
-
-const function parsePrerelease(raw: string): { PrereleaseIdent }
-	const idents: { PrereleaseIdent } = {}
-	for part in raw:gmatch("[^%.]+") do
-		const number = if part:match("^%d+$") ~= nil then tonumber(part) else nil
-		table.insert(idents, if number ~= nil then number else part)
-	end
-
-	return idents
-end
 
 -- Parses `major.minor.patch` with an optional leading `v`, prerelease, and build metadata, or returns nil.
 const function parseSemver(version: string): Semver?
