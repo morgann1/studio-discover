@@ -96,6 +96,29 @@ const function readDependencies(
 end
 
 --[[
+	Returns the shared roots, then the server roots, each in the order given.
+
+	Wally queues a project's `[dependencies]` before its `[server-dependencies]`,
+		so a shared root's requests are always visited first. Matching that order
+		means a shared root that asks for a server-only package is rejected however
+		the caller lists its roots, as wally rejects it, and install, update, and
+		uninstall all resolve the same graph.
+]]
+const function orderRoots(roots: { coreTypes.RootRequest }): { coreTypes.RootRequest }
+	const ordered: { coreTypes.RootRequest } = {}
+
+	for _, realm in { "shared", "server" } do
+		for _, root in roots do
+			if root.requestRealm == realm then
+				table.insert(ordered, root)
+			end
+		end
+	end
+
+	return ordered
+end
+
+--[[
 	Resolves `roots` and everything they depend on against Wally's registry.
 
 	Returns the graph keyed by `_Index` id, each root's alias keyed the same way, the
@@ -150,7 +173,7 @@ const function resolveAsync(
 		end
 	end
 
-	for _, root in roots do
+	for _, root in orderRoots(roots) do
 		const rootPackageId = packageId.format(root.scope, root.name, root.version)
 		logger.info(`root {root.scope}/{root.name}@{root.version} realm={root.requestRealm} alias={root.alias}`)
 

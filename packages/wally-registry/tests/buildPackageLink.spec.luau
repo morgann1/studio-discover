@@ -42,17 +42,15 @@ describe("buildSiblingPackageLink", function()
 	end)
 
 	--[[
-		A shared package depending on a server one is rejected by
-			`isDependencyValid` during resolve, matching wally's
-			`Realm::is_dependency_valid`. If it ever reaches apply, resolve is wrong,
-			and a link written anyway would put a ServerStorage require behind a
-			module that replicates: fine in Studio, broken for every client at
-			runtime. Failing the install cancels the recording instead.
+		Resolve can promote a server package to shared after its own server
+			dependencies were placed, as wally does. The link then reaches into the
+			server index, the path the wally CLI's `link_server_index` writes.
 	]]
-	it("refuses to link a shared package to a server dependency", function()
-		expect(function()
-			buildSiblingPackageLink("Promise", PACKAGE_ID, MODULE_NAME, "shared", "server")
-		end).toThrow()
+	it("reaches into ServerStorage when a shared package depends on a server one", function()
+		const build = buildSiblingPackageLink("Promise", PACKAGE_ID, MODULE_NAME, "shared", "server")
+		expect(build.source).toBe(
+			`return require(game.ServerStorage.ServerPackages._Index["{PACKAGE_ID}"]["{MODULE_NAME}"])`
+		)
 	end)
 end)
 
