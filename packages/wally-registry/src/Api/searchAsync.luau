@@ -13,7 +13,7 @@ const types = require(StudioDiscover.Libraries.Core.types)
 
 const MIN_QUERY_LENGTH = 2
 
-const cache = createCache() :: createCache.Cache<{ types.PackageBrief }>
+const cache = createCache<<{ types.PackageBrief }>>()
 
 const function formEncode(value: string): string
 	return (HttpService:UrlEncode(value):gsub("%%20", "+"))

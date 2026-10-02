@@ -17,7 +17,7 @@ export type UpdatesState = {
 }
 
 -- The installed roots with a newer version, checked once and shared by every screen.
-const updatesAtom = Charm.atom({ updates = {}, failed = 0, loading = true } :: UpdatesState)
+const updatesAtom = Charm.atom<<UpdatesState>>({ updates = {}, failed = 0, loading = true })
 
 -- Only the registry switches, so changing an unrelated setting doesn't check again.
 const registriesAtom = Charm.computed(function()
