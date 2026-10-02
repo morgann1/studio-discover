@@ -80,11 +80,8 @@ const function SettingsScreen()
 
 	const sources: { [string]: React.Node } = {}
 	for index, registry in registries do
-		const mark = registryMark(registry)
-
 		sources[registry] = e(List.Item, {
-			-- A mark cropped out of a wordmark can't be a list accessory, so it waits for a square one.
-			leading = if mark.crop == nil then mark.image else nil,
+			leading = registryMark(registry),
 			title = registryLabel(registry),
 			description = `by {MAINTAINERS[registry]}`,
 			input = toggle(isRegistryEnabled(settings.registries, registry), function(value)

@@ -4,25 +4,14 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const types = require(StudioDiscover.Libraries.Core.types)
 
---[[
-	A registry's square mark. `crop` picks the mark out of a larger image, for marks
-		that only exist inside a wordmark so far. Places that can't crop, such as the
-		breadcrumb, skip a cropped mark.
-]]
-export type Mark = {
-	read image: string,
-	read crop: Rect?,
+-- Each registry's favicon, from its own site.
+const MARKS: { [types.Registry]: string } = {
+	wally = "rbxassetid://84745302108730",
+	pesde = "rbxassetid://107553028826404",
 }
 
-const MARKS: { [types.Registry]: Mark } = {
-	-- The walrus, cropped out of the Wally wordmark until a square mark is uploaded.
-	wally = { image = "rbxassetid://87427394631506", crop = Rect.new(0, 0, 254, 254) },
-	-- pesde's favicon, from pesde.dev.
-	pesde = { image = "rbxassetid://107553028826404" },
-}
-
--- Returns the mark drawn wherever a registry is named.
-const function registryMark(registry: types.Registry): Mark
+-- Returns the square mark drawn wherever a registry is named.
+const function registryMark(registry: types.Registry): string
 	return MARKS[registry]
 end
 

@@ -28,11 +28,10 @@ const function Crumbs(props: {
 	for index, screen in props.stack do
 		const route = screen.route
 		const isCurrent = index == #props.stack
-		const mark = if route.name == "Source" then registryMark(route.registry) else nil
 
 		table.insert(items, {
 			text = routeTitle(route, namingConvention),
-			leading = if mark ~= nil and mark.crop == nil then mark.image else nil,
+			leading = if route.name == "Source" then registryMark(route.registry) else nil,
 			onActivated = if isCurrent
 				then nil
 				else function()
