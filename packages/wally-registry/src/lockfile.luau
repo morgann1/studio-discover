@@ -14,6 +14,7 @@ const asString = require(StudioDiscover.Libraries.Core.asString)
 const asTable = require(StudioDiscover.Libraries.Core.asTable)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const packageId = require(StudioDiscover.Libraries.WallyRegistry.packageId)
+const readLockfileEntries = require(StudioDiscover.Libraries.Core.readLockfileEntries)
 const replaceModuleAsync = require(StudioDiscover.Libraries.Core.replaceModuleAsync)
 const splitFullName = require(StudioDiscover.Libraries.Core.splitFullName)
 const types = require(StudioDiscover.Libraries.WallyRegistry.types)
@@ -47,37 +48,11 @@ end
 		entries it cannot parse. A missing or unreadable lockfile reads as empty.
 ]]
 const function load(): { [string]: true? }
-	const lockModule = ServerStorage:FindFirstChild(LOCKFILE_NAME)
-	if lockModule == nil or not lockModule:IsA("ModuleScript") then
-		logger.debug("no existing lockfile; starting fresh")
-		return {}
-	end
-
-	const ok, data: unknown = pcall(require, lockModule)
-	const rawEntries = if ok then asTable(data) else nil
-	if rawEntries == nil then
-		logger.warn(`lockfile unreadable: {data}`)
-		return {}
-	end
-
 	const lockedIds: { [string]: true? } = {}
-	local skippedCount = 0
-	local parsedCount = 0
-	for _, rawEntry in rawEntries do
-		const id = parseEntryId(rawEntry)
-		if id == nil then
-			skippedCount += 1
-			continue
-		end
-
+	for _, id in readLockfileEntries(LOCKFILE_NAME, parseEntryId) do
 		lockedIds[id] = true
-		parsedCount += 1
 	end
 
-	if skippedCount > 0 then
-		logger.warn(`skipped {skippedCount} malformed lockfile entries`)
-	end
-	logger.info(`loaded lockfile ({parsedCount} entries)`)
 	return lockedIds
 end
 

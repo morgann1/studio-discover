@@ -113,18 +113,63 @@ const function readDependencies(
 end
 
 --[[
+	Walks the locked edges down from `rootId` and returns every package in its
+		subtree, the root first. Returns nil when the root, or any package an edge
+		points at, is missing from the lock.
+]]
+const function collectLockedSubtree(
+	locked: { [string]: PesdeResolvedPackage },
+	rootId: string
+): { PesdeResolvedPackage }?
+	const root = locked[rootId]
+	if root == nil then
+		return nil
+	end
+
+	const subtree = { root }
+	const seen: { [string]: true? } = { [rootId] = true }
+	local head = 1
+	while head <= #subtree do
+		const pkg = subtree[head]
+		head += 1
+
+		for _, dependency in pkg.dependencies do
+			if seen[dependency.packageId] then
+				continue
+			end
+
+			const lockedDependency = locked[dependency.packageId]
+			if lockedDependency == nil then
+				return nil
+			end
+
+			seen[dependency.packageId] = true
+			table.insert(subtree, lockedDependency)
+		end
+	end
+
+	return subtree
+end
+
+--[[
 	Resolves `roots` and everything they depend on against pesde's registry, taking
 		the newest version that satisfies each request.
+
+	Like `pesde install`, a root whose package id is in `locked` keeps its locked
+		subtree as is, without fetching metadata. A root whose locked subtree is
+		incomplete resolves fresh. Pass an empty lock to resolve everything fresh, as
+		`pesde update` does.
 
 	Returns the graph keyed by package id, each root's alias keyed the same way, the
 		failures along the way, and the roots it could not resolve at all. Applying
 		without those roots would uninstall them, so callers stop instead.
 
-	A request reuses a version already in the graph for the same realm when it
-		satisfies it.
+	A request reuses the newest version already in the graph for the same realm
+		that satisfies it, including a locked one, as pesde does.
 ]]
 const function resolveAsync(
 	roots: { coreTypes.RootRequest },
+	locked: { [string]: PesdeResolvedPackage },
 	onProgress: coreTypes.ProgressCallback?
 ): (
 	{ [string]: PesdeResolvedPackage },
@@ -139,6 +184,15 @@ const function resolveAsync(
 	const activatedByName: { [string]: { PesdeResolvedPackage }? } = {}
 	const queue: { DependencyRequest } = {}
 
+	const function place(pkg: PesdeResolvedPackage)
+		resolved[pkg.packageId] = pkg
+
+		const fullName = `{pkg.scope}/{pkg.name}`
+		const activated = activatedByName[fullName] or {}
+		table.insert(activated, pkg)
+		activatedByName[fullName] = activated
+	end
+
 	const function activate(entry: VersionEntry, scope: string, name: string, realm: Realm): PesdeResolvedPackage
 		const pkg: PesdeResolvedPackage = {
 			packageId = formatPackageId(scope, name, entry.version, entry.target),
@@ -149,12 +203,7 @@ const function resolveAsync(
 			libPath = entry.libPath,
 			dependencies = {},
 		}
-		resolved[pkg.packageId] = pkg
-
-		const fullName = `{scope}/{name}`
-		const activated = activatedByName[fullName] or {}
-		table.insert(activated, pkg)
-		activatedByName[fullName] = activated
+		place(pkg)
 
 		return pkg
 	end
@@ -165,7 +214,27 @@ const function resolveAsync(
 		table.move(readFailures, 1, #readFailures, #failures + 1, failures)
 	end
 
+	-- Locked subtrees go in before anything resolves, so fresh requests can reuse them.
+	const freshRoots: { coreTypes.RootRequest } = {}
 	for _, root in roots do
+		const rootId = formatPackageId(root.scope, root.name, root.version, targetFromRealm(root.requestRealm))
+		const subtree = collectLockedSubtree(locked, rootId)
+		if subtree == nil then
+			table.insert(freshRoots, root)
+			continue
+		end
+
+		for _, pkg in subtree do
+			if resolved[pkg.packageId] == nil then
+				place(pkg)
+			end
+		end
+
+		rootAliases[rootId] = root.alias
+		logger.debug(`kept {rootId} and {#subtree - 1} locked dependencies`)
+	end
+
+	for _, root in freshRoots do
 		const target = targetFromRealm(root.requestRealm)
 		if onProgress ~= nil then
 			onProgress(`Resolving {root.scope}/{root.name}@{root.version}...`)
@@ -198,13 +267,18 @@ const function resolveAsync(
 			return nil
 		end
 
+		local newest: PesdeResolvedPackage? = nil
 		for _, pkg in activatedByName[`{request.scope}/{request.name}`] or {} do
-			if pkg.realm == realm and satisfies(pkg.version) then
-				return pkg
+			if pkg.realm ~= realm or not satisfies(pkg.version) then
+				continue
+			end
+
+			if newest == nil or isNewerVersion(pkg.version, newest.version) then
+				newest = pkg
 			end
 		end
 
-		return nil
+		return newest
 	end
 
 	-- Adds the newest version that satisfies the request to the graph, or records why there is none.

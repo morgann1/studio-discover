@@ -13,6 +13,7 @@ const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const types = require(StudioDiscover.Source.Installer.types)
 const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
 
+const loadPesdeLockfile = require(StudioDiscover.Libraries.PesdeRegistry.loadLockfile)
 const pesdeApplyAsync = require(StudioDiscover.Libraries.PesdeRegistry.applyAsync)
 const pesdeResolveAsync = require(StudioDiscover.Libraries.PesdeRegistry.resolveAsync)
 const pesdeSnapshotRoots = require(StudioDiscover.Libraries.PesdeRegistry.snapshotRoots)
@@ -62,8 +63,9 @@ const function runInstallAsync(
 		alias = alias,
 	})
 
-	logger.info(`resolve starting ({#roots} root(s))`)
-	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(roots, report.progress)
+	const locked = loadPesdeLockfile()
+	logger.info(`resolve starting ({#roots} root(s), lockfile has {countKeys(locked)} entries)`)
+	const resolved, rootAliases, resolutionFailures, unresolvedRoots = pesdeResolveAsync(roots, locked, report.progress)
 
 	for _, failure in resolutionFailures do
 		logger.warn(`resolve failure: {failure}`)
