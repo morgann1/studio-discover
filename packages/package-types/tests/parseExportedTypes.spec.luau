@@ -195,22 +195,23 @@ describe("extractExportedTypes", function()
 		expect(types[1].generics).toBe("<T = (...any) -> ()>")
 	end)
 
-	it("forwards each type function parameter as a generic", function()
-		const types = extractExportedTypes("export type function keyof(a, b) end")
-		expect(#types).toBe(1)
-		expect(types[1].name).toBe("keyof")
-		expect(types[1].kind).toBe("function")
-		expect(types[1].generics).toBe("<T0, T1>")
+	it("reads a type function's parameter names", function()
+		expect(extractExportedTypes("export type function keyof(a, b) end")).toEqual({
+			{ kind = "function", name = "keyof", parameters = { "a", "b" } },
+		})
 	end)
 
-	it("drops a variadic type function parameter", function()
-		const types = extractExportedTypes("export type function keyof(a, b, ...) end")
-		expect(types[1].generics).toBe("<T0, T1>")
-	end)
-
-	it("gives a variadic-only type function empty generics", function()
-		const types = extractExportedTypes("export type function keyof(...) end")
-		expect(types[1].generics).toBe("<>")
+	it("leaves a variadic out of a type function's parameters", function()
+		expect(extractExportedTypes("export type function keyof(a, b, ...) end")[1]).toEqual({
+			kind = "function",
+			name = "keyof",
+			parameters = { "a", "b" },
+		})
+		expect(extractExportedTypes("export type function keyof(...) end")[1]).toEqual({
+			kind = "function",
+			name = "keyof",
+			parameters = {},
+		})
 	end)
 
 	it("skips export type inside a short comment", function()

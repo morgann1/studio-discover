@@ -4,9 +4,9 @@
 	Reading exported types back out of Luau source.
 
 	This module is pure string work: it never touches an Instance, which is what
-		makes it directly testable. `forwardTypes.luau` builds the forwarding lines
-		from it, and `init.luau` is the part that knows about link modules and
-		`_Index`.
+		makes it directly testable. Each registry builds its forwarding lines from it
+		by its own CLI's rules: `forwardTypes.luau` here for Wally, and the pesde
+		registry's own `forwardTypes.luau` for pesde.
 ]]
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
@@ -19,15 +19,21 @@ export type ResolvedTypes = { [string]: true? }
 --[[
 	One `export type` in a module's source.
 
-	`generics` is the alias's own generic header. A type function has no header, so
-		it gets one generic per named parameter, `<T0, T1>`, the way upstream forwards
-		it.
+	An alias carries its own generic header as written, or "" when it has none. A
+		type function carries its named parameters in order. Its variadic `...` is
+		left out, since no registry can forward it as a generic.
 ]]
-export type ExportedType = {
-	read name: string,
-	read generics: string,
-	read kind: "alias" | "function",
-}
+export type ExportedType =
+	{
+		read kind: "alias",
+		read name: string,
+		read generics: string,
+	}
+	| {
+		read kind: "function",
+		read name: string,
+		read parameters: { string },
+	}
 
 const BUILTIN_TYPES: ResolvedTypes = {
 	["any"] = true,
@@ -198,20 +204,17 @@ const function extractParamNames(generics: string): string
 	return `<{table.concat(names, ", ")}>`
 end
 
---[[
-	Turns a type function's parameter list into the generics that forward it.
-		Variadic `...` cannot be forwarded as a generic, so it is dropped.
-]]
-const function typeFunctionGenerics(parameterList: string): string
+-- Returns the named parameters in a type function's `(a, b, ...)` list, without the `...`.
+const function typeFunctionParameters(parameterList: string): { string }
 	const names: { string } = {}
 	for param in parameterList:sub(2, -2):gmatch("[^,]+") do
-		const name = trim(param)
-		if name ~= "" and name ~= "..." then
-			table.insert(names, `T{#names}`)
+		const name = extractParamName(param)
+		if name ~= nil then
+			table.insert(names, name)
 		end
 	end
 
-	return `<{table.concat(names, ", ")}>`
+	return names
 end
 
 const function tryOpenLongBracket(source: string, position: number): number?
@@ -353,7 +356,6 @@ const function extractExportedTypes(source: string): { ExportedType }
 		end
 
 		const _, functionEnd = source:find("^function%s+", keywordEnd + 1)
-		const kind: "alias" | "function" = if functionEnd ~= nil then "function" else "alias"
 		const nameStart = if functionEnd ~= nil then functionEnd + 1 else keywordEnd + 1
 
 		const _, nameEnd, name = source:find("^([%w_]+)", nameStart)
@@ -363,24 +365,27 @@ const function extractExportedTypes(source: string): { ExportedType }
 		end
 
 		const afterName = nameEnd + 1
-		local generics = ""
-		if kind == "function" then
+		index = afterName
+
+		if functionEnd ~= nil then
 			const parameterList = source:match("^%s*(%b())", afterName)
-			if parameterList ~= nil then
-				generics = typeFunctionGenerics(parameterList)
-			end
-		else
-			const nextNonSpace = source:find("%S", afterName)
-			if nextNonSpace ~= nil and source:sub(nextNonSpace, nextNonSpace) == "<" then
-				const genericsEnd = readBalancedAngleBrackets(source, nextNonSpace)
-				if genericsEnd ~= nil then
-					generics = source:sub(nextNonSpace, genericsEnd)
-				end
+			const parameters = if parameterList ~= nil then typeFunctionParameters(parameterList) else {}
+			const typeFunction: ExportedType = { kind = "function", name = name, parameters = parameters }
+			table.insert(exported, typeFunction)
+			continue
+		end
+
+		local generics = ""
+		const nextNonSpace = source:find("%S", afterName)
+		if nextNonSpace ~= nil and source:sub(nextNonSpace, nextNonSpace) == "<" then
+			const genericsEnd = readBalancedAngleBrackets(source, nextNonSpace)
+			if genericsEnd ~= nil then
+				generics = source:sub(nextNonSpace, genericsEnd)
 			end
 		end
 
-		table.insert(exported, { name = name, generics = generics, kind = kind })
-		index = afterName
+		const alias: ExportedType = { kind = "alias", name = name, generics = generics }
+		table.insert(exported, alias)
 	end
 
 	return exported

@@ -75,6 +75,15 @@ describe("forwardTypes", function()
 		})
 	end)
 
+	it("leaves a type function's variadic out of its generics", function()
+		expect(forwardTypes("export type function keyof(a, b, ...) end", "module")).toEqual({
+			"export type keyof<T0, T1> = module.keyof<T0, T1>",
+		})
+		expect(forwardTypes("export type function keyof(...) end", "module")).toEqual({
+			"export type keyof<> = module.keyof<>",
+		})
+	end)
+
 	it("ignores exports inside comments and strings", function()
 		const source = "-- export type Fake = number\nlocal s = 'export type Also = string'\nexport type Real = string"
 
