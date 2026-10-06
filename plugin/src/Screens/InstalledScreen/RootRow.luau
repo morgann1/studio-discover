@@ -97,7 +97,6 @@ const function RootRow(props: {
 				LayoutOrder = 1,
 			}),
 			More = e(MoreMenu, {
-				label = `More for {root.alias}`,
 				actions = actions,
 				LayoutOrder = 2,
 			}),

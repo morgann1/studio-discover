@@ -93,6 +93,12 @@ const function InstalledScreen(props: {
 	const enabled = SettingsStore.useSettings().registries
 	const query, setQuery = React.useState("")
 
+	-- How tall the alert and column labels above the rows are, so the rows can fill the rest.
+	const topHeight, setTopHeight = React.useBinding(0)
+	const onTopSizeChanged = React.useCallback(function(top: GuiObject)
+		setTopHeight(top.AbsoluteSize.Y)
+	end, {})
+
 	-- The search row only shows docked, so a wider widget drops the filter along with it.
 	const activeQuery = if layout.isDocked then query else ""
 	const groups = groupRoots(installed.roots, updates.updates, activeQuery, props.onlyUpdates)
@@ -115,6 +121,7 @@ const function InstalledScreen(props: {
 			action = if firstSource ~= nil
 				then {
 					text = `Browse {registryLabel(firstSource)}`,
+					icon = iconName("MagnifyingGlass"),
 					onActivated = function()
 						Navigation.resetScreen({ name = "Source", registry = firstSource })
 					end,
@@ -155,20 +162,36 @@ const function InstalledScreen(props: {
 			end
 		end
 
+		--[[
+			The rows fill the height the alert and column labels leave, rather than
+				growing as a flex item. A `grow` sibling makes Roblox measure the alert's
+				wrapped text as one line, which clips it when the widget is docked.
+		]]
 		body = e(View, {
-			tag = "size-full col",
+			tag = "size-full",
 		}, {
-			Alert = e(UpdatesAlert, {
-				updates = updates.updates,
-				isChecking = updates.loading,
-				LayoutOrder = nextOrder(),
-			}),
-			Header = layout.isWide and e(Table.Header, {
-				columns = COLUMNS,
-				LayoutOrder = nextOrder(),
+			Top = e(View, {
+				tag = "size-full-0 auto-y col",
+				onAbsoluteSizeChanged = onTopSizeChanged,
+			}, {
+				Alert = e(UpdatesAlert, {
+					updates = updates.updates,
+					failed = updates.failed,
+					isChecking = updates.loading,
+					LayoutOrder = nextOrder(),
+				}),
+				Header = layout.isWide and e(Table.Header, {
+					columns = COLUMNS,
+					LayoutOrder = nextOrder(),
+				}),
 			}),
 			Rows = e(ScrollView, {
-				tag = "size-full-0 grow",
+				Size = topHeight:map(function(height: number)
+					return UDim2.new(1, 0, 1, -height)
+				end),
+				Position = topHeight:map(function(height: number)
+					return UDim2.fromOffset(0, height)
+				end),
 				scroll = {
 					AutomaticCanvasSize = Enum.AutomaticSize.Y,
 					CanvasSize = UDim2.fromScale(0, 0),
@@ -178,7 +201,6 @@ const function InstalledScreen(props: {
 					FillDirection = Enum.FillDirection.Vertical,
 					SortOrder = Enum.SortOrder.LayoutOrder,
 				},
-				LayoutOrder = nextOrder(),
 			}, rows),
 		})
 	end

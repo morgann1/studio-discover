@@ -44,7 +44,8 @@ end
 
 --[[
 	Fetches every published version of a package, newest first, or returns nil and
-		why not. A version the response does not describe fully is left out.
+		why not. A version the response does not describe fully is left out, and a
+		package Wally doesn't have comes back with no versions.
 ]]
 const function getMetadataAsync(scope: string, name: string): (types.PackageMetadata?, string?)
 	const path = `/package-metadata/{HttpService:UrlEncode(scope)}/{HttpService:UrlEncode(name)}`
@@ -54,8 +55,13 @@ const function getMetadataAsync(scope: string, name: string): (types.PackageMeta
 		return cached, nil
 	end
 
-	const decoded, err = httpClient.getJsonAsync(path)
-	if err ~= nil then
+	const decoded, err, missing = httpClient.getJsonAsync(path)
+	if missing then
+		const empty: types.PackageMetadata = { versions = {} }
+		cache.set(path, empty)
+
+		return empty, nil
+	elseif err ~= nil then
 		return nil, err
 	end
 

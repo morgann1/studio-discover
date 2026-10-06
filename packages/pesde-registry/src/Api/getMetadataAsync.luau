@@ -66,11 +66,14 @@ end
 
 --[[
 	Fetches every version of a package published for a Roblox target, newest first,
-		in the shape the package screen renders, or returns nil and why not.
+		in the shape the package screen renders, or returns nil and why not. A package
+		pesde doesn't have comes back with no versions.
 ]]
 const function getMetadataAsync(scope: string, name: string): (types.PackageMetadata?, string?)
-	const metadata, err = fetchMetadataAsync(scope, name)
-	if metadata == nil then
+	const metadata, err, missing = fetchMetadataAsync(scope, name)
+	if missing then
+		return { versions = {} }, nil
+	elseif metadata == nil then
 		return nil, err
 	end
 

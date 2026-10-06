@@ -131,26 +131,27 @@ end
 
 --[[
 	Fetches every version and target a package is published for, or returns nil
-		and why not. Resolve reads it directly, and the package screen reads it
-		through `Api.getMetadataAsync`.
+		and why not. The third value is true when pesde doesn't have the package.
+		Resolve reads it directly, and the package screen reads it through
+		`Api.getMetadataAsync`.
 ]]
-const function fetchMetadataAsync(scope: string, name: string): (PesdeMetadata?, string?)
+const function fetchMetadataAsync(scope: string, name: string): (PesdeMetadata?, string?, boolean)
 	const path = `/packages/{HttpService:UrlEncode(`{scope}/{name}`)}`
 
 	const cached = cache.get(path)
 	if cached ~= nil then
-		return cached, nil
+		return cached, nil, false
 	end
 
-	const decoded, err = httpClient.getJsonAsync(path)
+	const decoded, err, missing = httpClient.getJsonAsync(path)
 	if err ~= nil then
-		return nil, err
+		return nil, err, missing
 	end
 
 	const response = asTable(decoded)
 	const rawVersions = if response ~= nil then asTable(response.versions) else nil
 	if rawVersions == nil then
-		return nil, "metadata missing versions"
+		return nil, "metadata missing versions", false
 	end
 
 	const versions: { VersionEntry } = {}
@@ -167,7 +168,7 @@ const function fetchMetadataAsync(scope: string, name: string): (PesdeMetadata?,
 
 	cache.set(path, metadata)
 	logger.info(`{scope}/{name}: {#versions} version/target pair(s)`)
-	return metadata, nil
+	return metadata, nil, false
 end
 
 return fetchMetadataAsync
