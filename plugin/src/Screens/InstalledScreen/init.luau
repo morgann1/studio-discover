@@ -115,6 +115,7 @@ const function InstalledScreen(props: {
 			action = if firstSource ~= nil
 				then {
 					text = `Browse {registryLabel(firstSource)}`,
+					icon = iconName("MagnifyingGlass"),
 					onActivated = function()
 						Navigation.resetScreen({ name = "Source", registry = firstSource })
 					end,

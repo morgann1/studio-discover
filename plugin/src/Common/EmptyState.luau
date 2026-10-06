@@ -5,13 +5,21 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
-const Message = require(StudioDiscover.Source.Common.Message)
-
 const Empty = Foundation.Empty
 const View = Foundation.View
 const IconSize = Foundation.Enums.IconSize
 
 const e = React.createElement
+
+--[[
+	Where an empty state's button leads. Foundation's `Empty` merges its own Refresh
+		icon into any button that doesn't name one, so the action always names its icon.
+]]
+export type Action = {
+	read text: string,
+	read icon: string,
+	read onActivated: () -> (),
+}
 
 --[[
 	Foundation's empty state in the middle of a screen's body: an icon over the text,
@@ -22,7 +30,7 @@ const e = React.createElement
 const function EmptyState(props: {
 	read icon: string,
 	read text: string,
-	read action: Message.Action?,
+	read action: Action?,
 })
 	const action = props.action
 
@@ -32,7 +40,9 @@ const function EmptyState(props: {
 		Empty = e(Empty, {
 			icon = { name = props.icon, size = IconSize.Large },
 			text = props.text,
-			button = if action ~= nil then { text = action.text, onActivated = action.onActivated } else nil,
+			button = if action ~= nil
+				then { text = action.text, icon = action.icon, onActivated = action.onActivated }
+				else nil,
 		}),
 	})
 end
