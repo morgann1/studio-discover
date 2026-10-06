@@ -14,10 +14,11 @@ const PopoverAlign = Foundation.Enums.PopoverAlign
 
 const e = React.createElement
 
--- One entry in a "…" menu.
+-- One entry in a "…" menu. A disabled entry shows but can't be chosen.
 export type MenuAction = {
 	read id: string,
 	read text: string,
+	read isDisabled: boolean?,
 	read onActivated: () -> (),
 }
 
@@ -31,7 +32,7 @@ const function MoreMenu(props: {
 
 	const items: { Foundation.MenuItem } = {}
 	for _, action in props.actions do
-		table.insert(items, { id = action.id, text = action.text })
+		table.insert(items, { id = action.id, text = action.text, isDisabled = action.isDisabled })
 	end
 
 	const function onActivated(id: string | number)
