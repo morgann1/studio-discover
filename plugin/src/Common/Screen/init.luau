@@ -62,7 +62,7 @@ const function Screen(props: {
 			LayoutOrder = nextOrder(),
 		}),
 		Search = layout.isDocked and search ~= nil and e(View, {
-			tag = "size-full-0 auto-y padding-x-medium padding-bottom-medium",
+			tag = "size-full-0 auto-y padding-x-large padding-bottom-medium",
 			LayoutOrder = nextOrder(),
 		}, {
 			Input = e(SearchInput, {
