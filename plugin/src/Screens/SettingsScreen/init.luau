@@ -5,6 +5,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
+const ConfirmDialog = require(StudioDiscover.Source.Common.ConfirmDialog)
 const Content = require(StudioDiscover.Source.Common.Content)
 const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const Navigation = require(StudioDiscover.Source.Navigation)
@@ -20,14 +21,11 @@ const registryMark = require(StudioDiscover.Source.Util.registryMark)
 const settingDropdown = require(script.settingDropdown)
 
 const Button = Foundation.Button
-const Dialog = Foundation.Dialog
 const List = Foundation.List
 const Text = Foundation.Text
 const View = Foundation.View
 const ButtonVariant = Foundation.Enums.ButtonVariant
-const DialogSize = Foundation.Enums.DialogSize
 const InputSize = Foundation.Enums.InputSize
-const Orientation = Foundation.Enums.Orientation
 
 const e = React.createElement
 
@@ -190,36 +188,17 @@ const function SettingsScreen()
 				}),
 			}),
 
-			ConfirmResetDialog = isConfirmingReset
-				and e(Dialog.Root, {
-					size = DialogSize.Small,
-					disablePortal = false,
-					hasBackdrop = true,
-					onClose = closeReset,
-				}, {
-					DialogTitle = e(Dialog.Title, {
-						text = "Reset settings?",
-					}),
-					DialogContent = e(Dialog.Content, {}, {
-						Body = e(Dialog.Text, {
-							Text = "This restores every setting to its default and clears the display names. It can't be undone.",
-						}),
-					}),
-					DialogActions = e(Dialog.Actions, {
-						orientation = Orientation.Horizontal,
-						actions = {
-							{ text = "Cancel", variant = ButtonVariant.Standard, onActivated = closeReset },
-							{
-								text = "Reset",
-								variant = ButtonVariant.Alert,
-								onActivated = function()
-									SettingsStore.resetToDefaults()
-									closeReset()
-								end,
-							},
-						},
-					}),
-				}),
+			ConfirmResetDialog = isConfirmingReset and e(ConfirmDialog, {
+				title = "Reset settings?",
+				body = "This restores every setting to its default and clears the display names. It can't be undone.",
+				confirmText = "Reset",
+				isDestructive = true,
+				onConfirm = function()
+					SettingsStore.resetToDefaults()
+					closeReset()
+				end,
+				onCancel = closeReset,
+			}),
 		}),
 	})
 end
