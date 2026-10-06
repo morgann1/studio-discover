@@ -14,6 +14,7 @@ const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
 const formatName = require(StudioDiscover.Source.Util.formatName)
+const rowHeights = require(StudioDiscover.Source.Common.rowHeights)
 const useAtom = require(StudioDiscover.Source.Common.useAtom)
 const usePackageStatus = require(StudioDiscover.Source.Common.usePackageStatus)
 
@@ -100,7 +101,6 @@ const function PackageTable(props: {
 
 	const columnSets = if props.showsSource then SEARCH_COLUMNS else SOURCE_COLUMNS
 	const columns = if layout.isWide then columnSets.expanded else columnSets.docked
-	const rowHeight = if layout.isWide then 54 else 44
 
 	const uniqueKey = createUniqueKey()
 	const nextOrder = createNextOrder()
@@ -120,7 +120,7 @@ const function PackageTable(props: {
 
 		rows[uniqueKey(`{registry}:{brief.scope}/{brief.name}`)] = e(Table.Row, {
 			columns = columns,
-			height = rowHeight,
+			height = rowHeights.single,
 			cells = cells,
 			onActivated = function()
 				Navigation.pushScreen({

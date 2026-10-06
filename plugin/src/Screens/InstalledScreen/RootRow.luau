@@ -13,6 +13,7 @@ const SourceLabel = require(StudioDiscover.Source.Common.SourceLabel)
 const Table = require(StudioDiscover.Source.Common.Table)
 const VersionLabel = require(StudioDiscover.Source.Common.VersionLabel)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const rowHeights = require(StudioDiscover.Source.Common.rowHeights)
 const useOperation = require(StudioDiscover.Source.Common.useOperation)
 
 const groupRoots = require(script.Parent.groupRoots)
@@ -25,9 +26,6 @@ const ButtonVariant = Foundation.Enums.ButtonVariant
 const InputSize = Foundation.Enums.InputSize
 
 const e = React.createElement
-
-const EXPANDED_HEIGHT = 54
-const DOCKED_MIN_HEIGHT = 60
 
 --[[
 	One installed root: its alias, version, and source, with Update when it has an
@@ -131,7 +129,7 @@ const function RootRow(props: {
 			LayoutOrder = nextOrder(),
 		}, {
 			MinHeight = e("UISizeConstraint", {
-				MinSize = Vector2.new(0, DOCKED_MIN_HEIGHT),
+				MinSize = Vector2.new(0, rowHeights.double),
 			}),
 			Info = e(View, {
 				tag = "grow auto-y col gap-xxsmall",
@@ -171,7 +169,7 @@ const function RootRow(props: {
 
 		body = e(Table.Row, {
 			columns = props.columns,
-			height = EXPANDED_HEIGHT,
+			height = rowHeights.single,
 			cells = cells,
 			onActivated = open,
 			LayoutOrder = nextOrder(),
