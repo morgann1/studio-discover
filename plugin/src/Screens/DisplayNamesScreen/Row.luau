@@ -72,6 +72,7 @@ const function Row(props: {
 				icon = iconName("TrashCan"),
 				label = "Remove",
 				onActivated = props.onRemove,
+				isTrailing = true,
 				LayoutOrder = 2,
 			}),
 		}),

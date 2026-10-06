@@ -59,6 +59,7 @@ const function MoreMenu(props: {
 		Button = e(ToolButton, {
 			icon = iconName("ThreeDotsHorizontal"),
 			label = props.label or "More",
+			isTrailing = true,
 			onActivated = function()
 				setIsOpen(not isOpen)
 			end,
