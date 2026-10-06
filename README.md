@@ -8,6 +8,7 @@
 
   [![Get in Creator Store](.github/assets/badges/link-creator-store-middle.svg)](https://create.roblox.com/store/asset/124703864101585/Studio-Discover)
   [![GitHub Releases](.github/assets/badges/link-github-releases.svg)](https://github.com/morgann1/studio-discover/releases)
+  [![Contributions welcome](.github/assets/badges/link-contributions.svg)](CONTRIBUTING.md)
 </div>
 
 Studio Discover lets you pull [Wally](https://wally.run) and [pesde](https://pesde.dev/) packages into Studio without setting up a whole repository. Dependencies and types come with them.
