@@ -6,6 +6,7 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const Installer = require(StudioDiscover.Source.Installer)
+const EmptyState = require(StudioDiscover.Source.Common.EmptyState)
 const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const Message = require(StudioDiscover.Source.Common.Message)
 const Navigation = require(StudioDiscover.Source.Navigation)
@@ -14,6 +15,7 @@ const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const Table = require(StudioDiscover.Source.Common.Table)
 const capitalize = require(StudioDiscover.Source.Util.capitalize)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const iconName = require(StudioDiscover.Source.Util.iconName)
 const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
 const packagesPath = require(StudioDiscover.Source.Util.packagesPath)
 const plural = require(StudioDiscover.Source.Util.plural)
@@ -107,7 +109,8 @@ const function InstalledScreen(props: {
 	if installed.loading then
 		body = e(Message, { text = "Reading this place..." })
 	elseif #installed.roots == 0 then
-		body = e(Message, {
+		body = e(EmptyState, {
+			icon = iconName("FileBox"),
 			text = "Nothing is installed in this place yet.",
 			action = if firstSource ~= nil
 				then {
@@ -128,7 +131,10 @@ const function InstalledScreen(props: {
 			action = { text = "Try again", onActivated = Installer.refreshInstalledRoots },
 		})
 	elseif #groups == 0 then
-		body = e(Message, { text = "Everything is up to date." })
+		body = e(EmptyState, {
+			icon = iconName("CircleCheck"),
+			text = "Everything is up to date.",
+		})
 	else
 		const nextOrder = createNextOrder()
 		const nextRowOrder = createNextOrder()
