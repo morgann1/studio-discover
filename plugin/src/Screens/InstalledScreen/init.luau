@@ -161,6 +161,7 @@ const function InstalledScreen(props: {
 		}, {
 			Alert = e(UpdatesAlert, {
 				updates = updates.updates,
+				failed = updates.failed,
 				isChecking = updates.loading,
 				LayoutOrder = nextOrder(),
 			}),
