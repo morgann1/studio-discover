@@ -20,7 +20,8 @@ export type Action = {
 
 --[[
 	A line of muted text in the middle of a screen's body, for loading, failures, and
-		empty states, with a button when there is somewhere to go next.
+		filters with no matches, with a button when there is somewhere to go next. A
+		place with nothing to list uses `EmptyState`.
 ]]
 const function Message(props: {
 	read text: string,
