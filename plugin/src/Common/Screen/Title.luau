@@ -41,8 +41,12 @@ const function Title(props: {
 		setIsOpen(false)
 	end, {})
 
+	-- Padded and rounded like a menu item, so its hover and open states read as one.
 	const title = e(View, {
-		tag = "auto-xy row align-y-center gap-small",
+		tag = {
+			["auto-x size-0-1000 row align-y-center gap-small padding-x-small radius-medium"] = true,
+			["bg-shift-200"] = isOpen,
+		},
 		onActivated = if props.hasMenu
 			then function()
 				setIsOpen(not isOpen)

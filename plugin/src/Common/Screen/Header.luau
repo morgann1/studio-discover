@@ -73,7 +73,11 @@ const function Header(props: {
 				LayoutOrder = nextLeadingOrder(),
 			}),
 			Title = e(View, {
-				tag = "auto-xy row align-y-center padding-left-xsmall",
+				-- The title pads itself; the breadcrumb takes the same inset so its text lines up.
+				tag = {
+					["auto-xy row align-y-center"] = true,
+					["padding-left-small"] = isNested,
+				},
 				LayoutOrder = nextLeadingOrder(),
 			}, {
 				Title = if isNested

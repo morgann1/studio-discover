@@ -69,9 +69,9 @@ const function groupHeading(group: groupRoots.Group, isDocked: boolean, layoutOr
 		}),
 		Path = e(Text, {
 			tag = {
-				["auto-y text-body-small content-muted text-align-x-left"] = true,
-				["size-full-0 text-wrap"] = isDocked,
-				["auto-x"] = not isDocked,
+				["text-body-small content-muted text-align-x-left"] = true,
+				["size-full-0 auto-y text-wrap"] = isDocked,
+				["auto-xy"] = not isDocked,
 			},
 			Text = table.concat(paths, if isDocked then "\n" else ", "),
 			LayoutOrder = 2,

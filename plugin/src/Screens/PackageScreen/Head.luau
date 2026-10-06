@@ -107,9 +107,9 @@ const function Head(props: {
 
 	const actions = e(View, {
 		tag = {
-			["auto-y row align-y-center gap-small"] = true,
-			["auto-x"] = isWide,
-			["size-full-0"] = not isWide,
+			["row align-y-center gap-small"] = true,
+			["auto-xy"] = isWide,
+			["size-full-0 auto-y"] = not isWide,
 		},
 		LayoutOrder = nextOrder(),
 	}, {
