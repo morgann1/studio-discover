@@ -385,7 +385,8 @@ const function PackageScreen(props: {
 								indicator = if #specs > 0 then { value = #specs } else nil,
 							},
 						},
-						size = if breakpoint == Breakpoint.XSmall then InputSize.Small else InputSize.Medium,
+						-- Small overflows the 306px minimum, which scrolls Dependencies out of view.
+						size = if breakpoint == Breakpoint.XSmall then InputSize.XSmall else InputSize.Medium,
 						LayoutOrder = 1,
 					}),
 					Body = e(View, {
