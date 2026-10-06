@@ -14,6 +14,9 @@ export type HttpFailure =
 		read statusCode: number,
 	}
 	| {
+		read kind: "missing",
+	}
+	| {
 		read kind: "empty",
 	}
 	| {
@@ -31,6 +34,8 @@ export type HttpFailure =
 const function describeHttpFailure(host: string, failure: HttpFailure): string
 	if failure.kind == "request" then
 		return if string.find(failure.message, "^HttpError") ~= nil then `can't connect to {host}` else failure.message
+	elseif failure.kind == "missing" then
+		return `not found on {host}`
 	elseif failure.kind == "empty" then
 		return `{host} sent an empty response`
 	elseif failure.kind == "unreadable" then

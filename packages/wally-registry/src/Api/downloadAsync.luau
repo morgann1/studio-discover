@@ -12,7 +12,9 @@ const function downloadAsync(scope: string, name: string, version: string): (str
 	const encodedName = HttpService:UrlEncode(name)
 	const encodedVersion = HttpService:UrlEncode(version)
 
-	return httpClient.getAsync(`/package-contents/{encodedScope}/{encodedName}/{encodedVersion}`)
+	const archive, err = httpClient.getAsync(`/package-contents/{encodedScope}/{encodedName}/{encodedVersion}`)
+
+	return archive, err
 end
 
 return downloadAsync
