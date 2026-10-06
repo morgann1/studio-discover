@@ -132,7 +132,7 @@ Three rules hold the shape together. A package requires its siblings through `St
 - `plugin/src/Navigation/`, `SettingsStore/`, `SearchStore/`, `SidebarStore/` - Charm-backed state, one file per operation.
 - `plugin/src/Util/` - one function per file, file named for the function. Anything a package would also want belongs in `packages/core/` instead.
 - `plugin/src/Plugin/` - Studio-facing glue: the plugin handle, widget mounting, settings persistence.
-- `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` - generated, gitignored, never edited by hand.
+- `plugin/Packages/`, `plugin/DevPackages/`, `plugin/generated/` - generated, gitignored, never edited by hand. The plugin build leaves the vendored specs, stories, and `__tests__` folders out through `globIgnorePaths` in `default.project.json`. Some of them call `getfenv` or `InsertService:LoadAsset`, which Creator Store moderation flags.
 - `.repos/` - local read-only references, gitignored and absent until you run `lute scripts/sync.luau`. Prefer their patterns over invented ones. Never edit or import from them. Sync again when bumping the matching dependency.
 
 ## Taste
