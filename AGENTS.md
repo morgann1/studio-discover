@@ -106,7 +106,6 @@ The version is duplicated in several places and they all move together, in one c
 1. `plugin/wally.toml` - `[package].version`. Codegen reads this one to stamp the build.
 2. `plugin/wally.lock` - the `morgann1/studio-discover` entry's `version`.
 3. `packages/core/src/version.luau` - the runtime version string.
-4. `README.md` - the `### Version X.Y (Latest)` heading and its ToC anchor. Refresh the highlights if the release changed anything user-visible.
 
 Semver: dependency bumps and small fixes are PATCH, new user-visible features are MINOR, breaking changes are MAJOR. Commit as `chore(release): bump version to X.Y.Z`. Do not tag and do not push. We run the release workflow by hand.
 
