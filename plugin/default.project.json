@@ -1,5 +1,14 @@
 {
   "name": "StudioDiscover",
+  "globIgnorePaths": [
+    "Packages/**/__tests__",
+    "Packages/**/*.spec.lua",
+    "Packages/**/*.spec.luau",
+    "Packages/**/*.story.lua",
+    "Packages/**/*.story.luau",
+    "Packages/**/*.storybook.lua",
+    "Packages/**/*.storybook.luau"
+  ],
   "tree": {
     "$className": "Folder",
     "Main": {
