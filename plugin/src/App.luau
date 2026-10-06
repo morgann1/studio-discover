@@ -11,6 +11,7 @@ const InstalledScreen = require(StudioDiscover.Source.Screens.InstalledScreen)
 const Installer = require(StudioDiscover.Source.Installer)
 const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const Navigation = require(StudioDiscover.Source.Navigation)
+const Notice = require(StudioDiscover.Source.Common.Notice)
 const PackageScreen = require(StudioDiscover.Source.Screens.PackageScreen)
 const SearchScreen = require(StudioDiscover.Source.Screens.SearchScreen)
 const SettingsScreen = require(StudioDiscover.Source.Screens.SettingsScreen)
@@ -101,6 +102,9 @@ const function App(props: {
 				}, {
 					Screen = e(CurrentScreen),
 				}),
+			}),
+			Notice = e(Notice, {
+				ZIndex = 2,
 			}),
 		}),
 	})

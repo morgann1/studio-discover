@@ -10,6 +10,7 @@ const Installer = require(StudioDiscover.Source.Installer)
 const LoadError = require(StudioDiscover.Source.Common.LoadError)
 const Message = require(StudioDiscover.Source.Common.Message)
 const Navigation = require(StudioDiscover.Source.Navigation)
+const NoticeStore = require(StudioDiscover.Source.NoticeStore)
 const Screen = require(StudioDiscover.Source.Common.Screen)
 const SearchStore = require(StudioDiscover.Source.SearchStore)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
@@ -197,7 +198,10 @@ const function PackageScreen(props: {
 				isDisabled = isBusy,
 				onActivated = function()
 					removal.run(function()
-						return Installer.uninstallAsync(root)
+						const result = Installer.uninstallAsync(root)
+						NoticeStore.showSuccess(result, `Removed {root.alias}`, "Undo with Ctrl+Z.")
+
+						return result
 					end)
 				end,
 			}

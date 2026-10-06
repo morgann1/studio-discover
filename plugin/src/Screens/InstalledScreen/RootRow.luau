@@ -8,6 +8,7 @@ const React = require(StudioDiscover.Packages.React)
 const Installer = require(StudioDiscover.Source.Installer)
 const MoreMenu = require(StudioDiscover.Source.Common.MoreMenu)
 const Navigation = require(StudioDiscover.Source.Navigation)
+const NoticeStore = require(StudioDiscover.Source.NoticeStore)
 const SourceLabel = require(StudioDiscover.Source.Common.SourceLabel)
 const Table = require(StudioDiscover.Source.Common.Table)
 const VersionLabel = require(StudioDiscover.Source.Common.VersionLabel)
@@ -69,7 +70,10 @@ const function RootRow(props: {
 				onActivated = function()
 					setRunningText("Removing...")
 					operation.run(function()
-						return Installer.uninstallAsync(root)
+						const result = Installer.uninstallAsync(root)
+						NoticeStore.showSuccess(result, `Removed {root.alias}`, "Undo with Ctrl+Z.")
+
+						return result
 					end)
 				end,
 			},
@@ -86,7 +90,10 @@ const function RootRow(props: {
 				onActivated = function()
 					setRunningText("Updating...")
 					operation.run(function()
-						return Installer.updateAllAsync({ update })
+						const result = Installer.updateAllAsync({ update })
+						NoticeStore.showSuccess(result, `Updated {root.alias} to {update.latestVersion}`)
+
+						return result
 					end)
 				end,
 				LayoutOrder = 1,

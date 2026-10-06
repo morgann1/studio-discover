@@ -6,6 +6,7 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const Installer = require(StudioDiscover.Source.Installer)
+const NoticeStore = require(StudioDiscover.Source.NoticeStore)
 const installerTypes = require(StudioDiscover.Source.Installer.types)
 const plural = require(StudioDiscover.Source.Util.plural)
 const useOperation = require(StudioDiscover.Source.Common.useOperation)
@@ -71,7 +72,10 @@ const function UpdatesAlert(props: {
 					text = "Update all",
 					onActivated = function()
 						operation.run(function()
-							return Installer.updateAllAsync(updates)
+							const result = Installer.updateAllAsync(updates)
+							NoticeStore.showSuccess(result, `Updated {plural(#updates, "package")}`)
+
+							return result
 						end)
 					end,
 				},
