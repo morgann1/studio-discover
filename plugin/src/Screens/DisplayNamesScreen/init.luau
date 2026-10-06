@@ -13,6 +13,7 @@ const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const plural = require(StudioDiscover.Source.Util.plural)
 
+const ColumnLabels = require(script.ColumnLabels)
 const Row = require(script.Row)
 
 const Button = Foundation.Button
@@ -67,6 +68,12 @@ const function DisplayNamesScreen()
 			LayoutOrder = nextOrder(),
 		}),
 	}
+
+	if layout.isWide and #rules > 0 then
+		children.ColumnLabels = e(ColumnLabels, {
+			LayoutOrder = nextOrder(),
+		})
+	end
 
 	for index, rule in rules do
 		children[`Rule_{index}`] = e(Row, {
