@@ -30,13 +30,14 @@ end
 		to it instead of a title.
 
 	Expanded, back and forward lead. Docked, the breadcrumb is the way back and the
-		title opens the location menu. Refresh and Settings trail in both, and the
-		sidebar toggle leads whenever the user hid a sidebar there is room for.
+		title opens the location menu. Refresh, when the screen has one, and Settings
+		trail in both, and the sidebar toggle leads whenever the user hid a sidebar
+		there is room for.
 ]]
 const function Header(props: {
 	read title: string,
 	read registry: coreTypes.Registry?,
-	read onRefresh: () -> (),
+	read onRefresh: (() -> ())?,
 	read LayoutOrder: number?,
 })
 	const layout = LayoutContext.useLayout()
@@ -91,7 +92,7 @@ const function Header(props: {
 			tag = "auto-xy row align-y-center gap-small",
 			LayoutOrder = 3,
 		}, {
-			Refresh = e(ToolButton, {
+			Refresh = props.onRefresh ~= nil and e(ToolButton, {
 				icon = iconName("ArrowSpinClockwise"),
 				label = "Refresh",
 				onActivated = props.onRefresh,

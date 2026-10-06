@@ -100,7 +100,9 @@ const function SettingsScreen()
 
 	const ruleCount = #settings.displayNames
 
-	return e(Screen, {}, {
+	return e(Screen, {
+		canRefresh = false,
+	}, {
 		Body = e(Content, {}, {
 			SourcesHeading = heading("Sources", nextOrder()),
 			Sources = e(List.Root, {
