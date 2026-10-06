@@ -8,6 +8,7 @@ const React = require(StudioDiscover.Packages.React)
 const InstallConfirmDialog = require(StudioDiscover.Source.Installer.InstallConfirmDialog)
 const Installer = require(StudioDiscover.Source.Installer)
 const LoadError = require(StudioDiscover.Source.Common.LoadError)
+const MajorBadge = require(StudioDiscover.Source.Common.MajorBadge)
 const Message = require(StudioDiscover.Source.Common.Message)
 const Navigation = require(StudioDiscover.Source.Navigation)
 const NoticeStore = require(StudioDiscover.Source.NoticeStore)
@@ -37,7 +38,6 @@ const Versions = require(script.Versions)
 
 const Alert = Foundation.Alert
 const ScrollView = Foundation.ScrollView
-const StatusBadge = Foundation.StatusBadge
 const Tabs = Foundation.Tabs
 const Text = Foundation.Text
 const View = Foundation.View
@@ -45,8 +45,6 @@ const AlertSeverity = Foundation.Enums.AlertSeverity
 const AlertVariant = Foundation.Enums.AlertVariant
 const Breakpoint = Foundation.Enums.Breakpoint
 const InputSize = Foundation.Enums.InputSize
-const StatusBadgeShape = Foundation.Enums.StatusBadgeShape
-const StatusBadgeVariant = Foundation.Enums.StatusBadgeVariant
 
 const e = React.createElement
 
@@ -229,7 +227,7 @@ const function PackageScreen(props: {
 			table.insert(versionList, itemVersion)
 			table.insert(versionItems, {
 				id = itemVersion,
-				text = if index == 1 then `v{itemVersion} (latest)` else `v{itemVersion}`,
+				text = if index == 1 then `{itemVersion} (latest)` else itemVersion,
 			})
 		end
 
@@ -259,10 +257,7 @@ const function PackageScreen(props: {
 						Text = version,
 						LayoutOrder = 1,
 					}),
-					Major = isMajor and e(StatusBadge, {
-						text = "Major",
-						variant = StatusBadgeVariant.Warning,
-						shape = StatusBadgeShape.Box,
+					Major = isMajor and e(MajorBadge, {
 						LayoutOrder = 2,
 					}),
 				}),

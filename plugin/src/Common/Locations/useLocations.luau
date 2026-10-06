@@ -76,7 +76,7 @@ const function useLocations(): Locations
 		table.insert(sources, location(registry, registryLabel(registry), route, nil, false, registry))
 	end
 
-	const installedCount = if installed.loading then nil else #installed.roots
+	const installedCount = if not installed.loading and #installed.roots > 0 then #installed.roots else nil
 	const updatesCount = if #updates.updates > 0 then #updates.updates else nil
 
 	return {

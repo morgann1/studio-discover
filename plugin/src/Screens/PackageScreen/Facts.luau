@@ -12,6 +12,9 @@ const View = Foundation.View
 
 const e = React.createElement
 
+-- The row's gap-medium, which every column but the last has after it.
+const GAP = 12
+
 export type Fact = {
 	read label: string,
 	read value: React.Node,
@@ -26,10 +29,14 @@ const function Facts(props: {
 	const nextOrder = createNextOrder()
 	const cells: { [string]: React.Node } = {}
 
+	-- The gaps between columns are shared out, so the last column ends at the row's edge.
+	const columns = props.columns
+	const width = UDim2.new(1 / columns, -GAP * (columns - 1) / columns, 0, 0)
+
 	for _, fact in props.facts do
 		cells[fact.label] = e(View, {
 			tag = "auto-y col gap-xxsmall",
-			Size = UDim2.new(1 / props.columns, -12, 0, 0),
+			Size = width,
 			LayoutOrder = nextOrder(),
 		}, {
 			Label = e(Text, {

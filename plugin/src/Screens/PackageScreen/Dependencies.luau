@@ -17,12 +17,10 @@ const parseDependency = require(script.Parent.parseDependency)
 
 const Divider = Foundation.Divider
 const Icon = Foundation.Icon
-const Link = Foundation.Link
 const Text = Foundation.Text
 const View = Foundation.View
 const IconName = Foundation.Enums.IconName
 const IconSize = Foundation.Enums.IconSize
-const InputSize = Foundation.Enums.InputSize
 
 const e = React.createElement
 
@@ -77,18 +75,15 @@ const function Dependencies(props: {
 					tag = "grow auto-y col gap-xxsmall",
 					LayoutOrder = 1,
 				}, {
-					Name = if dependency ~= nil and open ~= nil
-						then e(Link, {
-							text = formatName(dependency.name, namingConvention),
-							size = InputSize.Medium,
-							onActivated = open,
-							LayoutOrder = 1,
-						})
-						else e(Text, {
-							tag = "size-full-0 auto-y text-body-medium content-default text-align-x-left text-truncate-end",
-							Text = spec,
-							LayoutOrder = 1,
-						}),
+					Name = e(Text, {
+						tag = {
+							["size-full-0 auto-y text-body-medium text-align-x-left text-truncate-end"] = true,
+							["content-emphasis"] = dependency ~= nil,
+							["content-default"] = dependency == nil,
+						},
+						Text = if dependency ~= nil then formatName(dependency.name, namingConvention) else spec,
+						LayoutOrder = 1,
+					}),
 					Detail = dependency ~= nil
 						and e(Text, {
 							tag = "size-full-0 auto-y text-body-small content-muted text-align-x-left text-truncate-end",

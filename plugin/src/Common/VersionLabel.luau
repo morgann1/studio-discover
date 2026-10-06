@@ -5,20 +5,17 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
+const MajorBadge = require(StudioDiscover.Source.Common.MajorBadge)
 const isBreakingUpdate = require(StudioDiscover.Libraries.Semver.isBreakingUpdate)
 
-const StatusBadge = Foundation.StatusBadge
 const Text = Foundation.Text
 const View = Foundation.View
-const StatusBadgeShape = Foundation.Enums.StatusBadgeShape
-const StatusBadgeSize = Foundation.Enums.StatusBadgeSize
-const StatusBadgeVariant = Foundation.Enums.StatusBadgeVariant
 
 const e = React.createElement
 
 --[[
-	An installed version, or the step from it to `latest` in the link colour, flagged
-		Major when the step is a breaking change.
+	An installed version, or the step from it to `latest` with the new version in
+		emphasis, flagged Major when the step is a breaking change.
 ]]
 const function VersionLabel(props: {
 	read version: string,
@@ -32,20 +29,17 @@ const function VersionLabel(props: {
 		LayoutOrder = props.LayoutOrder,
 	}, {
 		Version = e(Text, {
-			tag = {
-				["auto-xy text-body-medium"] = true,
-				["content-link"] = latest ~= nil,
-				["content-default"] = latest == nil,
-			},
-			Text = if latest ~= nil then `{props.version} → {latest}` else props.version,
+			tag = "auto-xy text-body-medium content-default",
+			Text = if latest ~= nil then `{props.version} →` else props.version,
 			LayoutOrder = 1,
 		}),
-		Major = latest ~= nil and isBreakingUpdate(props.version, latest) and e(StatusBadge, {
-			text = "Major",
-			variant = StatusBadgeVariant.Warning,
-			shape = StatusBadgeShape.Box,
-			size = StatusBadgeSize.XSmall,
+		Latest = latest ~= nil and e(Text, {
+			tag = "auto-xy text-body-medium content-emphasis",
+			Text = latest,
 			LayoutOrder = 2,
+		}),
+		Major = latest ~= nil and isBreakingUpdate(props.version, latest) and e(MajorBadge, {
+			LayoutOrder = 3,
 		}),
 	})
 end

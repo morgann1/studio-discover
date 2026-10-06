@@ -21,7 +21,8 @@ const GAP = 12
 
 --[[
 	The column labels above a table. Each label after the first has a divider in the
-		gap before it, so the labels line up with the values below them.
+		gap before it, so the labels line up with the values below them. A column
+		without a label, such as one for row actions, gets no divider.
 ]]
 const function Header(props: {
 	read columns: { types.Column },
@@ -34,7 +35,7 @@ const function Header(props: {
 		labels[column.key] = e(View, {
 			tag = "size-full",
 		}, {
-			Divider = index > 1 and e(View, {
+			Divider = index > 1 and column.label ~= "" and e(View, {
 				Size = UDim2.new(0, 1, 1, -12),
 				Position = UDim2.fromOffset(-GAP // 2, 6),
 			}, {

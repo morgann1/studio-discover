@@ -26,6 +26,7 @@ const Text = Foundation.Text
 const View = Foundation.View
 const ButtonVariant = Foundation.Enums.ButtonVariant
 const InputSize = Foundation.Enums.InputSize
+const ListItemInputType = Foundation.Enums.ListItemInputType
 
 const e = React.createElement
 
@@ -145,6 +146,7 @@ const function SettingsScreen()
 						tag = "auto-xy text-body-medium content-muted",
 						Text = tostring(ruleCount),
 					}),
+					input = ListItemInputType.Chevron,
 					onActivated = function()
 						Navigation.pushScreen({ name = "DisplayNames" })
 					end,
