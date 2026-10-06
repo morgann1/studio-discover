@@ -11,6 +11,7 @@ const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
 const formatName = require(StudioDiscover.Source.Util.formatName)
+const rowHeights = require(StudioDiscover.Source.Common.rowHeights)
 const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 const parseDependency = require(script.Parent.parseDependency)
@@ -23,8 +24,6 @@ const IconName = Foundation.Enums.IconName
 const IconSize = Foundation.Enums.IconSize
 
 const e = React.createElement
-
-const ROW_HEIGHT = 56
 
 --[[
 	Each dependency's name, with its scope and range under it, opening the
@@ -67,7 +66,7 @@ const function Dependencies(props: {
 		}, {
 			Body = e(View, {
 				tag = "size-full-0 row align-y-center gap-medium",
-				Size = UDim2.new(1, 0, 0, ROW_HEIGHT),
+				Size = UDim2.new(1, 0, 0, rowHeights.double),
 				onActivated = open,
 				LayoutOrder = nextRowOrder(),
 			}, {

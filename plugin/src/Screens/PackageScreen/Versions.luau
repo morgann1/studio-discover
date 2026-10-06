@@ -6,6 +6,7 @@ const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const rowHeights = require(StudioDiscover.Source.Common.rowHeights)
 
 const Divider = Foundation.Divider
 const Icon = Foundation.Icon
@@ -17,8 +18,6 @@ const IconSize = Foundation.Enums.IconSize
 const StatusBadgeVariant = Foundation.Enums.StatusBadgeVariant
 
 const e = React.createElement
-
-const ROW_HEIGHT = 44
 
 --[[
 	Every version, newest first, marking the latest, the installed one, and the one
@@ -43,7 +42,7 @@ const function Versions(props: {
 		}, {
 			Body = e(View, {
 				tag = "size-full-0 row align-y-center gap-small",
-				Size = UDim2.new(1, 0, 0, ROW_HEIGHT),
+				Size = UDim2.new(1, 0, 0, rowHeights.single),
 				onActivated = function()
 					props.onSelected(version)
 				end,
