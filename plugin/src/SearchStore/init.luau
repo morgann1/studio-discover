@@ -15,12 +15,17 @@ const function useQuery(): string
 	end)
 end
 
+const function getQuery(): string
+	return queryAtom()
+end
+
 const function setQuery(value: string)
 	queryAtom(value)
 end
 
 const SearchStore = table.freeze({
 	useQuery = useQuery,
+	getQuery = getQuery,
 	setQuery = setQuery,
 })
 

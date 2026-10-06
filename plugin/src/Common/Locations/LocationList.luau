@@ -9,6 +9,7 @@ const Navigation = require(StudioDiscover.Source.Navigation)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 
 const LocationItem = require(script.Parent.LocationItem)
+const pickLocation = require(script.Parent.pickLocation)
 const useLocations = require(script.Parent.useLocations)
 
 const Divider = Foundation.Divider
@@ -31,7 +32,7 @@ const function LocationList(props: {
 	const nextOrder = createNextOrder()
 
 	const function pick(route: Navigation.Route)
-		Navigation.resetScreen(route)
+		pickLocation(route)
 
 		if props.onPicked ~= nil then
 			props.onPicked()
