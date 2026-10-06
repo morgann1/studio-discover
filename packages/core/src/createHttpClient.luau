@@ -7,6 +7,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const buildUserAgent = require(StudioDiscover.Libraries.Core.buildUserAgent)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const createRateLimiter = require(StudioDiscover.Libraries.Core.createRateLimiter)
+const describeHttpFailure = require(StudioDiscover.Libraries.Core.describeHttpFailure)
 
 const MIN_REQUEST_INTERVAL_SECONDS = 1
 
@@ -35,7 +36,8 @@ end
 	Returns a client for one registry's API at `baseUrl`, named `name` in the logs.
 
 	`getAsync` returns the body of a successful GET to `path`, or nil and why not, and
-		`getJsonAsync` decodes that body as JSON.
+		`getJsonAsync` decodes that body as JSON. The reason reads as a phrase for
+		people, from `describeHttpFailure`.
 
 	Requests wait their turn behind a one-second rate limit, carry Discover's user
 		agent alongside `headers`, and retry once after a 429, honoring `Retry-After`.
@@ -43,6 +45,7 @@ end
 const function createHttpClient(name: string, baseUrl: string, headers: { [string]: string }): HttpClient
 	const logger = createLogger.createLogger(`{name}.http`)
 	const rateLimiter = createRateLimiter(MIN_REQUEST_INTERVAL_SECONDS)
+	const host = string.match(baseUrl, "^%a+://([^/]+)") or baseUrl
 
 	const function requestOnceAsync(url: string, requestHeaders: { [string]: string | Secret }): (Response?, string?)
 		const ok, response = pcall(function()
@@ -90,12 +93,15 @@ const function createHttpClient(name: string, baseUrl: string, headers: { [strin
 
 		if response == nil then
 			logger.warn(`GET {url} failed: {err}`)
-			return nil, err
-		elseif response.statusCode < 200 or response.statusCode >= 300 then
-			logger.warn(`GET {url} returned HTTP {response.statusCode}`)
-			return nil, `HTTP {response.statusCode}`
+			return nil, describeHttpFailure(host, { kind = "request", message = err or "" })
+		end
+
+		const statusCode = response.statusCode
+		if statusCode < 200 or statusCode >= 300 then
+			logger.warn(`GET {url} returned HTTP {statusCode}`)
+			return nil, describeHttpFailure(host, { kind = "status", statusCode = statusCode })
 		elseif response.body == nil or response.body == "" then
-			return nil, "Empty response"
+			return nil, describeHttpFailure(host, { kind = "empty" })
 		end
 
 		return response.body, nil
@@ -110,7 +116,8 @@ const function createHttpClient(name: string, baseUrl: string, headers: { [strin
 
 		const ok, decoded = pcall(HttpService.JSONDecode, HttpService, body)
 		if not ok then
-			return nil, `JSON decode failed: {decoded}`
+			logger.warn(`GET {baseUrl}{path} sent JSON that failed to decode: {decoded}`)
+			return nil, describeHttpFailure(host, { kind = "unreadable" })
 		end
 
 		return decoded, nil
