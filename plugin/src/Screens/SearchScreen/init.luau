@@ -13,7 +13,6 @@ const SearchStore = require(StudioDiscover.Source.SearchStore)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-const escapeRichText = require(StudioDiscover.Source.Util.escapeRichText)
 const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
 const registries = require(StudioDiscover.Libraries.Core.registries)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
@@ -108,7 +107,6 @@ const function SearchScreen()
 	end
 
 	return e(Screen, {
-		title = if query ~= "" then `<font weight="Regular">Results for</font> {escapeRichText(query)}` else "Search",
 		search = {
 			text = query,
 			placeholder = "Search all sources",
