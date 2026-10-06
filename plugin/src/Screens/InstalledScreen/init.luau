@@ -37,8 +37,6 @@ const COLUMNS: { Table.Column } = {
 	{ key = "action", label = "", width = 104 },
 }
 
-const MONOSPACE = Font.fromEnum(Enum.Font.RobotoMono)
-
 --[[
 	A realm's heading, with the folders its rows live in, such as
 		"ReplicatedStorage.Packages". Docked, the folders go under the realm.
@@ -74,7 +72,6 @@ const function groupHeading(group: groupRoots.Group, isDocked: boolean, layoutOr
 				["auto-x"] = not isDocked,
 			},
 			Text = table.concat(paths, if isDocked then "\n" else ", "),
-			fontStyle = { Font = MONOSPACE },
 			LayoutOrder = 2,
 		}),
 	})

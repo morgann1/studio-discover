@@ -16,6 +16,7 @@ const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
 const registries = require(StudioDiscover.Libraries.Core.registries)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
+const registryMark = require(StudioDiscover.Source.Util.registryMark)
 const useSearchPackages = require(StudioDiscover.Source.Api.useSearchPackages)
 
 const ChipGroup = Foundation.ChipGroup
@@ -72,6 +73,7 @@ const function SearchScreen()
 		for _, registry in sources do
 			table.insert(chips, {
 				text = registryLabel(registry),
+				leading = registryMark(registry),
 				isChecked = filter == registry,
 				onActivated = function()
 					setFilter(registry)
