@@ -110,36 +110,31 @@ describe("extractDefaultType", function()
 end)
 
 describe("shouldKeepDefault", function()
-	it("keeps a builtin default", function()
-		expect(shouldKeepDefault("number", {})).toBe(true)
-	end)
-
-	it("keeps a default that references a resolved type", function()
+	it("keeps a bare name that is builtin or in scope", function()
+		expect(shouldKeepDefault("unknown", {})).toBe(true)
 		expect(shouldKeepDefault("Self", { Self = true })).toBe(true)
 	end)
 
-	it("drops a default with namespace access", function()
-		expect(shouldKeepDefault("Foo.Bar", {})).toBe(false)
+	it("keeps a boolean singleton", function()
+		expect(shouldKeepDefault("true", {})).toBe(true)
+		expect(shouldKeepDefault("false", {})).toBe(true)
 	end)
 
-	it("keeps a function-type default made of builtins", function()
-		expect(shouldKeepDefault("(...any) -> ()", {})).toBe(true)
+	it("drops a bare name that is not in scope", function()
+		expect(shouldKeepDefault("Object", {})).toBe(false)
+		expect(shouldKeepDefault("nil", {})).toBe(false)
 	end)
 
-	it("drops a function-type default that references an unresolved type", function()
-		expect(shouldKeepDefault("(Unknown) -> ()", {})).toBe(false)
-	end)
+	it("drops anything richer than a bare name, even when every name in it resolves", function()
+		const resolvedTypes = { T = true } :: { [string]: true }
 
-	it("keeps a union of builtins", function()
-		expect(shouldKeepDefault("number | string", {})).toBe(true)
-	end)
-
-	it("keeps a typeof expression made of keywords", function()
-		expect(shouldKeepDefault("typeof(nil)", {})).toBe(true)
-	end)
-
-	it("drops a union that references an external namespaced type", function()
-		expect(shouldKeepDefault("number | Foo.Bar", {})).toBe(false)
+		expect(shouldKeepDefault("Foo.Bar", resolvedTypes)).toBe(false)
+		expect(shouldKeepDefault("T?", resolvedTypes)).toBe(false)
+		expect(shouldKeepDefault("{ T }", resolvedTypes)).toBe(false)
+		expect(shouldKeepDefault("number | string", resolvedTypes)).toBe(false)
+		expect(shouldKeepDefault("(...any) -> ()", resolvedTypes)).toBe(false)
+		expect(shouldKeepDefault("typeof(T)", resolvedTypes)).toBe(false)
+		expect(shouldKeepDefault('"open"', resolvedTypes)).toBe(false)
 	end)
 end)
 

@@ -41,14 +41,6 @@ const BUILTIN_TYPES: ResolvedTypes = {
 }
 table.freeze(BUILTIN_TYPES)
 
-const TYPE_SYNTAX_TOKENS: ResolvedTypes = {
-	["typeof"] = true,
-	["nil"] = true,
-	["true"] = true,
-	["false"] = true,
-}
-table.freeze(TYPE_SYNTAX_TOKENS)
-
 const function isOpeningBracket(char: string): boolean
 	return char == "<" or char == "(" or char == "{" or char == "["
 end
@@ -123,21 +115,21 @@ const function extractDefaultType(param: string): string?
 end
 
 --[[
-	A default is only safe to copy across if every identifier in it resolves where
-		the rewritten link module will be evaluated.
+	A default is copied across only when it is a bare type name in scope where the
+		rewritten link module is evaluated, or a `true` or `false` singleton. That is
+		the whole of wally-package-types' rule, so anything richer, such as `T?` or
+		`{ T }`, is dropped even when every name in it resolves.
 ]]
 const function shouldKeepDefault(defaultType: string, resolvedTypes: ResolvedTypes): boolean
-	if defaultType:find("[%w_]%s*%.%s*[%a_]") ~= nil then
+	if defaultType == "true" or defaultType == "false" then
+		return true
+	end
+
+	if defaultType:match("^[%a_][%w_]*$") == nil then
 		return false
 	end
 
-	for ident in defaultType:gmatch("[%a_][%w_]*") do
-		if BUILTIN_TYPES[ident] == nil and resolvedTypes[ident] == nil and TYPE_SYNTAX_TOKENS[ident] == nil then
-			return false
-		end
-	end
-
-	return true
+	return BUILTIN_TYPES[defaultType] ~= nil or resolvedTypes[defaultType] ~= nil
 end
 
 -- A forwarded parameter keeps its name, and its `...` when it is a type pack.

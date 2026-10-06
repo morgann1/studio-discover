@@ -8,8 +8,9 @@ const parseExportedTypes = require(StudioDiscover.Libraries.PackageTypes.parseEx
 	Returns the `export type` lines that re-export every type `source` exports,
 		through `moduleVariable`, the local a link module holds the required module in.
 
-	A generic default is kept only when every name in it is in scope in the link
-		module, and Luau's ordering rule then drops the defaults to its left as well.
+	A generic default is kept only when it is a bare type name in scope in the link
+		module, or `true` or `false`, as wally-package-types does. Luau's ordering rule
+		then drops the defaults to the left of a dropped one as well.
 		Type functions are forwarded with one generic per parameter.
 ]]
 const function forwardTypes(source: string, moduleVariable: string): { string }
