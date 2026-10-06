@@ -10,10 +10,47 @@ const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const isUpdateCandidate = require(StudioDiscover.Libraries.Semver.isUpdateCandidate)
 const types = require(StudioDiscover.Source.Installer.types)
 
+const function getMetadataAsync(root: coreTypes.InstalledRoot): coreTypes.PackageMetadata?
+	return if root.registry == "pesde"
+		then getPesdeMetadataAsync(root.scope, root.name)
+		else getWallyMetadataAsync(root.scope, root.name)
+end
+
 --[[
-	Returns the roots that have a newer version on their registry, asking each
-		registry in turn, and how many roots couldn't be checked because their metadata
-		failed to load. Roots from a registry the user turned off are skipped.
+	Fetches every root's metadata at once and yields until all of it is back. Each
+		registry's HTTP client paces the requests. A root whose metadata failed to load
+		is missing from the result.
+]]
+const function getAllMetadataAsync(roots: { coreTypes.InstalledRoot }): { [number]: coreTypes.PackageMetadata? }
+	const results: { [number]: coreTypes.PackageMetadata? } = {}
+	const thread = coroutine.running()
+	local remaining = #roots
+	local isWaiting = false
+
+	for index, root in roots do
+		task.spawn(function()
+			results[index] = getMetadataAsync(root)
+			remaining -= 1
+
+			if remaining == 0 and isWaiting then
+				task.spawn(thread)
+			end
+		end)
+	end
+
+	-- Cached metadata comes back without yielding, so every fetch may already be done.
+	if remaining > 0 then
+		isWaiting = true
+		coroutine.yield()
+	end
+
+	return results
+end
+
+--[[
+	Returns the roots that have a newer version on their registry, in the order given,
+		and how many roots couldn't be checked because their metadata failed to load.
+		Roots from a registry the user turned off are skipped.
 
 	Each root is offered the newest version `isUpdateCandidate` allows, so a stable
 		root never moves onto a prerelease.
@@ -22,18 +59,20 @@ const function findUpdatesAsync(
 	roots: { coreTypes.InstalledRoot },
 	registries: SettingsStore.RegistryEnableMap
 ): ({ types.UpdateInfo }, number)
+	const checked: { coreTypes.InstalledRoot } = {}
+	for _, root in roots do
+		const enabled = if root.registry == "pesde" then registries.pesde else registries.wally
+		if enabled then
+			table.insert(checked, root)
+		end
+	end
+
+	const allMetadata = getAllMetadataAsync(checked)
 	const updates: { types.UpdateInfo } = {}
 	local failed = 0
 
-	for _, root in roots do
-		const enabled = if root.registry == "pesde" then registries.pesde else registries.wally
-		if not enabled then
-			continue
-		end
-
-		const metadata = if root.registry == "pesde"
-			then getPesdeMetadataAsync(root.scope, root.name)
-			else getWallyMetadataAsync(root.scope, root.name)
+	for index, root in checked do
+		const metadata = allMetadata[index]
 		if metadata == nil then
 			failed += 1
 			continue

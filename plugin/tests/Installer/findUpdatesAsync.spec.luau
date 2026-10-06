@@ -14,7 +14,22 @@ const StudioDiscover = ServerScriptService.StudioDiscover
 -- What both registries publish in the current test, newest first, as their metadata readers sort it.
 local published: { string } = {}
 
-const function getMetadataAsync()
+-- How long each package's metadata takes to arrive in the current test, by name.
+local delays: { [string]: number } = {}
+
+local inFlight = 0
+local mostInFlight = 0
+
+const function getMetadataAsync(_scope: string, name: string)
+	inFlight += 1
+	mostInFlight = math.max(mostInFlight, inFlight)
+
+	const delay = delays[name]
+	if delay ~= nil then
+		task.wait(delay)
+	end
+	inFlight -= 1
+
 	const versions = {}
 	for _, version in published do
 		table.insert(versions, { package = { version = version } })
@@ -33,8 +48,15 @@ end)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const findUpdatesAsync = require(StudioDiscover.Source.Installer.findUpdatesAsync)
 
-const function root(registry: coreTypes.Registry, version: string): coreTypes.InstalledRoot
-	return { registry = registry, scope = "scope", name = "name", version = version, realm = "shared", alias = "Name" }
+const function root(registry: coreTypes.Registry, version: string, name: string?): coreTypes.InstalledRoot
+	return {
+		registry = registry,
+		scope = "scope",
+		name = name or "name",
+		version = version,
+		realm = "shared",
+		alias = "Name",
+	}
 end
 
 -- The version each root is offered, or "none".
@@ -69,5 +91,21 @@ describe("findUpdatesAsync", function()
 			"0.6.0-rc.6",
 			"0.6.0-rc.6",
 		})
+	end)
+
+	it("checks every root at once and keeps the roots' order", function()
+		published = { "2.0.0", "1.0.0" }
+		delays = { slow = 0.2, fast = 0 }
+		mostInFlight = 0
+
+		const updates = findUpdatesAsync(
+			{ root("wally", "1.0.0", "slow"), root("pesde", "1.0.0", "fast") },
+			{ wally = true, pesde = true }
+		)
+
+		expect(mostInFlight).toBe(2)
+		expect(#updates).toBe(2)
+		expect(updates[1].name).toBe("slow")
+		expect(updates[2].name).toBe("fast")
 	end)
 end)
