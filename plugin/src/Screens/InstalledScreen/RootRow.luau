@@ -65,6 +65,7 @@ const function RootRow(props: {
 			{
 				id = "remove",
 				text = "Remove from this place",
+				isDisabled = isBusy,
 				onActivated = function()
 					setRunningText("Removing...")
 					operation.run(function()
