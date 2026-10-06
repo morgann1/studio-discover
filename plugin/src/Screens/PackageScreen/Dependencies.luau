@@ -10,9 +10,8 @@ const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
-const formatName = require(StudioDiscover.Source.Util.formatName)
+const packageDisplayName = require(StudioDiscover.Source.Util.packageDisplayName)
 const rowHeights = require(StudioDiscover.Source.Common.rowHeights)
-const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 const parseDependency = require(script.Parent.parseDependency)
 
@@ -34,9 +33,7 @@ const function Dependencies(props: {
 	read registry: coreTypes.Registry,
 	read LayoutOrder: number?,
 })
-	const namingConvention = useAtom(function()
-		return SettingsStore.getSettings().namingConvention
-	end)
+	const settings = SettingsStore.useSettings()
 
 	const uniqueKey = createUniqueKey()
 	const nextOrder = createNextOrder()
@@ -80,7 +77,7 @@ const function Dependencies(props: {
 							["content-emphasis"] = dependency ~= nil,
 							["content-default"] = dependency == nil,
 						},
-						Text = if dependency ~= nil then formatName(dependency.name, namingConvention) else spec,
+						Text = if dependency ~= nil then packageDisplayName(dependency.name, settings) else spec,
 						LayoutOrder = 1,
 					}),
 					Detail = dependency ~= nil

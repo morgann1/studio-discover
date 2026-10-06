@@ -10,7 +10,6 @@ const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const Navigation = require(StudioDiscover.Source.Navigation)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
-const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 const Header = require(script.Header)
 const routeTitle = require(script.routeTitle)
@@ -48,9 +47,7 @@ const function Screen(props: {
 })
 	const layout = LayoutContext.useLayout()
 	const route = Navigation.useScreen().route
-	const namingConvention = useAtom(function()
-		return SettingsStore.getSettings().namingConvention
-	end)
+	const settings = SettingsStore.useSettings()
 
 	const search = props.search
 	const nextOrder = createNextOrder()
@@ -59,7 +56,7 @@ const function Screen(props: {
 		tag = "size-full col",
 	}, {
 		Header = e(Header, {
-			title = props.title or routeTitle(route, namingConvention),
+			title = props.title or routeTitle(route, settings),
 			registry = if route.name == "Source" then route.registry else nil,
 			onRefresh = if props.canRefresh == false then nil else refresh,
 			LayoutOrder = nextOrder(),

@@ -19,14 +19,13 @@ const capitalize = require(StudioDiscover.Source.Util.capitalize)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const escapeRichText = require(StudioDiscover.Source.Util.escapeRichText)
-const formatName = require(StudioDiscover.Source.Util.formatName)
 const installerTypes = require(StudioDiscover.Source.Installer.types)
 const isBreakingUpdate = require(StudioDiscover.Libraries.Semver.isBreakingUpdate)
 const isNewerVersion = require(StudioDiscover.Libraries.Semver.isNewerVersion)
 const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
+const packageDisplayName = require(StudioDiscover.Source.Util.packageDisplayName)
 const packagesPath = require(StudioDiscover.Source.Util.packagesPath)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
-const resolveAlias = require(StudioDiscover.Source.Installer.resolveAlias)
 const useBreakpoint = require(StudioDiscover.Source.Common.useBreakpoint)
 const useOperation = require(StudioDiscover.Source.Common.useOperation)
 const usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
@@ -133,7 +132,7 @@ const function PackageScreen(props: {
 	end, { state.data, target.version } :: { unknown })
 
 	const label = registryLabel(registry)
-	const displayName = formatName(name, settings.namingConvention)
+	const displayName = packageDisplayName(name, settings)
 	const root = findRoot(roots, target)
 	const metadata = state.data
 
@@ -239,7 +238,7 @@ const function PackageScreen(props: {
 				`Installed as <b>{escapeRichText(root.alias)}</b> in {packagesPath(registry, root.realm)}, version {root.version}`
 		else
 			notice =
-				`Adds <b>{escapeRichText(resolveAlias(name))}</b> to {packagesPath(registry, realm)} as {scope}/{name} {version}`
+				`Adds <b>{escapeRichText(displayName)}</b> to {packagesPath(registry, realm)} as {scope}/{name} {version}`
 		end
 
 		const specs = installedSpecs(selected)

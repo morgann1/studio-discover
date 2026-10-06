@@ -3,17 +3,16 @@
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const Navigation = require(StudioDiscover.Source.Navigation)
-const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const exhaustiveMatch = require(StudioDiscover.Libraries.Core.exhaustiveMatch)
-const formatName = require(StudioDiscover.Source.Util.formatName)
+const packageDisplayName = require(StudioDiscover.Source.Util.packageDisplayName)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
 
 -- The name a screen goes by in the header and the breadcrumb, such as "Wally" or "Knit".
-const function routeTitle(route: Navigation.Route, namingConvention: SettingsStore.NamingConvention): string
+const function routeTitle(route: Navigation.Route, settings: packageDisplayName.NameSettings): string
 	if route.name == "Source" then
 		return registryLabel(route.registry)
 	elseif route.name == "Package" then
-		return formatName(route.target.name, namingConvention)
+		return packageDisplayName(route.target.name, settings)
 	elseif route.name == "Installed" then
 		return "Installed"
 	elseif route.name == "Updates" then

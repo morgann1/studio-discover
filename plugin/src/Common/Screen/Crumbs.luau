@@ -9,7 +9,6 @@ const Navigation = require(StudioDiscover.Source.Navigation)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const registryMark = require(StudioDiscover.Source.Util.registryMark)
 const routeTitle = require(script.Parent.routeTitle)
-const useAtom = require(StudioDiscover.Source.Common.useAtom)
 
 const Breadcrumb = Foundation.Breadcrumb
 const InputSize = Foundation.Enums.InputSize
@@ -20,9 +19,7 @@ const e = React.createElement
 const function Crumbs(props: {
 	read stack: { Navigation.Screen },
 })
-	const namingConvention = useAtom(function()
-		return SettingsStore.getSettings().namingConvention
-	end)
+	const settings = SettingsStore.useSettings()
 
 	const items: { Foundation.BreadcrumbItem } = {}
 	for index, screen in props.stack do
@@ -30,7 +27,7 @@ const function Crumbs(props: {
 		const isCurrent = index == #props.stack
 
 		table.insert(items, {
-			text = routeTitle(route, namingConvention),
+			text = routeTitle(route, settings),
 			leading = if route.name == "Source" then registryMark(route.registry) else nil,
 			onActivated = if isCurrent
 				then nil

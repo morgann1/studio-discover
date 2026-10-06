@@ -13,9 +13,8 @@ const Table = require(StudioDiscover.Source.Common.Table)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
 const createUniqueKey = require(StudioDiscover.Source.Util.createUniqueKey)
-const formatName = require(StudioDiscover.Source.Util.formatName)
+const packageDisplayName = require(StudioDiscover.Source.Util.packageDisplayName)
 const rowHeights = require(StudioDiscover.Source.Common.rowHeights)
-const useAtom = require(StudioDiscover.Source.Common.useAtom)
 const usePackageStatus = require(StudioDiscover.Source.Common.usePackageStatus)
 
 const ScrollView = Foundation.ScrollView
@@ -95,9 +94,7 @@ const function PackageTable(props: {
 })
 	const layout = LayoutContext.useLayout()
 	const statusOf = usePackageStatus()
-	const namingConvention = useAtom(function()
-		return SettingsStore.getSettings().namingConvention
-	end)
+	const settings = SettingsStore.useSettings()
 
 	const columnSets = if props.showsSource then SEARCH_COLUMNS else SOURCE_COLUMNS
 	const columns = if layout.isWide then columnSets.expanded else columnSets.docked
@@ -111,7 +108,7 @@ const function PackageTable(props: {
 		const registry = brief.registries[1]
 
 		const cells: { [string]: React.Node } = {
-			name = textCell(formatName(brief.name, namingConvention), true),
+			name = textCell(packageDisplayName(brief.name, settings), true),
 			latest = textCell(brief.latestVersion or "", false),
 			author = textCell(brief.scope, false),
 			source = e(SourceLabel, { registry = registry }),
