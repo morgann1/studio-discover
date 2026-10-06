@@ -17,7 +17,9 @@ const e = React.createElement
 
 --[[
 	One display-name rule: the package name, the name to give it, and a remove button.
-		With `isStacked`, the two inputs stack so the row fits a docked widget.
+		With `isStacked`, the two inputs stack so the row fits a docked widget, and each
+		carries its own label. Side by side, `ColumnLabels` labels them once above the
+		rows.
 ]]
 const function Row(props: {
 	read name: string,
@@ -49,7 +51,7 @@ const function Row(props: {
 			}, {
 				Name = e(TextInput, {
 					text = props.name,
-					label = "",
+					label = if isStacked then "Package" else "",
 					placeholder = "Package name",
 					size = InputSize.Medium,
 					width = inputWidth,
@@ -58,7 +60,7 @@ const function Row(props: {
 				}),
 				DisplayName = e(TextInput, {
 					text = props.displayName,
-					label = "",
+					label = if isStacked then "Display name" else "",
 					placeholder = "Display name",
 					size = InputSize.Medium,
 					width = inputWidth,
