@@ -1,5 +1,5 @@
 --!strict
 
-const version = "3.8.1"
+const version = "3.9.0"
 
 return version
