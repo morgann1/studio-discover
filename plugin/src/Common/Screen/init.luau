@@ -36,10 +36,14 @@ end
 --[[
 	The shell of a screen: the header, the search row when docked, and the body.
 		`title` is RichText and defaults to the route's name.
+
+	Refresh reloads what was read from the place and the registries. A screen with
+		nothing to reload passes `canRefresh = false` to leave it out of the header.
 ]]
 const function Screen(props: {
 	read title: string?,
 	read search: Search?,
+	read canRefresh: boolean?,
 	read children: React.Node,
 })
 	const layout = LayoutContext.useLayout()
@@ -57,7 +61,7 @@ const function Screen(props: {
 		Header = e(Header, {
 			title = props.title or routeTitle(route, namingConvention),
 			registry = if route.name == "Source" then route.registry else nil,
-			onRefresh = refresh,
+			onRefresh = if props.canRefresh == false then nil else refresh,
 			LayoutOrder = nextOrder(),
 		}),
 		Search = layout.isDocked and search ~= nil and e(View, {

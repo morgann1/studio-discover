@@ -19,11 +19,13 @@ const e = React.createElement
 
 --[[
 	How many updates are waiting, with Update all. While the updates run it says so in
-		place of the action, and a failure replaces it until dismissed. Renders nothing
-		when there is nothing to say.
+		place of the action, and a failure replaces it until dismissed. While
+		`isChecking`, it says updates are being checked, so a refresh shows it ran.
+		Renders nothing when there is nothing to say.
 ]]
 const function UpdatesAlert(props: {
 	read updates: { installerTypes.UpdateInfo },
+	read isChecking: boolean,
 	read LayoutOrder: number?,
 }): React.Node
 	const operation = useOperation()
@@ -44,6 +46,12 @@ const function UpdatesAlert(props: {
 			variant = AlertVariant.Feedback,
 			severity = AlertSeverity.Info,
 			text = `Updating {plural(#updates, "package")}...`,
+		})
+	elseif props.isChecking then
+		alert = e(Alert, {
+			variant = AlertVariant.Feedback,
+			severity = AlertSeverity.Info,
+			text = "Checking for updates...",
 		})
 	elseif #updates == 0 then
 		return nil

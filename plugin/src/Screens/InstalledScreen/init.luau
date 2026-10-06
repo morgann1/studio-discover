@@ -157,6 +157,7 @@ const function InstalledScreen(props: {
 		}, {
 			Alert = e(UpdatesAlert, {
 				updates = updates.updates,
+				isChecking = updates.loading,
 				LayoutOrder = nextOrder(),
 			}),
 			Header = layout.isWide and e(Table.Header, {

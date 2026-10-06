@@ -124,7 +124,9 @@ const function DisplayNamesScreen()
 			onCancel = closeClear,
 		})
 
-	return e(Screen, {}, {
+	return e(Screen, {
+		canRefresh = false,
+	}, {
 		Body = e(Content, {}, children),
 	})
 end
