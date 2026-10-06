@@ -5,11 +5,13 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const Foundation = require(StudioDiscover.Packages.Foundation)
 const React = require(StudioDiscover.Packages.React)
 
+const ConfirmDialog = require(StudioDiscover.Source.Common.ConfirmDialog)
 const Content = require(StudioDiscover.Source.Common.Content)
 const LayoutContext = require(StudioDiscover.Source.Common.LayoutContext)
 const Screen = require(StudioDiscover.Source.Common.Screen)
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const createNextOrder = require(StudioDiscover.Source.Util.createNextOrder)
+const plural = require(StudioDiscover.Source.Util.plural)
 
 const Row = require(script.Row)
 
@@ -51,7 +53,13 @@ end
 const function DisplayNamesScreen()
 	const rules = SettingsStore.useSettings().displayNames
 	const layout = LayoutContext.useLayout()
+	const isConfirmingClear, setIsConfirmingClear = React.useState(false)
 	const nextOrder = createNextOrder()
+
+	const function closeClear()
+		setIsConfirmingClear(false)
+	end
+
 	const children: { [string]: React.Node } = {
 		Intro = e(Text, {
 			tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left text-wrap",
@@ -96,10 +104,25 @@ const function DisplayNamesScreen()
 			text = "Clear all",
 			variant = ButtonVariant.Utility,
 			size = InputSize.Small,
-			onActivated = clearRules,
+			onActivated = function()
+				setIsConfirmingClear(true)
+			end,
 			LayoutOrder = 2,
 		}),
 	})
+
+	children.ConfirmClearDialog = isConfirmingClear
+		and e(ConfirmDialog, {
+			title = "Clear display names?",
+			body = `This removes {plural(#rules, "display name")}. It can't be undone.`,
+			confirmText = "Clear all",
+			isDestructive = true,
+			onConfirm = function()
+				clearRules()
+				closeClear()
+			end,
+			onCancel = closeClear,
+		})
 
 	return e(Screen, {}, {
 		Body = e(Content, {}, children),
