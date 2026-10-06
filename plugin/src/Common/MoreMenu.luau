@@ -22,10 +22,14 @@ export type MenuAction = {
 	read onActivated: () -> (),
 }
 
--- The "…" button and the menu of `actions` it opens.
+--[[
+	The "…" button and the menu of `actions` it opens.
+
+	Its tooltip says only "More". Inside Foundation's `Menu`, a longer tooltip title
+		lays out at about 40px and truncates, as "More for ECS" did.
+]]
 const function MoreMenu(props: {
 	read actions: { MenuAction },
-	read label: string?,
 	read LayoutOrder: number?,
 })
 	const isOpen, setIsOpen = React.useState(false)
@@ -58,7 +62,7 @@ const function MoreMenu(props: {
 	}, {
 		Button = e(ToolButton, {
 			icon = iconName("ThreeDotsHorizontal"),
-			label = props.label or "More",
+			label = "More",
 			isTrailing = true,
 			onActivated = function()
 				setIsOpen(not isOpen)
