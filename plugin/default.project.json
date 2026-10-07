@@ -25,6 +25,9 @@
       "Core": {
         "$path": "../packages/core/src"
       },
+      "NevermoreRegistry": {
+        "$path": "../packages/nevermore-registry/src"
+      },
       "PackageTypes": {
         "$path": "../packages/package-types/src"
       },

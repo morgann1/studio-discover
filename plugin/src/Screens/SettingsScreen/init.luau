@@ -37,6 +37,7 @@ const UNCONTAINED = { isContained = false, hasMargin = false }
 const MAINTAINERS: { [coreTypes.Registry]: string } = {
 	wally = "Uplift Games",
 	pesde = "daimond113",
+	nevermore = "Quenty",
 }
 
 const function setRegistryEnabled(
@@ -47,6 +48,7 @@ const function setRegistryEnabled(
 	SettingsStore.setSetting("registries", {
 		wally = if registry == "wally" then value else enabled.wally,
 		pesde = if registry == "pesde" then value else enabled.pesde,
+		nevermore = if registry == "nevermore" then value else enabled.nevermore,
 	})
 end
 

@@ -9,7 +9,7 @@ const asTable = require(StudioDiscover.Libraries.Core.asTable)
 const buildTree = require(StudioDiscover.Libraries.Core.buildTree)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const downloadAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.downloadAsync)
-const parseTar = require(StudioDiscover.Libraries.PesdeRegistry.parseTar)
+const parseTar = require(StudioDiscover.Libraries.Core.parseTar)
 const parseToml = require(StudioDiscover.Libraries.Core.parseToml)
 const types = require(StudioDiscover.Libraries.PesdeRegistry.types)
 

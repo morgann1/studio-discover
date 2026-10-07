@@ -29,7 +29,8 @@ jest.mock(WallyRegistry.downloadAndExtractAsync, function()
 		const tree = Instance.new("ModuleScript")
 		tree.Name = name
 
-		const pending: { buildTree.PendingSource } = { { script = tree, path = name, content = `return "{name}"` } }
+		const pending: { buildTree.PendingSource } =
+			{ { kind = "script", script = tree, path = name, content = `return "{name}"` } }
 		return { ok = true, tree = tree, pending = pending }
 	end
 end)

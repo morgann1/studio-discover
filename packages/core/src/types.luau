@@ -1,7 +1,7 @@
 --!strict
 
 --[[
-	The vocabulary both registries and the plugin share.
+	The vocabulary every registry and the plugin share.
 
 	Anything only one registry understands belongs in that registry's own types
 		module, and anything that is only UI state belongs in the plugin.
@@ -9,7 +9,7 @@
 
 export type Realm = "shared" | "server"
 
-export type Registry = "wally" | "pesde"
+export type Registry = "wally" | "pesde" | "nevermore"
 
 export type ProgressCallback = (message: string) -> ()
 
@@ -56,10 +56,10 @@ export type DependencyMap = { [string]: string }
 --[[
 	The metadata the package screen renders.
 
-	This is a view model, not either registry's wire format. Wally's API happens to
-		return it almost verbatim; pesde's normalizes into it. Both registries produce
-		it so that the screen has one shape to render, and neither has to know the
-		other exists.
+	This is a view model, not any registry's wire format. Wally's API happens to
+		return it almost verbatim; pesde's and npm's normalize into it. Every registry
+		produces it so that the screen has one shape to render, and none has to know
+		the others exist.
 ]]
 export type PackageInfo = {
 	read authors: { string },

@@ -13,17 +13,29 @@ export type Entry = {
 	read content: string,
 }
 
--- A script the tree holds and the source it still needs, which the caller writes through `setScriptSourceAsync`.
-export type PendingSource = {
-	read script: LuaSourceContainer,
-	read path: string,
-	read content: string,
-}
+--[[
+	A file the tree still needs the content of, which `writePendingSourcesAsync`
+		writes: a script's source, or a model that replaces its placeholder folder.
+]]
+export type PendingSource =
+	{
+		read kind: "script",
+		read script: LuaSourceContainer,
+		read path: string,
+		read content: string,
+	}
+	| {
+		read kind: "model",
+		read placeholder: Folder,
+		read path: string,
+		read content: string,
+	}
 
 const function getInstanceName(fileName: string): string
 	return fileName:match("^(.-)%.server%.luau?$")
 		or fileName:match("^(.-)%.client%.luau?$")
 		or fileName:match("^(.-)%.luau?$")
+		or fileName:match("^(.-)%.rbxmx?$")
 		or fileName
 end
 
@@ -41,14 +53,16 @@ end
 
 --[[
 	Builds an archive's files into an Instance tree named `packageName`, dropping the
-		archive's top-level directory and anything that is not Luau source.
+		archive's top-level directory and anything that is neither Luau source nor a
+		model.
 
 	An init file turns its folder into a script named for the folder. Entries can
 		come in any order, since a file whose folder is already a script lands inside
 		that script.
 
-	The scripts come back without source, as `pending`, since a source write can
-		fail and the caller decides what a failure means.
+	The scripts come back without source, and each model as an empty folder named
+		for it, both in `pending`, since writing either can fail and the caller
+		decides what a failure means.
 ]]
 const function buildTree(entries: { Entry }, packageName: string): (Instance, { PendingSource })
 	logger.debug(`building tree for "{packageName}" ({#entries} entries)`)
@@ -59,6 +73,7 @@ const function buildTree(entries: { Entry }, packageName: string): (Instance, { 
 	const pending: { PendingSource } = {}
 	local skipped = 0
 	local moduleCount = 0
+	local modelCount = 0
 	local initPromotions = 0
 
 	for _, entry in entries do
@@ -90,12 +105,28 @@ const function buildTree(entries: { Entry }, packageName: string): (Instance, { 
 		end
 
 		const instanceName = getInstanceName(parts[#parts])
-		if instanceName ~= "init" then
+		if className == "Model" then
+			const placeholder = Instance.new("Folder")
+			placeholder.Name = instanceName
+			placeholder.Parent = parent
+
+			const item: PendingSource = {
+				kind = "model",
+				placeholder = placeholder,
+				path = entry.path,
+				content = entry.content,
+			}
+			table.insert(pending, item)
+			modelCount += 1
+			continue
+		elseif instanceName ~= "init" then
 			const container = createScript(className)
 			container.Name = instanceName
 			container.Parent = parent
 
-			table.insert(pending, { script = container, path = entry.path, content = entry.content })
+			const item: PendingSource =
+				{ kind = "script", script = container, path = entry.path, content = entry.content }
+			table.insert(pending, item)
 			moduleCount += 1
 			continue
 		end
@@ -107,7 +138,8 @@ const function buildTree(entries: { Entry }, packageName: string): (Instance, { 
 
 		const container = createScript(className)
 		container.Name = parent.Name
-		table.insert(pending, { script = container, path = entry.path, content = entry.content })
+		const item: PendingSource = { kind = "script", script = container, path = entry.path, content = entry.content }
+		table.insert(pending, item)
 
 		for _, child in parent:GetChildren() do
 			child.Parent = container
@@ -125,7 +157,7 @@ const function buildTree(entries: { Entry }, packageName: string): (Instance, { 
 	end
 
 	logger.debug(
-		`built "{packageName}" tree: {moduleCount} module(s), {initPromotions} init promotion(s), {skipped} skipped`
+		`built "{packageName}" tree: {moduleCount} module(s), {modelCount} model(s), {initPromotions} init promotion(s), {skipped} skipped`
 	)
 
 	return root, pending

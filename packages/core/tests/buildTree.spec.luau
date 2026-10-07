@@ -50,8 +50,33 @@ describe("buildTree", function()
 	it("returns each script with the source it still needs", function()
 		const _, pending = buildTree({ entry("archive-root/thing.luau", "return 42") }, "Pkg")
 		expect(#pending).toBe(1)
-		expect(pending[1].content).toBe("return 42")
-		expect(pending[1].script:IsA("ModuleScript")).toBe(true)
+
+		const item = pending[1]
+		assert(item.kind == "script", "expected a script")
+		expect(item.content).toBe("return 42")
+		expect(item.script:IsA("ModuleScript")).toBe(true)
+	end)
+
+	it("holds a model's place with a folder named for it, which moves with an init promotion", function()
+		const root, pending = buildTree({
+			entry("archive-root/Shared/TagList.rbxmx", "<roblox />"),
+			entry("archive-root/Shared/init.luau"),
+		}, "Pkg")
+
+		const shared = root:FindFirstChild("Shared")
+		const placeholder = if shared ~= nil then shared:FindFirstChild("TagList") else nil
+		expect(placeholder).never.toBeNil()
+
+		const models = {}
+		for _, item in pending do
+			if item.kind == "model" then
+				table.insert(models, item)
+			end
+		end
+
+		expect(#models).toBe(1)
+		expect(models[1].placeholder).toBe(placeholder)
+		expect(models[1].content).toBe("<roblox />")
 	end)
 
 	it("leaves non-Luau files out of the tree", function()

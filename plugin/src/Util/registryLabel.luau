@@ -7,6 +7,7 @@ const types = require(StudioDiscover.Libraries.Core.types)
 const LABELS: { [types.Registry]: string } = {
 	wally = "Wally",
 	pesde = "pesde",
+	nevermore = "Nevermore",
 }
 
 -- Returns a registry's name as the user sees it, such as "Wally".

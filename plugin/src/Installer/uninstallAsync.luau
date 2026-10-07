@@ -12,6 +12,7 @@ const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const snapshotRoots = require(StudioDiscover.Libraries.WallyRegistry.snapshotRoots)
 const types = require(StudioDiscover.Source.Installer.types)
 const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
+const uninstallNevermoreAsync = require(StudioDiscover.Source.Installer.uninstallNevermoreAsync)
 const uninstallPesdeAsync = require(StudioDiscover.Source.Installer.uninstallPesdeAsync)
 
 const logger = createLogger.createLogger("wally.installer.uninstall")
@@ -74,6 +75,8 @@ end
 const function uninstallAsync(root: coreTypes.InstalledRoot): types.OperationResult
 	if root.registry == "pesde" then
 		return uninstallPesdeAsync(root)
+	elseif root.registry == "nevermore" then
+		return uninstallNevermoreAsync(root)
 	end
 
 	return runWithBusyLock("Uninstall", function()

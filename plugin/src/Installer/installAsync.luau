@@ -8,6 +8,7 @@ const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const countKeys = require(StudioDiscover.Source.Util.countKeys)
 const createInstallReporter = require(StudioDiscover.Source.Installer.createInstallReporter)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
+const installNevermoreAsync = require(StudioDiscover.Source.Installer.installNevermoreAsync)
 const installPesdeAsync = require(StudioDiscover.Source.Installer.installPesdeAsync)
 const lockfile = require(StudioDiscover.Libraries.WallyRegistry.lockfile)
 const pickFreeAlias = require(StudioDiscover.Source.Installer.pickFreeAlias)
@@ -95,6 +96,8 @@ end
 const function installAsync(request: types.InstallRequest): types.OperationResult
 	if request.registry == "pesde" then
 		return installPesdeAsync(request)
+	elseif request.registry == "nevermore" then
+		return installNevermoreAsync(request)
 	end
 
 	const report = createInstallReporter(request)

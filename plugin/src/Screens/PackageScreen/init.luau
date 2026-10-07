@@ -245,6 +245,17 @@ const function PackageScreen(props: {
 		const description = pkg.description
 		const nextOrder = createNextOrder()
 
+		-- Nevermore has no realms, since its loader replicates each folder by name.
+		const realmFact: Facts.Fact? = if registry == "nevermore"
+			then nil
+			else {
+				label = "Realm",
+				value = e(Text, {
+					tag = "auto-xy text-body-medium content-emphasis",
+					Text = capitalize(pkg.realm),
+				}),
+			}
+
 		const facts: { Facts.Fact } = {
 			{
 				label = "Version",
@@ -269,13 +280,6 @@ const function PackageScreen(props: {
 				}),
 			},
 			{
-				label = "Realm",
-				value = e(Text, {
-					tag = "auto-xy text-body-medium content-emphasis",
-					Text = capitalize(pkg.realm),
-				}),
-			},
-			{
 				label = "Versions",
 				value = e(Text, {
 					tag = "auto-xy text-body-medium content-emphasis",
@@ -283,6 +287,9 @@ const function PackageScreen(props: {
 				}),
 			},
 		}
+		if realmFact ~= nil then
+			table.insert(facts, 3, realmFact)
+		end
 
 		local tabBody: React.Node
 		if tab == "versions" then

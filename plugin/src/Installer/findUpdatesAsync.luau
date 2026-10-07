@@ -2,19 +2,12 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
-const getPesdeMetadataAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.getMetadataAsync)
-const getWallyMetadataAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.getMetadataAsync)
-
 const SettingsStore = require(StudioDiscover.Source.SettingsStore)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
+const getRegistryMetadataAsync = require(StudioDiscover.Source.Api.getRegistryMetadataAsync)
+const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
 const isUpdateCandidate = require(StudioDiscover.Libraries.Semver.isUpdateCandidate)
 const types = require(StudioDiscover.Source.Installer.types)
-
-const function getMetadataAsync(root: coreTypes.InstalledRoot): coreTypes.PackageMetadata?
-	return if root.registry == "pesde"
-		then getPesdeMetadataAsync(root.scope, root.name)
-		else getWallyMetadataAsync(root.scope, root.name)
-end
 
 --[[
 	Fetches every root's metadata at once and yields until all of it is back. Each
@@ -29,7 +22,7 @@ const function getAllMetadataAsync(roots: { coreTypes.InstalledRoot }): { [numbe
 
 	for index, root in roots do
 		task.spawn(function()
-			results[index] = getMetadataAsync(root)
+			results[index] = getRegistryMetadataAsync(root.registry, root.scope, root.name)
 			remaining -= 1
 
 			if remaining == 0 and isWaiting then
@@ -61,8 +54,7 @@ const function findUpdatesAsync(
 ): ({ types.UpdateInfo }, number)
 	const checked: { coreTypes.InstalledRoot } = {}
 	for _, root in roots do
-		const enabled = if root.registry == "pesde" then registries.pesde else registries.wally
-		if enabled then
+		if isRegistryEnabled(registries, root.registry) then
 			table.insert(checked, root)
 		end
 	end

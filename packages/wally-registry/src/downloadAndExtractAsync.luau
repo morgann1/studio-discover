@@ -1,16 +1,15 @@
 --!strict
 
-const HttpService = game:GetService("HttpService")
-
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const zzlib = require(StudioDiscover.Libraries.Core.zzlib)
 
-const asTable = require(StudioDiscover.Libraries.Core.asTable)
 const buildFileFilter = require(StudioDiscover.Libraries.WallyRegistry.buildFileFilter)
 const buildTree = require(StudioDiscover.Libraries.Core.buildTree)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const downloadAsync = require(StudioDiscover.Libraries.WallyRegistry.Api.downloadAsync)
+const readProjectSourcePath = require(StudioDiscover.Libraries.Core.readProjectSourcePath)
+const relativeToSource = require(StudioDiscover.Libraries.Core.relativeToSource)
 
 const logger = createLogger.createLogger("wally.installer.download")
 
@@ -62,33 +61,7 @@ end
 -- Returns the Rojo project's root `$path`, which is the part of the archive that installs.
 const function findSourcePath(zipData: string, prefix: string): string?
 	const projectJson = unzipFile(zipData, `{prefix}default.project.json`)
-	if projectJson == nil then
-		return nil
-	end
-
-	const ok, decoded = pcall(HttpService.JSONDecode, HttpService, projectJson)
-	const project = if ok then asTable(decoded) else nil
-	const tree = if project ~= nil then asTable(project.tree) else nil
-	const path = if tree ~= nil then tree["$path"] else nil
-
-	if typeof(path) == "string" and path ~= "" and path ~= "." then
-		return (string.gsub(path, "^%./", ""))
-	end
-
-	return nil
-end
-
--- Maps an archive path to its place in the package, or returns nil when it falls outside `sourcePath`.
-const function relativeToSource(path: string, sourcePath: string?): string?
-	if sourcePath == nil or path == sourcePath then
-		return path
-	elseif string.sub(path, 1, #sourcePath + 1) == `{sourcePath}/` then
-		return string.sub(path, #sourcePath + 2)
-	elseif path == `{sourcePath}.luau` or path == `{sourcePath}.lua` then
-		return "init.luau"
-	end
-
-	return nil
+	return if projectJson ~= nil then readProjectSourcePath(projectJson) else nil
 end
 
 --[[

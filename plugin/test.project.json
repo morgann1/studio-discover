@@ -24,6 +24,9 @@
           "Core": {
             "$path": "../packages/core/src"
           },
+          "NevermoreRegistry": {
+            "$path": "../packages/nevermore-registry/src"
+          },
           "PackageTypes": {
             "$path": "../packages/package-types/src"
           },
@@ -46,6 +49,9 @@
             "$className": "Folder",
             "Core": {
               "$path": "../packages/core/tests"
+            },
+            "NevermoreRegistry": {
+              "$path": "../packages/nevermore-registry/tests"
             },
             "PackageTypes": {
               "$path": "../packages/package-types/tests"
