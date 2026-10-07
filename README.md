@@ -11,7 +11,9 @@
   [![Contributions welcome](.github/assets/badges/link-contributions.svg)](CONTRIBUTING.md)
 </div>
 
-Studio Discover lets you pull [Wally](https://wally.run) and [pesde](https://pesde.dev/) packages into Studio without setting up a whole repository. Dependencies and types come with them.
+Studio Discover lets you pull [Wally](https://wally.run), [pesde](https://pesde.dev/), and [Nevermore](https://quenty.github.io/NevermoreEngine/) packages into Studio without setting up a whole repository. Dependencies and types come with them.
+
+Nevermore packages install the way the Nevermore docs lay a game out. The first one adds `ServerScriptService.Nevermore`, with your own code going in `game` and the packages in `node_modules`, plus `ServerMain` and `ClientMain` scripts that start the loader. Those scripts and folders are yours afterward, and removing packages never touches them.
 
 <table>
   <tr>

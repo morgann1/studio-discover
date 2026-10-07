@@ -9,11 +9,11 @@ const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const createRateLimiter = require(StudioDiscover.Libraries.Core.createRateLimiter)
 const describeHttpFailure = require(StudioDiscover.Libraries.Core.describeHttpFailure)
 
-const MIN_REQUEST_INTERVAL_SECONDS = 1
+const DEFAULT_REQUEST_INTERVAL_SECONDS = 1
 
 export type HttpClient = {
 	read getAsync: (path: string, headers: { [string]: string }?) -> (string?, string?, boolean),
-	read getJsonAsync: (path: string) -> (unknown, string?, boolean),
+	read getJsonAsync: (path: string, headers: { [string]: string }?) -> (unknown, string?, boolean),
 }
 
 -- Whether an answer outside 2xx means the requested thing doesn't exist.
@@ -48,17 +48,19 @@ end
 		said the thing asked for doesn't exist, which `isMissing` decides and which
 		defaults to a 404.
 
-	Requests wait their turn behind a one-second rate limit, carry Discover's user
-		agent alongside `headers`, and retry once after a 429, honoring `Retry-After`.
+	Requests wait their turn behind a rate limit of one every `requestIntervalSeconds`,
+		one second unless given, carry Discover's user agent alongside `headers`, and
+		retry once after a 429, honoring `Retry-After`.
 ]]
 const function createHttpClient(
 	name: string,
 	baseUrl: string,
 	headers: { [string]: string },
-	isMissing: IsMissing?
+	isMissing: IsMissing?,
+	requestIntervalSeconds: number?
 ): HttpClient
 	const logger = createLogger.createLogger(`{name}.http`)
-	const rateLimiter = createRateLimiter(MIN_REQUEST_INTERVAL_SECONDS)
+	const rateLimiter = createRateLimiter(requestIntervalSeconds or DEFAULT_REQUEST_INTERVAL_SECONDS)
 	const host = string.match(baseUrl, "^%a+://([^/]+)") or baseUrl
 	const checkMissing: IsMissing = isMissing or isNotFound
 
@@ -128,8 +130,8 @@ const function createHttpClient(
 	end
 
 	-- Like `getAsync`, with the body decoded as JSON. The result is unchecked, so callers narrow it.
-	const function getJsonAsync(path: string): (unknown, string?, boolean)
-		const body, err, missing = getAsync(path)
+	const function getJsonAsync(path: string, extraHeaders: { [string]: string }?): (unknown, string?, boolean)
+		const body, err, missing = getAsync(path, extraHeaders)
 		if body == nil then
 			return nil, err, missing
 		end

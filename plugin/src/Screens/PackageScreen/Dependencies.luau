@@ -77,7 +77,9 @@ const function Dependencies(props: {
 							["content-emphasis"] = dependency ~= nil,
 							["content-default"] = dependency == nil,
 						},
-						Text = if dependency ~= nil then packageDisplayName(dependency.name, settings) else spec,
+						Text = if dependency ~= nil
+							then packageDisplayName(props.registry, dependency.name, settings)
+							else spec,
 						LayoutOrder = 1,
 					}),
 					Detail = dependency ~= nil

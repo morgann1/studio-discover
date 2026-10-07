@@ -17,7 +17,12 @@ describe("classifyFile", function()
 		expect(classifyFile("pkg/util.luau")).toBe("ModuleScript")
 	end)
 
-	it("skips anything that is not Luau source", function()
+	it("maps a model file to a model", function()
+		expect(classifyFile("pkg/TagList.rbxmx")).toBe("Model")
+		expect(classifyFile("pkg/Assets.rbxm")).toBe("Model")
+	end)
+
+	it("skips anything that is neither Luau source nor a model", function()
 		expect(classifyFile("pkg/README.md")).toBe("skip")
 		expect(classifyFile("pkg/default.project.json")).toBe("skip")
 	end)

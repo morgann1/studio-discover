@@ -2,9 +2,10 @@
 
 export type ScriptClass = "Script" | "LocalScript" | "ModuleScript"
 
-export type FileClass = ScriptClass | "skip"
+-- A `.rbxm` or `.rbxmx` model, which becomes the instance it holds.
+export type FileClass = ScriptClass | "Model" | "skip"
 
--- Returns the class of script an archive file becomes, or "skip" for anything that is not Luau source.
+-- Returns what an archive file becomes, or "skip" for anything that is neither Luau source nor a model.
 const function classifyFile(path: string): FileClass
 	if string.match(path, "%.server%.luau?$") ~= nil then
 		return "Script"
@@ -12,6 +13,8 @@ const function classifyFile(path: string): FileClass
 		return "LocalScript"
 	elseif string.match(path, "%.luau?$") ~= nil then
 		return "ModuleScript"
+	elseif string.match(path, "%.rbxmx?$") ~= nil then
+		return "Model"
 	end
 
 	return "skip"

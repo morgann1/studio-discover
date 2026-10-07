@@ -2,6 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
+const collectLockedSubtree = require(StudioDiscover.Libraries.Core.collectLockedSubtree)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const fetchMetadataAsync = require(StudioDiscover.Libraries.PesdeRegistry.Api.fetchMetadataAsync)
@@ -112,43 +113,8 @@ const function readDependencies(
 	return requests, failures
 end
 
---[[
-	Walks the locked edges down from `rootId` and returns every package in its
-		subtree, the root first. Returns nil when the root, or any package an edge
-		points at, is missing from the lock.
-]]
-const function collectLockedSubtree(
-	locked: { [string]: PesdeResolvedPackage },
-	rootId: string
-): { PesdeResolvedPackage }?
-	const root = locked[rootId]
-	if root == nil then
-		return nil
-	end
-
-	const subtree = { root }
-	const seen: { [string]: true? } = { [rootId] = true }
-	local head = 1
-	while head <= #subtree do
-		const pkg = subtree[head]
-		head += 1
-
-		for _, dependency in pkg.dependencies do
-			if seen[dependency.packageId] then
-				continue
-			end
-
-			const lockedDependency = locked[dependency.packageId]
-			if lockedDependency == nil then
-				return nil
-			end
-
-			seen[dependency.packageId] = true
-			table.insert(subtree, lockedDependency)
-		end
-	end
-
-	return subtree
+const function dependenciesOf(pkg: PesdeResolvedPackage): { coreTypes.Dependency }
+	return pkg.dependencies
 end
 
 --[[
@@ -218,7 +184,7 @@ const function resolveAsync(
 	const freshRoots: { coreTypes.RootRequest } = {}
 	for _, root in roots do
 		const rootId = formatPackageId(root.scope, root.name, root.version, targetFromRealm(root.requestRealm))
-		const subtree = collectLockedSubtree(locked, rootId)
+		const subtree = collectLockedSubtree(locked, rootId, dependenciesOf)
 		if subtree == nil then
 			table.insert(freshRoots, root)
 			continue

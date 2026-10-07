@@ -28,7 +28,7 @@ const InputSize = Foundation.Enums.InputSize
 const e = React.createElement
 
 --[[
-	One installed root: its alias, version, and source, with Update when it has an
+	One installed root: its name, version, and source, with Update when it has an
 		update and a "…" menu to open or remove it. Activating the row opens its
 		package page. A failed action shows under the row.
 ]]
@@ -39,6 +39,7 @@ const function RootRow(props: {
 	read LayoutOrder: number?,
 })
 	const root = props.entry.root
+	const displayName = props.entry.displayName
 	const update = props.entry.update
 	const operation = useOperation()
 	const runningText, setRunningText = React.useState("")
@@ -69,7 +70,7 @@ const function RootRow(props: {
 					setRunningText("Removing...")
 					operation.run(function()
 						const result = Installer.uninstallAsync(root)
-						NoticeStore.showSuccess(result, `Removed {root.alias}`, "Undo with Ctrl+Z.")
+						NoticeStore.showSuccess(result, `Removed {displayName}`, "Undo with Ctrl+Z.")
 
 						return result
 					end)
@@ -89,7 +90,7 @@ const function RootRow(props: {
 					setRunningText("Updating...")
 					operation.run(function()
 						const result = Installer.updateAllAsync({ update })
-						NoticeStore.showSuccess(result, `Updated {root.alias} to {update.latestVersion}`)
+						NoticeStore.showSuccess(result, `Updated {displayName} to {update.latestVersion}`)
 
 						return result
 					end)
@@ -109,7 +110,7 @@ const function RootRow(props: {
 			["text-title-medium"] = props.isDocked,
 			["text-body-medium"] = not props.isDocked,
 		},
-		Text = root.alias,
+		Text = displayName,
 		LayoutOrder = 1,
 	})
 

@@ -108,7 +108,7 @@ const function PackageTable(props: {
 		const registry = brief.registries[1]
 
 		const cells: { [string]: React.Node } = {
-			name = textCell(packageDisplayName(brief.name, settings), true),
+			name = textCell(packageDisplayName(registry, brief.name, settings), true),
 			latest = textCell(brief.latestVersion or "", false),
 			author = textCell(brief.scope, false),
 			source = e(SourceLabel, { registry = registry }),

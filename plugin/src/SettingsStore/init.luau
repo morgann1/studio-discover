@@ -16,9 +16,11 @@ export type DisplayNameRule = {
 	read displayName: string,
 }
 
+-- Settings saved before Nevermore was a source have no `nevermore`, which reads as on.
 export type RegistryEnableMap = {
 	read wally: boolean,
 	read pesde: boolean,
+	read nevermore: boolean?,
 }
 
 export type SettingsState = {
@@ -38,7 +40,7 @@ const DEFAULTS: SettingsState = {
 	reduceMotion = false,
 	verboseLogging = false,
 	confirmBeforeInstall = true,
-	registries = { wally = true, pesde = true },
+	registries = { wally = true, pesde = true, nevermore = true },
 }
 
 const function oneOf<T>(options: { T })
@@ -71,6 +73,7 @@ const VALIDATORS = {
 	registries = check(GreenTea.table({
 		wally = GreenTea.boolean(),
 		pesde = GreenTea.boolean(),
+		nevermore = GreenTea.optional(GreenTea.boolean()),
 		[GreenTea.any()] = GreenTea.never(),
 	})),
 }

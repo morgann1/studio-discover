@@ -7,11 +7,13 @@ const applyRootsAsync = require(StudioDiscover.Source.Installer.applyRootsAsync)
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const lockfile = require(StudioDiscover.Libraries.WallyRegistry.lockfile)
+const registries = require(StudioDiscover.Libraries.Core.registries)
 const resolveAsync = require(StudioDiscover.Libraries.WallyRegistry.resolveAsync)
 const runWithBusyLock = require(StudioDiscover.Source.Installer.runWithBusyLock)
 const snapshotRoots = require(StudioDiscover.Libraries.WallyRegistry.snapshotRoots)
 const types = require(StudioDiscover.Source.Installer.types)
 const unresolvedRootsError = require(StudioDiscover.Source.Installer.unresolvedRootsError)
+const updateAllNevermoreAsync = require(StudioDiscover.Source.Installer.updateAllNevermoreAsync)
 const updateAllPesdeAsync = require(StudioDiscover.Source.Installer.updateAllPesdeAsync)
 
 const logger = createLogger.createLogger("wally.installer.updateAll")
@@ -83,38 +85,41 @@ const function updateWallyAsync(updates: { types.UpdateInfo }): types.OperationR
 	end)
 end
 
-const function runUpdateAllAsync(updates: { types.UpdateInfo }): types.OperationResult
-	const wallyUpdates: { types.UpdateInfo } = {}
-	const pesdeUpdates: { types.UpdateInfo } = {}
-	for _, update in updates do
-		table.insert(if update.registry == "pesde" then pesdeUpdates else wallyUpdates, update)
-	end
+-- Each registry's part of an update, which moves its roots in one resolve and apply.
+const UPDATERS: { [coreTypes.Registry]: (updates: { types.UpdateInfo }) -> types.OperationResult } = {
+	wally = updateWallyAsync,
+	pesde = updateAllPesdeAsync,
+	nevermore = updateAllNevermoreAsync,
+}
 
+const function runUpdateAllAsync(updates: { types.UpdateInfo }): types.OperationResult
 	const failures: { string } = {}
 	local errorMessage: string? = nil
 
-	-- A pesde crash is caught here, so the Wally updates still run after it.
-	if #pesdeUpdates > 0 then
-		const ok, outcome = pcall(updateAllPesdeAsync, pesdeUpdates)
-
-		if not ok then
-			logger.error(`pesde updates crashed: {outcome}`)
-			errorMessage = `pesde updates failed: {outcome}`
-			table.insert(failures, tostring(outcome))
-		else
-			table.move(outcome.failures, 1, #outcome.failures, #failures + 1, failures)
-			if not outcome.ok then
-				errorMessage = outcome.error
+	-- A crash in one registry's updates is caught here, so the other registries still update.
+	for _, registry in registries do
+		const registryUpdates: { types.UpdateInfo } = {}
+		for _, update in updates do
+			if update.registry == registry then
+				table.insert(registryUpdates, update)
 			end
 		end
-	end
 
-	if #wallyUpdates > 0 then
-		const result = updateWallyAsync(wallyUpdates)
+		if #registryUpdates == 0 then
+			continue
+		end
 
-		table.move(result.failures, 1, #result.failures, #failures + 1, failures)
-		if not result.ok then
-			errorMessage = result.error
+		const ok, outcome = pcall(UPDATERS[registry], registryUpdates)
+		if not ok then
+			logger.error(`{registry} updates crashed: {outcome}`)
+			errorMessage = `{registry} updates failed: {outcome}`
+			table.insert(failures, tostring(outcome))
+			continue
+		end
+
+		table.move(outcome.failures, 1, #outcome.failures, #failures + 1, failures)
+		if not outcome.ok then
+			errorMessage = outcome.error
 		end
 	end
 
@@ -132,7 +137,7 @@ const function runUpdateAllAsync(updates: { types.UpdateInfo }): types.Operation
 	}
 end
 
--- Moves each installed root in `updates` to its latest version, for both registries.
+-- Moves each installed root in `updates` to its latest version, for every registry.
 const function updateAllAsync(updates: { types.UpdateInfo }): types.OperationResult
 	if #updates == 0 then
 		return {

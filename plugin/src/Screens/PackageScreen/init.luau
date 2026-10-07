@@ -26,6 +26,7 @@ const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
 const packageDisplayName = require(StudioDiscover.Source.Util.packageDisplayName)
 const packagesPath = require(StudioDiscover.Source.Util.packagesPath)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
+const rootDisplayName = require(StudioDiscover.Source.Util.rootDisplayName)
 const useBreakpoint = require(StudioDiscover.Source.Common.useBreakpoint)
 const useOperation = require(StudioDiscover.Source.Common.useOperation)
 const usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
@@ -132,7 +133,7 @@ const function PackageScreen(props: {
 	end, { state.data, target.version } :: { unknown })
 
 	const label = registryLabel(registry)
-	const displayName = packageDisplayName(name, settings)
+	const displayName = packageDisplayName(registry, name, settings)
 	const root = findRoot(roots, target)
 	const metadata = state.data
 
@@ -196,7 +197,11 @@ const function PackageScreen(props: {
 				onActivated = function()
 					removal.run(function()
 						const result = Installer.uninstallAsync(root)
-						NoticeStore.showSuccess(result, `Removed {root.alias}`, "Undo with Ctrl+Z.")
+						NoticeStore.showSuccess(
+							result,
+							`Removed {rootDisplayName(root, settings)}`,
+							"Undo with Ctrl+Z."
+						)
 
 						return result
 					end)
@@ -234,8 +239,8 @@ const function PackageScreen(props: {
 		if isInstalling then
 			notice = escapeRichText(installer.message or "Installing...")
 		elseif root ~= nil then
-			notice =
-				`Installed as <b>{escapeRichText(root.alias)}</b> in {packagesPath(registry, root.realm)}, version {root.version}`
+			const rootName = escapeRichText(rootDisplayName(root, settings))
+			notice = `Installed as <b>{rootName}</b> in {packagesPath(registry, root.realm)}, version {root.version}`
 		else
 			notice =
 				`Adds <b>{escapeRichText(displayName)}</b> to {packagesPath(registry, realm)} as {scope}/{name} {version}`
@@ -244,6 +249,17 @@ const function PackageScreen(props: {
 		const specs = installedSpecs(selected)
 		const description = pkg.description
 		const nextOrder = createNextOrder()
+
+		-- Nevermore has no realms, since its loader replicates each folder by name.
+		const realmFact: Facts.Fact? = if registry == "nevermore"
+			then nil
+			else {
+				label = "Realm",
+				value = e(Text, {
+					tag = "auto-xy text-body-medium content-emphasis",
+					Text = capitalize(pkg.realm),
+				}),
+			}
 
 		const facts: { Facts.Fact } = {
 			{
@@ -269,13 +285,6 @@ const function PackageScreen(props: {
 				}),
 			},
 			{
-				label = "Realm",
-				value = e(Text, {
-					tag = "auto-xy text-body-medium content-emphasis",
-					Text = capitalize(pkg.realm),
-				}),
-			},
-			{
 				label = "Versions",
 				value = e(Text, {
 					tag = "auto-xy text-body-medium content-emphasis",
@@ -283,6 +292,9 @@ const function PackageScreen(props: {
 				}),
 			},
 		}
+		if realmFact ~= nil then
+			table.insert(facts, 3, realmFact)
+		end
 
 		local tabBody: React.Node
 		if tab == "versions" then
@@ -347,7 +359,7 @@ const function PackageScreen(props: {
 				RemovalError = removal.error ~= nil and alert(AlertSeverity.Error, removal.error, nextOrder()),
 				MajorAlert = isMajor and root ~= nil and alert(
 					AlertSeverity.Warning,
-					`{version} is a major version. Code that uses {root.alias} may need changes.`,
+					`{version} is a major version. Code that uses {rootDisplayName(root, settings)} may need changes.`,
 					nextOrder()
 				),
 				Notice = e(View, {

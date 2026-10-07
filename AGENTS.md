@@ -1,6 +1,6 @@
 # Discover
 
-Discover is a Roblox Studio plugin for browsing and installing Luau packages from the [Wally](https://wally.run) and [pesde](https://pesde.dev) registries. It resolves the dependency graph, downloads the archives, and writes the tree into the place you have open.
+Discover is a Roblox Studio plugin for browsing and installing Luau packages from the [Wally](https://wally.run) and [pesde](https://pesde.dev) registries, and Nevermore packages from npm. It resolves the dependency graph, downloads the archives, and writes the tree into the place you have open.
 
 You can think of Discover as the Studio-native answer to the Rokit/Rojo/Wally CLI toolchain. Same registries, none of the setup.
 
@@ -16,9 +16,9 @@ Discover is pure Luau running inside Studio. No CLI, no Rokit, no Rojo, no files
 
 Every install mutates a DataModel that somebody is actively working in. That is the whole product, and it is also the whole risk. Writes go through a `ChangeHistoryService` recording so they are undoable, failures cancel the recording rather than leaving a half-applied tree, and one installer operation runs at a time behind the busy lock in `Installer/runWithBusyLock`. Nothing about this is optional.
 
-### 3. Two registries, one product
+### 3. Three registries, one product
 
-Wally and pesde have different APIs, different archive formats, different dependency graphs, and different naming rules. Users don't care, and shouldn't have to. Registry-shaped work needs a decision per registry, even when the decision is "not supported here".
+Wally, pesde, and Nevermore have different APIs, different archive formats, different dependency graphs, and different naming rules. Nevermore isn't a registry of its own: its packages live on npm, and they install into the npm-style `node_modules` tree the Nevermore loader expects. Users don't care, and shouldn't have to. Registry-shaped work needs a decision per registry, even when the decision is "not supported here".
 
 ### 4. Studio-native, not Studio-adjacent
 
@@ -41,12 +41,12 @@ We need to be on the same page with terminology. When communicating, use this la
 - **you** means the agent reading this file and changing Discover.
 - **we, us, and maintainers** mean morgann1 and the people building Discover. These are who you are talking to now.
 - **user** means the person using Discover to develop games on Roblox.
-- **registry** means Wally or pesde: the index Discover searches and downloads from.
+- **registry** means Wally, pesde, or Nevermore: the index Discover searches and downloads from. For Nevermore that index is npm.
 - **package** means one scope/name/version in a registry.
 - **root** means a package the user asked for directly, as opposed to one pulled in as a dependency.
-- **realm** means where a package lands: `shared` in `ReplicatedStorage.Packages`, `server` in `ServerStorage.ServerPackages`. The `dev` realm is rejected on purpose.
-- **alias** means the name of the ModuleScript a root gets in `Packages`, after naming-convention and display-name rules are applied. The real content lives under `Packages/_Index`.
-- **lockfile** means the `WallyLock` or `PesdeLock` ModuleScript in `ServerStorage`, the record of what is currently resolved in this place.
+- **realm** means where a package lands: `shared` in `ReplicatedStorage.Packages`, `server` in `ServerStorage.ServerPackages`. The `dev` realm is rejected on purpose. Nevermore has no realms: every root reads as `shared` and lands in `ServerScriptService.Nevermore.node_modules`. The Nevermore loader decides at runtime what replicates to the client.
+- **alias** means the name of the ModuleScript a root gets in `Packages`, after naming-convention and display-name rules are applied. The real content lives under `Packages/_Index`. A Nevermore root has no link module, so its alias is the npm folder name, like `characterutils`. The UI shows the module name people require instead, like `CharacterUtils`, through `Util/rootDisplayName`.
+- **lockfile** means the `WallyLock`, `PesdeLock`, or `NevermoreLock` ModuleScript in `ServerStorage`, the record of what is currently resolved in this place.
 - **resolve, apply** means the two halves of an install: working out the version graph, then writing it into the DataModel.
 - **screen** means one entry in the navigation stack, rendered into the dock widget.
 
@@ -60,8 +60,8 @@ We need to be on the same page with terminology. When communicating, use this la
 
 The most common defect in this repo is a change that works on the path you tested and is missing everywhere else. Before calling work done, walk this list and say which entries applied:
 
-- **Registries.** Wally and pesde each have their own package, and they never call each other. Fixing the Wally path is not fixing the feature, and reaching across from one into the other is not the fix either. If both need the same thing, it belongs in `packages/core/`.
-- **Realms.** `shared` and `server` resolve to different folders, different lockfile entries, and different alias collision sets.
+- **Registries.** Wally, pesde, and Nevermore each have their own package, and they never call each other. Fixing the Wally path is not fixing the feature, and reaching across from one into another is not the fix either. If two of them need the same thing, it belongs in `packages/core/`.
+- **Realms.** `shared` and `server` resolve to different folders, different lockfile entries, and different alias collision sets. Nevermore has only the one folder, so realm-shaped UI needs a Nevermore answer too.
 - **Screens.** Installed, Updates, each source, Search, Package, Settings, Display names. Behavior reachable from the package page is usually also reachable from Installed and Updates.
 - **Layouts.** Above Foundation's Small breakpoint the sidebar shows unless the user hides it; at Small and below the widget is docked and the header carries the location menu. Columns follow the widget's width, and the header follows whether the sidebar shows. Every screen has to survive the 306px minimum.
 - **Themes.** Foundation gives you light and dark for free, and only if you use its tokens. Never hardcode a color.
@@ -80,6 +80,7 @@ The dev scripts live in `scripts/`, are written in Luau, and run under Lute from
 - `test` builds `plugin/tests/build/tests.rbxl` and runs `scripts/tasks/run-tests.luau` in it through run-in-roblox. `--build-only` stops after the build.
 - `patch <package-path>` snapshots a vendored package on the first run and writes the diff to `plugin/patches/` on the second.
 - `codegen` regenerates `plugin/generated/` and the sourcemap. `upload-plugin <path>` publishes to the Creator Store by running `scripts/tasks/upload-plugin.luau` as an Open Cloud Luau Execution task, and the release workflow is what normally calls it.
+- `nevermore-names` regenerates `packages/nevermore-registry/src/knownNames.luau`, the module name each Nevermore package goes by, from the NevermoreEngine source tree and an npm search. Rerun it when Quenty publishes new packages. When it names a package wrong, fix its `OVERRIDES`, not the output. The header comment in `scripts/nevermore-names.luau` explains the rules.
 - `sync` shallow-clones the reference repos into the gitignored `.repos/`. Ones we depend on at a version are pinned to the tag matching `rokit.toml`; the rest follow their branch. `--dry-run` prints the plan, `--repo <id>` limits it to one, `--latest` ignores the pins. Declared in `scripts/lib/referenceRepos.luau`.
 
 ## Verifying
@@ -111,19 +112,20 @@ Semver: dependency bumps and small fixes are PATCH, new user-visible features ar
 
 ## How it works
 
-Search and metadata go through a per-registry HTTP client that is rate limited, honors `Retry-After` on a 429, and caches responses for five minutes. Installing resolves the requested roots against the lockfile in `ServerStorage`, downloads each archive, unzips or untars it in memory, and applies the whole tree into the place inside a single ChangeHistory recording. Roots get an alias ModuleScript in `Packages` pointing at the real content under `Packages/_Index`. UI state is Charm atoms read through `Common/useAtom`; navigation is a back and forward history of screens in one atom.
+Search and metadata go through a per-registry HTTP client that is rate limited, honors `Retry-After` on a 429, and caches responses for five minutes. Installing resolves the requested roots against the lockfile in `ServerStorage`, downloads each archive, unzips or untars it in memory, and applies the whole tree into the place inside a single ChangeHistory recording. Wally and pesde roots get an alias ModuleScript in `Packages` pointing at the real content under `Packages/_Index`. Nevermore packages go into `node_modules` folders laid out the way npm would, with no link modules. UI state is Charm atoms read through `Common/useAtom`; navigation is a back and forward history of screens in one atom.
 
 ## Where code lives
 
 The repo is a source-only monorepo. `packages/` holds the parts that are really Luau ports of standalone tools, and `plugin/` holds everything coupled to Studio, React, and Charm. Packages are mounted into the build by Rojo, one entry per package in `plugin/default.project.json` and `plugin/test.project.json`; there are no per-package manifests and nothing is published. Adding a package means a mount under `Libraries` in both project files, and a `packages/<name>/tests` mount under `Tests.Libraries` if it has specs. `scripts/lint.luau` and `scripts/analyze.luau` already cover all of `packages`.
 
-Three rules hold the shape together. A package requires its siblings through `StudioDiscover.Libraries`, never through `StudioDiscover.Source`, and never requires anything under `plugin/src`. The two registry packages never require each other. Third-party code still comes from the one vendored tree at `StudioDiscover.Packages`, since there is a single `wally.toml`; both registry packages take `zzlib` that way.
+Three rules hold the shape together. A package requires its siblings through `StudioDiscover.Libraries`, never through `StudioDiscover.Source`, and never requires anything under `plugin/src`. The registry packages never require each other. Third-party code still comes from the one vendored tree at `StudioDiscover.Packages`, since there is a single `wally.toml`. Core wraps `zzlib` from that tree as `Core.zzlib`, and every registry package takes it from there.
 
-- `packages/core/` - what both registries and the plugin share: the logger, `setScriptSourceAsync`, the TOML reader, the HTTP client with its cache and rate limiter, the archive-to-Instance tree builder, and the shared type vocabulary in `types.luau`. Mounted as `StudioDiscover.Libraries.Core`.
-- `packages/semver/` - parsing and comparison, plus a constraint engine per registry in `wally.luau` and `pesde.luau`. Mounted as `StudioDiscover.Libraries.Semver`.
-- `packages/package-types/` - a Luau port of the wally-package-types CLI. `parseExportedTypes.luau` reads exported types out of source for both registries. `forwardTypes.luau` turns them into the `export type` lines a Wally link needs, by the CLI's rules, and `processLinkAsync.luau` rewrites one Wally link module in place. Mounted as `StudioDiscover.Libraries.PackageTypes`.
+- `packages/core/` - what the registries and the plugin share: the logger, `setScriptSourceAsync`, the TOML reader, the tar reader, the HTTP client with its cache and rate limiter, the lockfile subtree walk in `collectLockedSubtree`, and the shared type vocabulary in `types.luau`. `buildTree` and `writePendingSourcesAsync` turn an archive into Instances, including `.rbxm` and `.rbxmx` models through `SerializationService`. `readProjectSourcePath` and `relativeToSource` pick out the part of an archive a package's `default.project.json` installs. Mounted as `StudioDiscover.Libraries.Core`.
+- `packages/semver/` - parsing and comparison, plus a constraint engine per registry in `wally.luau`, `pesde.luau`, and `npm.luau`. Mounted as `StudioDiscover.Libraries.Semver`.
+- `packages/package-types/` - a Luau port of the wally-package-types CLI. `parseExportedTypes.luau` reads exported types out of source for Wally and pesde. `forwardTypes.luau` turns them into the `export type` lines a Wally link needs, by the CLI's rules, and `processLinkAsync.luau` rewrites one Wally link module in place. Nevermore has no link modules, so it forwards no types. Mounted as `StudioDiscover.Libraries.PackageTypes`.
 - `packages/wally-registry/` - Wally's engine: `Api/` for search, metadata and download; then resolve, apply, lockfile, snapshot, and the naming rules around `_Index`. Mounted as `StudioDiscover.Libraries.WallyRegistry`.
-- `packages/pesde-registry/` - the same surface for pesde, including the tar reader, the normalization from pesde's metadata into `Core.types.PackageMetadata`, and its own `forwardTypes.luau`, since pesde forwards types by different rules than wally-package-types. Mounted as `StudioDiscover.Libraries.PesdeRegistry`.
+- `packages/pesde-registry/` - the same surface for pesde, including the normalization from pesde's metadata into `Core.types.PackageMetadata`, and its own `forwardTypes.luau`, since pesde forwards types by different rules than wally-package-types. Mounted as `StudioDiscover.Libraries.PesdeRegistry`.
+- `packages/nevermore-registry/` - the same surface for Nevermore. It reads npm directly, resolves npm ranges through `Semver.npm`, and lays packages out the way npm would in `layoutPackages.luau`. On the first install, `setUpGameAsync.luau` creates the game folder and the `ServerMain` and `ClientMain` scripts that start the loader. `nevermore-names` generates its `knownNames.luau`. Mounted as `StudioDiscover.Libraries.NevermoreRegistry`.
 - `plugin/bin/Main.plugin.luau` - the entry point. Everything hangs off `Plugin/setupPlugin`.
 - `plugin/src/Api/` - the React hooks over registry search and metadata. The requests themselves live in the registry packages.
 - `plugin/src/Installer/` - orchestration only: the ChangeHistory recording, the busy lock, install/update/uninstall, the Charm atoms and the `use*` hooks. The resolve and apply engines live in the registry packages. Most of the risk in this repo lives here.

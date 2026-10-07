@@ -37,6 +37,7 @@ const UNCONTAINED = { isContained = false, hasMargin = false }
 const MAINTAINERS: { [coreTypes.Registry]: string } = {
 	wally = "Uplift Games",
 	pesde = "daimond113",
+	nevermore = "Quenty",
 }
 
 const function setRegistryEnabled(
@@ -47,6 +48,7 @@ const function setRegistryEnabled(
 	SettingsStore.setSetting("registries", {
 		wally = if registry == "wally" then value else enabled.wally,
 		pesde = if registry == "pesde" then value else enabled.pesde,
+		nevermore = if registry == "nevermore" then value else enabled.nevermore,
 	})
 end
 
@@ -128,7 +130,7 @@ const function SettingsScreen()
 				}),
 				NamingConvention = e(List.Item, {
 					title = "Naming convention",
-					description = "How package names read in lists, and the names new installs get.",
+					description = "How Wally and pesde package names read, and the names their installs get.",
 					trailing = if layout.isWide then namingDropdown else nil,
 					LayoutOrder = 2,
 				}),
@@ -141,7 +143,7 @@ const function SettingsScreen()
 				}),
 				DisplayNames = e(List.Item, {
 					title = "Display names",
-					description = "Give specific packages a fixed name when they install.",
+					description = "Give specific packages a fixed name. Wally and pesde packages also install under it.",
 					trailing = e(Text, {
 						tag = "auto-xy text-body-medium content-muted",
 						Text = tostring(ruleCount),

@@ -12,7 +12,7 @@ const function routeTitle(route: Navigation.Route, settings: packageDisplayName.
 	if route.name == "Source" then
 		return registryLabel(route.registry)
 	elseif route.name == "Package" then
-		return packageDisplayName(route.target.name, settings)
+		return packageDisplayName(route.target.registry, route.target.name, settings)
 	elseif route.name == "Installed" then
 		return "Installed"
 	elseif route.name == "Updates" then

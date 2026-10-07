@@ -5,7 +5,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const React = require(StudioDiscover.Packages.React)
 
 const ConfirmDialog = require(StudioDiscover.Source.Common.ConfirmDialog)
-const capitalize = require(StudioDiscover.Source.Util.capitalize)
+const packagesPath = require(StudioDiscover.Source.Util.packagesPath)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
 const types = require(StudioDiscover.Source.Installer.types)
 
@@ -19,7 +19,7 @@ const function InstallConfirmDialog(props: {
 })
 	const request = props.request
 	const body = `Install {request.scope}/{request.name} v{request.version} from {registryLabel(request.registry)}? `
-		.. `Luau source will be fetched and written into the {capitalize(request.realm)} packages folder of this place.`
+		.. `Luau source will be fetched and written into {packagesPath(request.registry, request.realm)} in this place.`
 
 	return e(ConfirmDialog, {
 		title = "Install package?",
