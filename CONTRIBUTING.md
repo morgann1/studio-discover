@@ -40,7 +40,7 @@ Logic you change gets a spec: `plugin/tests/` for the plugin, `packages/<name>/t
 - Never assign `ModuleScript.Source` directly. Roblox caps it at 200,000 characters, so write through `Core.setScriptSourceAsync` instead.
 - Write to the place only inside a `ChangeHistoryService` recording, and cancel the recording if anything fails. `Installer/applyRootsAsync` shows the pattern.
 - Don't edit `plugin/Packages/`, `plugin/DevPackages/`, or `plugin/generated/`. The install script rebuilds them. To change a dependency's code, add a patch with `lute scripts/patch.luau <package-path>`.
-- Wally and pesde each have their own package, and neither requires the other. A change to registry behavior needs a decision for both. Code they share belongs in `packages/core/`.
+- Wally, pesde, and Nevermore each have their own package, and none requires another. A change to registry behavior needs a decision for every registry. Code they share belongs in `packages/core/`.
 - Take colors from Foundation's tokens, never hardcode them. Check UI changes docked at the 306px minimum and expanded, in light and dark themes.
 
 [AGENTS.md](AGENTS.md) covers the architecture and conventions in full. It is written for coding agents, but it is also the most complete guide to the codebase.
