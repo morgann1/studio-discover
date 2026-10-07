@@ -239,8 +239,8 @@ const function PackageScreen(props: {
 		if isInstalling then
 			notice = escapeRichText(installer.message or "Installing...")
 		elseif root ~= nil then
-			notice =
-				`Installed as <b>{escapeRichText(root.alias)}</b> in {packagesPath(registry, root.realm)}, version {root.version}`
+			const rootName = escapeRichText(rootDisplayName(root, settings))
+			notice = `Installed as <b>{rootName}</b> in {packagesPath(registry, root.realm)}, version {root.version}`
 		else
 			notice =
 				`Adds <b>{escapeRichText(displayName)}</b> to {packagesPath(registry, realm)} as {scope}/{name} {version}`
