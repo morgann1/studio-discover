@@ -2,6 +2,7 @@
 
 const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
+const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const formatName = require(StudioDiscover.Source.Util.formatName)
 
 -- The settings that decide a package's name, a subset of `SettingsStore.SettingsState`.
@@ -13,8 +14,13 @@ export type NameSettings = {
 --[[
 	The name a package goes by in the UI and as an installed root's alias: the user's
 		display-name rule for it if one is set, otherwise the name in their naming convention.
+	Nevermore packages keep their own names, since its loader finds modules by name.
 ]]
-const function packageDisplayName(name: string, settings: NameSettings): string
+const function packageDisplayName(registry: coreTypes.Registry, name: string, settings: NameSettings): string
+	if registry == "nevermore" then
+		return name
+	end
+
 	for _, rule in settings.displayNames do
 		if rule.name == name and rule.displayName ~= "" then
 			return rule.displayName

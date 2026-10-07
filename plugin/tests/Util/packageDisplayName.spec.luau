@@ -17,8 +17,8 @@ describe("packageDisplayName", function()
 			displayNames = { { name = "t", displayName = "t" } },
 		}
 
-		expect(packageDisplayName("t", settings)).toBe("t")
-		expect(packageDisplayName("react-roblox", settings)).toBe("ReactRoblox")
+		expect(packageDisplayName("wally", "t", settings)).toBe("t")
+		expect(packageDisplayName("wally", "react-roblox", settings)).toBe("ReactRoblox")
 	end)
 
 	test("ignores a rule with an empty display name", function()
@@ -27,6 +27,16 @@ describe("packageDisplayName", function()
 			displayNames = { { name = "t", displayName = "" } },
 		}
 
-		expect(packageDisplayName("t", settings)).toBe("T")
+		expect(packageDisplayName("wally", "t", settings)).toBe("T")
+	end)
+
+	test("keeps a Nevermore package's own name", function()
+		const settings = {
+			namingConvention = "PascalCase",
+			displayNames = { { name = "maid", displayName = "Janitor" } },
+		}
+
+		expect(packageDisplayName("nevermore", "maid", settings)).toBe("maid")
+		expect(packageDisplayName("nevermore", "camera-story-utils", settings)).toBe("camera-story-utils")
 	end)
 end)

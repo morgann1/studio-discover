@@ -40,7 +40,7 @@ const function runInstallAsync(
 		table.insert(roots, prior)
 	end
 
-	const baseAlias = resolveAlias(name)
+	const baseAlias = resolveAlias("pesde", name)
 	const alias = pickFreeAlias(baseAlias, function(candidate)
 		for _, prior in roots do
 			if prior.requestRealm == realm and prior.alias == candidate then

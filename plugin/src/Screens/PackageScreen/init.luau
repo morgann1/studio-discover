@@ -132,7 +132,7 @@ const function PackageScreen(props: {
 	end, { state.data, target.version } :: { unknown })
 
 	const label = registryLabel(registry)
-	const displayName = packageDisplayName(name, settings)
+	const displayName = packageDisplayName(registry, name, settings)
 	const root = findRoot(roots, target)
 	const metadata = state.data
 
