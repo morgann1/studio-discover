@@ -90,7 +90,8 @@ const function InstalledScreen(props: {
 	const layout = LayoutContext.useLayout()
 	const installed = Installer.useInstalledRoots()
 	const updates = Installer.useUpdates()
-	const enabled = SettingsStore.useSettings().registries
+	const settings = SettingsStore.useSettings()
+	const enabled = settings.registries
 	const query, setQuery = React.useState("")
 
 	-- How tall the alert and column labels above the rows are, so the rows can fill the rest.
@@ -101,7 +102,7 @@ const function InstalledScreen(props: {
 
 	-- The search row only shows docked, so a wider widget drops the filter along with it.
 	const activeQuery = if layout.isDocked then query else ""
-	const groups = groupRoots(installed.roots, updates.updates, activeQuery, props.onlyUpdates)
+	const groups = groupRoots(installed.roots, updates.updates, activeQuery, props.onlyUpdates, settings)
 
 	local firstSource = nil
 	for _, registry in registries do

@@ -64,7 +64,7 @@ const function DisplayNamesScreen()
 	const children: { [string]: React.Node } = {
 		Intro = e(Text, {
 			tag = "size-full-0 auto-y text-body-medium content-muted text-align-x-left text-wrap",
-			Text = "A package listed here installs under its display name instead of a name from the naming convention.",
+			Text = "A package listed here goes by its display name. Wally and pesde packages also install under it, instead of a name from the naming convention.",
 			LayoutOrder = nextOrder(),
 		}),
 	}

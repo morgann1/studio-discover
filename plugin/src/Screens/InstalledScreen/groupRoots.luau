@@ -4,11 +4,14 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 
 const coreTypes = require(StudioDiscover.Libraries.Core.types)
 const installerTypes = require(StudioDiscover.Source.Installer.types)
+const packageDisplayName = require(StudioDiscover.Source.Util.packageDisplayName)
 const realms = require(StudioDiscover.Libraries.Core.realms)
+const rootDisplayName = require(StudioDiscover.Source.Util.rootDisplayName)
 
--- One installed root, with its update when it has one.
+-- One installed root, the name it goes by, and its update when it has one.
 export type Entry = {
 	read root: coreTypes.InstalledRoot,
+	read displayName: string,
 	read update: installerTypes.UpdateInfo?,
 }
 
@@ -17,10 +20,10 @@ export type Group = {
 	read entries: { Entry },
 }
 
-const function matches(root: coreTypes.InstalledRoot, query: string): boolean
+const function matches(root: coreTypes.InstalledRoot, displayName: string, query: string): boolean
 	const needle = string.lower(query)
 
-	for _, text in { root.alias, root.name, root.scope } do
+	for _, text in { displayName, root.alias, root.name, root.scope } do
 		if string.find(string.lower(text), needle, 1, true) ~= nil then
 			return true
 		end
@@ -48,15 +51,17 @@ const function findUpdate(
 end
 
 --[[
-	Pairs each root with its update and groups them by realm, sorted by alias. Keeps
-		only the roots matching `query` by alias, name, or scope, and with
-		`onlyUpdates`, only the ones with an update. Realms left empty are dropped.
+	Pairs each root with its name and update and groups them by realm, sorted by
+		name. Keeps only the roots matching `query` by name, alias, package name, or
+		scope, and with `onlyUpdates`, only the ones with an update. Realms left empty
+		are dropped.
 ]]
 const function groupRoots(
 	roots: { coreTypes.InstalledRoot },
 	updates: { installerTypes.UpdateInfo },
 	query: string,
-	onlyUpdates: boolean
+	onlyUpdates: boolean,
+	settings: packageDisplayName.NameSettings
 ): { Group }
 	const groups: { Group } = {}
 
@@ -65,16 +70,17 @@ const function groupRoots(
 
 		for _, root in roots do
 			const update = findUpdate(updates, root)
+			const displayName = rootDisplayName(root, settings)
 
-			if root.realm ~= realm or (onlyUpdates and update == nil) or not matches(root, query) then
+			if root.realm ~= realm or (onlyUpdates and update == nil) or not matches(root, displayName, query) then
 				continue
 			end
 
-			table.insert(entries, { root = root, update = update })
+			table.insert(entries, { root = root, displayName = displayName, update = update })
 		end
 
 		table.sort(entries, function(a, b)
-			return string.lower(a.root.alias) < string.lower(b.root.alias)
+			return string.lower(a.displayName) < string.lower(b.displayName)
 		end)
 
 		if #entries > 0 then

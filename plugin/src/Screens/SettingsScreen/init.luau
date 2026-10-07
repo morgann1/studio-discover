@@ -143,7 +143,7 @@ const function SettingsScreen()
 				}),
 				DisplayNames = e(List.Item, {
 					title = "Display names",
-					description = "Give specific Wally and pesde packages a fixed name when they install.",
+					description = "Give specific packages a fixed name. Wally and pesde packages also install under it.",
 					trailing = e(Text, {
 						tag = "auto-xy text-body-medium content-muted",
 						Text = tostring(ruleCount),

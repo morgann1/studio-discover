@@ -26,6 +26,7 @@ const isRegistryEnabled = require(StudioDiscover.Source.Util.isRegistryEnabled)
 const packageDisplayName = require(StudioDiscover.Source.Util.packageDisplayName)
 const packagesPath = require(StudioDiscover.Source.Util.packagesPath)
 const registryLabel = require(StudioDiscover.Source.Util.registryLabel)
+const rootDisplayName = require(StudioDiscover.Source.Util.rootDisplayName)
 const useBreakpoint = require(StudioDiscover.Source.Common.useBreakpoint)
 const useOperation = require(StudioDiscover.Source.Common.useOperation)
 const usePackageMetadata = require(StudioDiscover.Source.Api.usePackageMetadata)
@@ -196,7 +197,11 @@ const function PackageScreen(props: {
 				onActivated = function()
 					removal.run(function()
 						const result = Installer.uninstallAsync(root)
-						NoticeStore.showSuccess(result, `Removed {root.alias}`, "Undo with Ctrl+Z.")
+						NoticeStore.showSuccess(
+							result,
+							`Removed {rootDisplayName(root, settings)}`,
+							"Undo with Ctrl+Z."
+						)
 
 						return result
 					end)
@@ -354,7 +359,7 @@ const function PackageScreen(props: {
 				RemovalError = removal.error ~= nil and alert(AlertSeverity.Error, removal.error, nextOrder()),
 				MajorAlert = isMajor and root ~= nil and alert(
 					AlertSeverity.Warning,
-					`{version} is a major version. Code that uses {root.alias} may need changes.`,
+					`{version} is a major version. Code that uses {rootDisplayName(root, settings)} may need changes.`,
 					nextOrder()
 				),
 				Notice = e(View, {

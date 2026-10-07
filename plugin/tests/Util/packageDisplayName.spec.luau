@@ -30,13 +30,22 @@ describe("packageDisplayName", function()
 		expect(packageDisplayName("wally", "t", settings)).toBe("T")
 	end)
 
-	test("keeps a Nevermore package's own name", function()
+	test("names a Nevermore package by its module, whatever the naming convention", function()
 		const settings = {
-			namingConvention = "PascalCase",
+			namingConvention = "snake_case",
+			displayNames = {},
+		}
+
+		expect(packageDisplayName("nevermore", "characterutils", settings)).toBe("CharacterUtils")
+		expect(packageDisplayName("nevermore", "not-a-known-package", settings)).toBe("not-a-known-package")
+	end)
+
+	test("uses the display-name rule over a Nevermore package's known name", function()
+		const settings = {
+			namingConvention = "Original",
 			displayNames = { { name = "maid", displayName = "Janitor" } },
 		}
 
-		expect(packageDisplayName("nevermore", "maid", settings)).toBe("maid")
-		expect(packageDisplayName("nevermore", "camera-story-utils", settings)).toBe("camera-story-utils")
+		expect(packageDisplayName("nevermore", "maid", settings)).toBe("Janitor")
 	end)
 end)
