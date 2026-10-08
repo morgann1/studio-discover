@@ -11,8 +11,22 @@ const EncodingService = game:GetService("EncodingService")
 const SerializationService = game:GetService("SerializationService")
 
 const PLUGIN_ID = 124703864101585
-const PLUGIN_NAME = "Discover"
-const PLUGIN_DESCRIPTION = "Browse and install Luau packages from Wally and pesde directly from Roblox Studio."
+const PLUGIN_NAME = "Studio Discover - Install Packages Without a CLI"
+
+-- The Creator Store listing's text. It stays flush left, since a long string keeps its indentation.
+const PLUGIN_DESCRIPTION = [[
+Studio Discover lets you search Wally, pesde, and Nevermore, and install packages into the place you have open. Dependencies and types come with them.
+
+It does the job of Wally, Rojo, and Rokit from inside Studio. Pick a version, and Discover resolves its dependencies, downloads them, and writes them into your place. No CLI to install, no repository to set up, nothing beyond allowing the permissions Studio asks for.
+
+Features:
+- Each install is one undo step, and a failed install changes nothing.
+- See which packages have updates, and update one or all of them.
+- Remove a package, and the dependencies nothing else needs go with it.
+- Pick a naming convention or set your own display names.
+- Turn off any registry you don't use.
+
+Source code and release notes are on GitHub (see Social Links).]]
 const PLUGIN_CREATOR_ID = 48044582
 const PLUGIN_CREATOR_TYPE = Enum.AssetCreatorType.User
 
