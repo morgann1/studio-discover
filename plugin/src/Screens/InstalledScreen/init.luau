@@ -41,7 +41,8 @@ const COLUMNS: { Table.Column } = {
 
 --[[
 	A realm's heading, with the folders its rows live in, such as
-		"ReplicatedStorage.Packages". Docked, the folders go under the realm.
+		"ReplicatedStorage.Packages". Docked, or with more than one folder, the
+		folders go under the realm, one per line.
 ]]
 const function groupHeading(group: groupRoots.Group, isDocked: boolean, layoutOrder: number): React.Node
 	const paths: { string } = {}
@@ -54,11 +55,13 @@ const function groupHeading(group: groupRoots.Group, isDocked: boolean, layoutOr
 		end
 	end
 
+	const isStacked = isDocked or #paths > 1
+
 	return e(View, {
 		tag = {
 			["size-full-0 auto-y padding-x-large padding-top-large padding-bottom-small"] = true,
-			["col gap-xxsmall"] = isDocked,
-			["row align-y-center gap-medium"] = not isDocked,
+			["col gap-xxsmall"] = isStacked,
+			["row align-y-center gap-medium"] = not isStacked,
 		},
 		LayoutOrder = layoutOrder,
 	}, {
@@ -70,10 +73,10 @@ const function groupHeading(group: groupRoots.Group, isDocked: boolean, layoutOr
 		Path = e(Text, {
 			tag = {
 				["text-body-small content-muted text-align-x-left"] = true,
-				["size-full-0 auto-y text-wrap"] = isDocked,
-				["auto-xy"] = not isDocked,
+				["size-full-0 auto-y text-wrap"] = isStacked,
+				["auto-xy"] = not isStacked,
 			},
-			Text = table.concat(paths, if isDocked then "\n" else ", "),
+			Text = table.concat(paths, "\n"),
 			LayoutOrder = 2,
 		}),
 	})
