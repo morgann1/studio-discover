@@ -5,6 +5,7 @@
   "back": "F123", "fwd": "F124", "down": "F126", "dots": "F1F9", "check": "F120", "sidebar": "F1DB",
   "search": "F182", "refresh": "F10F", "gear": "F15C", "info": "F12B", "x": "F21C"
 } -%}
+{%- set labels = { "wally": "Wally", "pesde": "pesde", "nevermore": "Nevermore" } -%}
 {%- macro icon(name) -%}<span class="ic">&#x{{ glyphs[name] }};</span>{%- endmacro -%}
 {%- macro mark(source, size) -%}
 <img class="mark" src="{{ ("/assets/" + source + ".png") | url }}" alt="" width="{{ size }}" height="{{ size }}">
@@ -16,11 +17,12 @@
       <nav class="side">
         <div class="side-top"><span class="tool">{{ icon("sidebar") }}</span><span class="pill">{{ icon("search") }}Search all sources</span></div>
         <div class="group">This place</div>
-        <div class="loc" data-for="installed">Installed<span class="count">5</span></div>
+        <div class="loc" data-for="installed">Installed<span class="count">6</span></div>
         <div class="loc">Updates<span class="count emphasis updates">2</span></div>
         <div class="group">Sources</div>
         <div class="loc" data-for="wally">{{ mark("wally", 18) }}Wally</div>
         <div class="loc">{{ mark("pesde", 18) }}pesde</div>
+        <div class="loc">{{ mark("nevermore", 18) }}Nevermore</div>
       </nav>
       <div class="main">
         <header class="head">
@@ -49,30 +51,31 @@
           <div class="alert">
             <span class="alert-icon">{{ icon("info") }}</span>
             <span class="alert-text">
-              <span data-step="idle">2 updates available</span>
-              {%- for message in demo.progress %}<span data-step="{{ loop.index0 }}">{{ message }}</span>{% endfor -%}
+              <span data-step="idle">2 updates available</span><span data-step="running">Updating 2 packages...</span>
             </span>
             <span class="button" data-step="idle">Update all</span>
           </div>
           <div class="table-head roots"><span>Name</span><span>Version</span><span>Source</span><span></span></div>
           {%- for realm in demo.realms %}
-          <div class="realm"><b>{{ realm.name }}</b><span class="path">{{ realm.path }}</span></div>
+          <div class="realm"><b>{{ realm.name }}</b><span class="paths">
+            {%- for path in realm.paths %}<span class="path">{{ path }}</span>{% endfor -%}
+          </span></div>
           {%- for root in realm.roots %}
           <div class="root">
             <span class="name">{{ root.name }}</span>
             <span class="meta">
               {%- if root.update %}
-              <span class="version before"><span class="link">{{ root.version }} → {{ root.update }}</span>
+              <span class="version before"><span>{{ root.version }} →</span><span class="latest">{{ root.update }}</span>
                 {%- if root.major %}<span class="status box"><i class="warning"></i>Major</span>{% endif %}</span>
               <span class="version after">{{ root.update }}</span>
               {%- else %}
               <span class="version">{{ root.version }}</span>
               {%- endif %}
-              <span class="source">{{ mark(root.source, 16) }}{{ "Wally" if root.source == "wally" else "pesde" }}</span>
+              <span class="source">{{ mark(root.source, 16) }}{{ labels[root.source] }}</span>
             </span>
             <span class="action">
-              {%- if root.update %}<span class="button small before" data-step="idle">Update</span>{% endif -%}
-              <span class="tool more{{ ' after' if root.update }}">{{ icon("dots") }}</span>
+              {%- if root.update %}<span class="button small before">Update</span>{% endif -%}
+              <span class="tool more">{{ icon("dots") }}</span>
             </span>
           </div>
           {%- endfor %}
@@ -81,13 +84,15 @@
       </div>
       <div class="menu">
         <div class="group">This place</div>
-        <div class="loc">Installed<span class="count">5</span></div>
+        <div class="loc">Installed<span class="count">6</span></div>
         <div class="loc">Updates<span class="count emphasis">2</span></div>
         <div class="divider"></div>
         <div class="group">Sources</div>
         <div class="loc current">{{ mark("wally", 18) }}Wally{{ icon("check") }}</div>
         <div class="loc">{{ mark("pesde", 18) }}pesde</div>
+        <div class="loc">{{ mark("nevermore", 18) }}Nevermore</div>
       </div>
+      <div class="notice">Updated 2 packages{{ icon("x") }}</div>
     </div>
   </div>
   <svg class="cursor" viewBox="0 0 20 20" width="20" height="20">

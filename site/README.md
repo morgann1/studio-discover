@@ -40,7 +40,9 @@ The GitHub mark in the header comes from [SVGL](https://svgl.app/library/github_
 Its use is subject to [GitHub's brand guidelines](https://brand.github.com/).
 
 `src/assets/wally.png` and `src/assets/pesde.png` are the favicons of
-[wally.run](https://wally.run) and [pesde.dev](https://pesde.dev), the same marks the plugin uses.
+[wally.run](https://wally.run) and [pesde.dev](https://pesde.dev). `src/assets/nevermore.png` is
+`Images/NevermoreLogo.png` from [NevermoreEngine](https://github.com/Quenty/NevermoreEngine),
+scaled to 48px. These are the same marks the plugin uses.
 
 `src/assets/fonts/BuilderIcons-Subset.woff2` is a subset of Roblox's BuilderIcons font with only
 the glyphs the demo draws.

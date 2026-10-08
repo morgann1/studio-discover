@@ -58,7 +58,7 @@ function animate(stage) {
   // Each scene is a caption and its steps, as [milliseconds after the previous step, change].
   // Wide scenes resize the widget, so the docked script on narrow screens skips them.
   const scenes = [
-    { caption: "Browse Wally and pesde from one place.", steps: [[0, () => {}]] },
+    { caption: "Browse Wally, pesde, and Nevermore from one place.", steps: [[0, () => {}]] },
     {
       caption: "Docked, the sidebar folds into the title.",
       wide: true,
@@ -79,16 +79,21 @@ function animate(stage) {
       ],
     },
     {
-      caption: "Update everything at once, with real progress.",
+      caption: "Update everything at once.",
       steps: [
         [1300, () => moveTo(centerOf(".alert .button"))],
-        ...click(() => set("progress", "0")),
-        [1100, () => set("progress", "1")],
-        [1100, () => set("progress", "2")],
-        [1300, () => (set("progress", "done"), wave(), moveTo([demo.offsetWidth * 0.75, 460]))],
+        ...click(() => set("progress", "running")),
+        [2400, () => (set("progress", "done"), set("notice", ""), wave())],
+        [300, () => moveTo([demo.offsetWidth * 0.75, 400])],
       ],
     },
-    { caption: "It follows Studio's theme.", steps: [[1500, () => set("theme", "light")]] },
+    {
+      caption: "It follows Studio's theme.",
+      steps: [
+        [1500, () => set("theme", "light")],
+        [2000, () => set("notice")],
+      ],
+    },
     {
       caption: "Expanded, everything gets its own column.",
       wide: true,
@@ -109,6 +114,7 @@ function animate(stage) {
     set("theme", "dark");
     set("location", "wally");
     set("progress", "idle");
+    set("notice");
     set("menu");
     set("dragging");
     set("cursor");

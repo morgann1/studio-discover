@@ -555,7 +555,6 @@ h1 {
   --w-text: #f7f7f8;
   --w-default: #d5d7dd;
   --w-muted: #bcbec8;
-  --w-link: #528bff;
   --w-shift: rgba(208, 217, 251, 0.08);
   --w-shift-strong: rgba(208, 217, 251, 0.12);
   --w-stroke: rgba(208, 217, 251, 0.12);
@@ -574,7 +573,6 @@ h1 {
   --w-text: #202227;
   --w-default: #494d5a;
   --w-muted: #6a6f81;
-  --w-link: #1446ff;
   --w-shift: rgba(27, 37, 75, 0.08);
   --w-shift-strong: rgba(27, 37, 75, 0.12);
   --w-stroke: rgba(27, 37, 75, 0.12);
@@ -974,25 +972,25 @@ h1 {
   margin-left: 32px;
 }
 
+/* Docked, a realm's folders stack under its name. */
 .realm {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 10px;
+  flex-direction: column;
+  gap: 2px;
   padding: 16px 16px 6px;
   color: var(--w-text);
 }
 
-.path {
-  max-width: 100%;
-  overflow: hidden;
+.paths {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   color: var(--w-muted);
-  font:
-    11px/1.4 ui-monospace,
-    Consolas,
-    monospace;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 12px;
+}
+
+.path {
+  overflow-wrap: anywhere;
 }
 
 .root {
@@ -1001,7 +999,7 @@ h1 {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 2px 12px;
-  min-height: 60px;
+  min-height: 57px;
   padding: 8px 16px;
   border-bottom: 1px solid var(--w-stroke);
 }
@@ -1031,9 +1029,8 @@ h1 {
   gap: 6px;
 }
 
-.link {
-  color: var(--w-link);
-  white-space: nowrap;
+.latest {
+  color: var(--w-text);
 }
 
 .action {
@@ -1097,12 +1094,51 @@ h1 {
 .demo:not([data-location="wally"]) .for-wally,
 .demo:not([data-location="installed"]) .for-installed,
 .demo:not([data-progress="idle"]) [data-step="idle"],
-.demo:not([data-progress="0"]) [data-step="0"],
-.demo:not([data-progress="1"]) [data-step="1"],
-.demo:not([data-progress="2"]) [data-step="2"],
+.demo:not([data-progress="running"]) [data-step="running"],
 .demo[data-progress="done"] :is(.alert, .updates, .before),
 .demo:not([data-progress="done"]) .after {
   display: none;
+}
+
+/* While the updates run, each row's Update is disabled. */
+.demo[data-progress="running"] .root .button {
+  opacity: 0.5;
+}
+
+/* The notice that says the updates finished, floating at the bottom of the widget. */
+
+.notice {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 40px;
+  padding: 0 8px 0 12px;
+  border-radius: 8px;
+  background: var(--w-text);
+  color: var(--w-background);
+  font-size: 12px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition:
+    opacity 0.2s,
+    visibility 0.2s,
+    transform 0.45s var(--spring);
+}
+
+.notice .ic {
+  font-size: 16px;
+}
+
+.demo[data-notice] .notice {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 /* The pointer moves on eased paths and dips when it clicks. */
@@ -1164,10 +1200,6 @@ h1 {
     grid-template-columns: minmax(0, 1.4fr) 120px minmax(0, 1fr) 120px;
   }
 
-  .table-row {
-    height: 55px;
-  }
-
   .wide {
     display: block;
   }
@@ -1193,7 +1225,7 @@ h1 {
 
   .root {
     grid-template-areas: "name version source action";
-    min-height: 55px;
+    min-height: 45px;
   }
 
   .root .name {
@@ -1217,7 +1249,20 @@ h1 {
   }
 
   .realm {
-    flex-wrap: nowrap;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .paths {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .path + .path::before {
+    content: ", ";
   }
 }
 
