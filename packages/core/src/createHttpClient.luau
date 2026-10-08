@@ -12,6 +12,7 @@ const describeHttpFailure = require(StudioDiscover.Libraries.Core.describeHttpFa
 const DEFAULT_REQUEST_INTERVAL_SECONDS = 1
 
 export type HttpClient = {
+	read baseUrl: string,
 	read getAsync: (path: string, headers: { [string]: string }?) -> (string?, string?, boolean),
 	read getJsonAsync: (path: string, headers: { [string]: string }?) -> (unknown, string?, boolean),
 }
@@ -40,7 +41,8 @@ const function isNotFound(statusCode: number, _body: string?): boolean
 end
 
 --[[
-	Returns a client for one registry's API at `baseUrl`, named `name` in the logs.
+	Returns a client for one registry's API at `baseUrl`, named `name` in the logs. The
+		client keeps `baseUrl` so the plugin can ask Studio for HTTP access to it up front.
 
 	`getAsync` returns the body of a successful GET to `path`, or nil and why not, and
 		`getJsonAsync` decodes that body as JSON. The reason reads as a phrase for
@@ -146,6 +148,7 @@ const function createHttpClient(
 	end
 
 	return table.freeze({
+		baseUrl = baseUrl,
 		getAsync = getAsync,
 		getJsonAsync = getJsonAsync,
 	})

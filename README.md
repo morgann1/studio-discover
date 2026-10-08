@@ -13,6 +13,8 @@
 
 Studio Discover lets you pull [Wally](https://wally.run), [pesde](https://pesde.dev/), and [Nevermore](https://quenty.github.io/NevermoreEngine/) packages into Studio without setting up a whole repository. Dependencies and types come with them.
 
+The first time Discover loads, Studio asks whether it can create scripts and reach api.wally.run, registry.pesde.daimond113.com, and registry.npmjs.org. Allow all of them, since Discover can't install anything without them. If you denied one, you can change it in Studio's Plugin Manager.
+
 Nevermore packages install the way the Nevermore docs lay a game out. The first one adds `ServerScriptService.Nevermore`, with your own code going in `game` and the packages in `node_modules`, plus `ServerMain` and `ClientMain` scripts that start the loader. Those scripts and folders are yours afterward, and removing packages never touches them.
 
 <table>

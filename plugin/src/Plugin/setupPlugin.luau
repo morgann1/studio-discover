@@ -8,6 +8,7 @@ const StudioDiscover = script:FindFirstAncestor("StudioDiscover")
 const buildConfig = require(StudioDiscover.Source.buildConfig)
 const createLogger = require(StudioDiscover.Libraries.Core.createLogger)
 const pluginAtom = require(StudioDiscover.Source.Plugin.pluginAtom)
+const requestPermissionsAsync = require(StudioDiscover.Source.Plugin.requestPermissionsAsync)
 
 const logger = createLogger.createLogger("plugin.bootstrap")
 
@@ -39,6 +40,7 @@ const function setupPlugin(plugin: Plugin)
 
 	plugin.Name = buildConfig.pluginName
 	pluginAtom(plugin)
+	task.spawn(requestPermissionsAsync, plugin)
 
 	const widget = plugin:CreateDockWidgetPluginGuiAsync(buildConfig.widgetId, WIDGET_INFO)
 	widget.Title = buildConfig.widgetTitle
