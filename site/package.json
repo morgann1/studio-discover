@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "eleventy --serve",
+    "dev": "eleventy --serve --port 8081",
     "build": "eleventy",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
